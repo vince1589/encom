@@ -1,0 +1,98 @@
+#################################################################
+# Makefile for the ENCoM   program (Linux Version)              #
+#                                                               #
+# Vincent Frappier   & Rafael Najmanovich                       #
+#                                                               #
+#################################################################
+
+
+# Include path
+I = ../src
+
+# Executable path
+W = ../bin
+
+CXX = g++
+
+CXXFLAGS = -Wall -O3
+
+LIBS = -lgsl -lgslcblas -lm
+
+OBJ =   STeM_lib_grid_motion.o                   \
+        STeM_lib_hessian.o                 \
+        STeM_lib_fit.o          \
+        STeM_lib_other.o            \
+        STeM_lib_rot.o               \
+        STeM_lib_STRC.o             \
+        STeM_lib_template.o            \
+        STeM_lib_vcon.o            
+
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd
+	\mv build_encom $W/build_encom
+	\mv b_factor $W/b_factor
+	\mv bfactor_diff $W/bfactor_diff
+	\mv build_grid_rmsd $W/build_grid_rmsd
+	\mv fit_svd $W/fit_svd
+	\mv motion $W/motion
+	\mv rmsd $W/rmsd
+clean:
+	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
+	clear
+
+# Linking / Create executable
+build_encom: $(OBJ) build_encom.o
+	$(CXX) $(OBJ) build_encom.o $(LIBS) -o build_encom
+b_factor: $(OBJ) b_factor.o
+	$(CXX) $(OBJ) b_factor.o $(LIBS) -o b_factor
+bfactor_diff: $(OBJ) bfactor_diff.o 
+	$(CXX) $(OBJ) bfactor_diff.o $(LIBS) -o bfactor_diff
+build_grid_rmsd: $(OBJ) build_grid_rmsd.o
+	$(CXX) $(OBJ) build_grid_rmsd.o $(LIBS) -o build_grid_rmsd
+fit_svd: $(OBJ) fit_svd.o  
+	$(CXX) $(OBJ) fit_svd.o $(LIBS) -o fit_svd
+motion: $(OBJ) motion.o
+	$(CXX) $(OBJ) motion.o $(LIBS) -o motion
+rmsd: $(OBJ) rmsd.o
+	$(CXX) $(OBJ) rmsd.o $(LIBS) -o rmsd
+build_pca: $(OBJ) build_pca.o
+	$(CXX) $(OBJ) build_pca.o $(LIBS) -o build_pca
+
+# Build main()
+build_encom.o: $I/build_encom.c
+	$(CXX) $(CXXFLAGS) -c $I/build_encom.c $(INCLUDES)
+b_factor.o: $I/b_factor.c
+	$(CXX) $(CXXFLAGS) -c $I/b_factor.c $(INCLUDES)
+bfactor_diff.o: $I/bfactor_diff.c 
+	$(CXX) $(CXXFLAGS) -c $I/bfactor_diff.c $(INCLUDES)
+build_grid_rmsd.o: $I/build_grid_rmsd.c
+	$(CXX) $(CXXFLAGS) -c $I/build_grid_rmsd.c $(INCLUDES)
+fit_svd.o: $I/fit_svd.c
+	$(CXX) $(CXXFLAGS) -c $I/fit_svd.c $(INCLUDES)
+motion.o: $I/motion.c
+	$(CXX) $(CXXFLAGS) -c $I/motion.c $(INCLUDES)
+rmsd.o: $I/rmsd.o
+	$(CXX) $(CXXFLAGS) -c $I/rmsd.c $(INCLUDES)
+build_pca.o: $I/build_pca.o
+	$(CXX) $(CXXFLAGS) -c $I/build_pca $(INCLUDES)
+
+# Build Source STeM_lib
+
+STeM_lib_grid_motion.o: $I/STeM_lib_grid_motion.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_grid_motion.c $(INCLUDES)
+STeM_lib_hessian.o: $I/STeM_lib_hessian.c          
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_hessian.c $(INCLUDES)
+STeM_lib_fit.o: $I/STeM_lib_fit.c          
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_fit.c $(INCLUDES)
+STeM_lib_other.o: $I/STeM_lib_other.c          
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_other.c $(INCLUDES)
+STeM_lib_rot.o: $I/STeM_lib_rot.c          
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_rot.c $(INCLUDES)
+STeM_lib_STRC.o: $I/STeM_lib_STRC.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_STRC.c $(INCLUDES)
+STeM_lib_vcon.o: $I/STeM_lib_vcon.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_vcon.c $(INCLUDES)
+STeM_lib_template.o: $I/STeM_lib_template.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_template.c $(INCLUDES)
+
+
+
