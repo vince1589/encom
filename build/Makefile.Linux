@@ -16,7 +16,9 @@ CXX = g++
 
 CXXFLAGS = -Wall -O3
 
-LIBS = -lgsl -lgslcblas -lm
+INCLUDES = -I/opt/local/include
+
+LIBS = -lgsl -lgslcblas -lm -L/opt/local/lib
 
 OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_hessian.o                 \
@@ -25,7 +27,7 @@ OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_rot.o               \
         STeM_lib_STRC.o             \
         STeM_lib_template.o            \
-        STeM_lib_vcon.o            
+        STeM_lib_vcon.o
 
 all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd
 	\mv build_encom $W/build_encom
@@ -44,11 +46,11 @@ build_encom: $(OBJ) build_encom.o
 	$(CXX) $(OBJ) build_encom.o $(LIBS) -o build_encom
 b_factor: $(OBJ) b_factor.o
 	$(CXX) $(OBJ) b_factor.o $(LIBS) -o b_factor
-bfactor_diff: $(OBJ) bfactor_diff.o 
+bfactor_diff: $(OBJ) bfactor_diff.o
 	$(CXX) $(OBJ) bfactor_diff.o $(LIBS) -o bfactor_diff
 build_grid_rmsd: $(OBJ) build_grid_rmsd.o
 	$(CXX) $(OBJ) build_grid_rmsd.o $(LIBS) -o build_grid_rmsd
-fit_svd: $(OBJ) fit_svd.o  
+fit_svd: $(OBJ) fit_svd.o
 	$(CXX) $(OBJ) fit_svd.o $(LIBS) -o fit_svd
 motion: $(OBJ) motion.o
 	$(CXX) $(OBJ) motion.o $(LIBS) -o motion
@@ -62,7 +64,7 @@ build_encom.o: $I/build_encom.c
 	$(CXX) $(CXXFLAGS) -c $I/build_encom.c $(INCLUDES)
 b_factor.o: $I/b_factor.c
 	$(CXX) $(CXXFLAGS) -c $I/b_factor.c $(INCLUDES)
-bfactor_diff.o: $I/bfactor_diff.c 
+bfactor_diff.o: $I/bfactor_diff.c
 	$(CXX) $(CXXFLAGS) -c $I/bfactor_diff.c $(INCLUDES)
 build_grid_rmsd.o: $I/build_grid_rmsd.c
 	$(CXX) $(CXXFLAGS) -c $I/build_grid_rmsd.c $(INCLUDES)
@@ -79,13 +81,13 @@ build_pca.o: $I/build_pca.o
 
 STeM_lib_grid_motion.o: $I/STeM_lib_grid_motion.c
 	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_grid_motion.c $(INCLUDES)
-STeM_lib_hessian.o: $I/STeM_lib_hessian.c          
+STeM_lib_hessian.o: $I/STeM_lib_hessian.c
 	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_hessian.c $(INCLUDES)
-STeM_lib_fit.o: $I/STeM_lib_fit.c          
+STeM_lib_fit.o: $I/STeM_lib_fit.c
 	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_fit.c $(INCLUDES)
-STeM_lib_other.o: $I/STeM_lib_other.c          
+STeM_lib_other.o: $I/STeM_lib_other.c
 	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_other.c $(INCLUDES)
-STeM_lib_rot.o: $I/STeM_lib_rot.c          
+STeM_lib_rot.o: $I/STeM_lib_rot.c
 	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_rot.c $(INCLUDES)
 STeM_lib_STRC.o: $I/STeM_lib_STRC.c
 	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_STRC.c $(INCLUDES)
