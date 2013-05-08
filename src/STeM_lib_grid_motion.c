@@ -76,7 +76,7 @@ void write_matrix_pdb(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_
 	 	for (k = 0;k<atom;++k) {
 	 		
 	 		if (strcmp(newstrc[k].res_type,"HOH") == 0) {continue;}
-	 		if (old[k].atom_type == 1 || old[k].atom_type == 4) {fprintf(out_file,"ATOM  ");}
+	 		if (old[k].atom_type == 1 || old[k].atom_type == 4 )  {fprintf(out_file,"ATOM  ");}
 	 		if (old[k].atom_type == 3 || old[k].atom_type == 2 || old[k].atom_type == 5) {fprintf(out_file,"HETATM");}
 	 		fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %3.2f\n",
 	 			old[k].atom_number,
@@ -141,8 +141,8 @@ void print_grid_motion(struct pdb_atom *old,gsl_matrix *m,int mode,int atom,char
 	 	
 	 	
 	 	for (k = 0;k<atom;++k) {
-	 		if (newstrc[k].atom_type == 1) {fprintf(out_file,"ATOM  ");}
-	 		if (newstrc[k].atom_type == 2 || newstrc[k].atom_type == 3) {fprintf(out_file,"HETATM");}
+	 		if (newstrc[k].atom_type == 1 || newstrc[k].atom_type == 4) {fprintf(out_file,"ATOM  ");}
+	 		if (newstrc[k].atom_type == 2 || newstrc[k].atom_type == 3 || newstrc[k].atom_type == 5) {fprintf(out_file,"HETATM");}
 	 		fprintf(out_file,"%5.d %s%s%6.d%12.3f%8.3f%8.3f  1.00  0.00\n",
 	 			newstrc[k].atom_number,
 	 			newstrc[k].atom_prot_type,
