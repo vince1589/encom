@@ -29,7 +29,7 @@ OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_template.o            \
         STeM_lib_vcon.o
 
-all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob
 	\mv build_encom $W/build_encom
 	\mv b_factor $W/b_factor
 	\mv bfactor_diff $W/bfactor_diff
@@ -37,11 +37,15 @@ all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd
 	\mv fit_svd $W/fit_svd
 	\mv motion $W/motion
 	\mv rmsd $W/rmsd
+	\mv fit_prob $W/fit_prob
 clean:
 	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
 	clear
 
 # Linking / Create executable
+
+fit_prob: $(OBJ) fit_prob.o
+	$(CXX) $(OBJ) fit_prob.o $(LIBS) -o fit_prob
 build_encom: $(OBJ) build_encom.o
 	$(CXX) $(OBJ) build_encom.o $(LIBS) -o build_encom
 b_factor: $(OBJ) b_factor.o
@@ -60,6 +64,8 @@ build_pca: $(OBJ) build_pca.o
 	$(CXX) $(OBJ) build_pca.o $(LIBS) -o build_pca
 
 # Build main()
+fit_prob.o: $I/fit_prob.c
+	$(CXX) $(CXXFLAGS) -c $I/fit_prob.c $(INCLUDES)
 build_encom.o: $I/build_encom.c
 	$(CXX) $(CXXFLAGS) -c $I/build_encom.c $(INCLUDES)
 b_factor.o: $I/b_factor.c

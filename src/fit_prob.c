@@ -1,5 +1,5 @@
 #include "STeM.h"
-void overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t);
+void overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t,float beta);
 
 
 int main(int argc, char *argv[]) {
@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 	int mode = 7;
 	int lig = 0;
 	int nconn;
-
+	float beta = 1000;
 	float ligalign = 0; // Flag/valeur pour aligner seulement les résidus dans un cutoff du ligand, 0, one le fait pas... > 0... le cutoff
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
@@ -30,6 +30,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-nm",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp);nbr_mode = temp;}
  		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
  		if (strcmp("-ligc",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);ligalign = temp;}
+ 		if (strcmp("-b",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);beta = temp;}
  	}
  	
  	if (help_flag == 1) {
@@ -153,7 +154,7 @@ int main(int argc, char *argv[]) {
 	// Build vector of difference
 
 		
-	overlap_prob(strc_node,strc_node_t,atom,atom_t,evec,align,eval,strc_all_t,all_t);
+	overlap_prob(strc_node,strc_node_t,atom,atom_t,evec,align,eval,strc_all_t,all_t,beta);
 	
 
    
@@ -162,7 +163,7 @@ int main(int argc, char *argv[]) {
 	return(0);
  }
  
- void overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t) {
+ void overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t,float beta) {
 	int i,j;
  	int nb_mode = atom*3-6;
  	//nb_mode = 10;
@@ -209,7 +210,7 @@ int main(int argc, char *argv[]) {
 	
 	printf("Calculate probability of mode\n");
 	double repar_func = 0;
-	double beta = 10.0;
+	
 	for(j=0;j<nb_mode;++j) {
 		//printf("%.4f / %.4f\n",-gsl_vector_get(eval,mode+j-1),beta);
  		repar_func += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta);
