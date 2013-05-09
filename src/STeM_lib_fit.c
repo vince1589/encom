@@ -452,7 +452,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  		rmsd += dist;
  				 if (dist > max_displacement) {max_displacement = dist;}
  	}
- 	printf("Max_displacement:%.4f\n",sqrt(max_displacement));
+ 	//printf("Max_displacement:%.4f\n",sqrt(max_displacement));
  	//printf("	Rota RMSD:%f = %f/%d\n",rmsd/t_atom,rmsd,t_atom);
  	
  	gsl_matrix_free(corr);
@@ -611,7 +611,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  					rmsd += dist;
  				 if (dist > max_displacement) {max_displacement = dist;}
  	}
- 	printf("Max_displacement:%.4f\n",sqrt(max_displacement));
+// 	printf("Max_displacement:%.4f\n",sqrt(max_displacement));
  	//printf("	Rota RMSD:%f\n",rmsd/t_atom);
  	
  	
