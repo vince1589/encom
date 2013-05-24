@@ -168,6 +168,7 @@ void mode_switching(gsl_vector *eval,gsl_matrix *evec,int atom1,int atom2,int *m
 	write_grid_mat(out_name,grid_m,nb_grid,nbr_mode);
 	if (verbose == 1) {printf("	Write Eigen\n");}
 	if (modef != 0) {
+		printf("I reasign the mode\n");
 		mode_switching(eval,evec,3*atom,3*atom,mode_list,nbr_mode);
 		mode = 6;
 	}  	
@@ -482,6 +483,7 @@ void mode_switching(gsl_vector *eval,gsl_matrix *evec,int atom1,int atom2,int *m
 	// Replace in eval
 	
 	for (i=6;i<6+nm;++i) {
+		//printf("I assign:%.4f to %.4f, %d %d\n",gsl_vector_get(eval,i),gsl_vector_get(teval,mode_list[i-6]),i,mode_list[i-6]);
 		gsl_vector_set(eval,i,gsl_vector_get(teval,mode_list[i-6]));
 	}
 	
@@ -489,7 +491,8 @@ void mode_switching(gsl_vector *eval,gsl_matrix *evec,int atom1,int atom2,int *m
 	
 	for (i=6;i<6+nm;++i) {
 		for (j = 0;j<atom2;++j) {
-			gsl_matrix_set(evec,i,j,gsl_matrix_get(tevec,mode_list[i-6],j));
+			//printf("I assign:%.4f to %.4f, %d %d\n",gsl_matrix_get(evec,i,j),gsl_matrix_get(tevec,mode_list[i-6],j),i,mode_list[i-6]);
+			gsl_matrix_set(evec,j,i,gsl_matrix_get(tevec,j,mode_list[i-6]));
 		}
 	}
 	
