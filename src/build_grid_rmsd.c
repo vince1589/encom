@@ -8,7 +8,7 @@ int build_grid_rmsd(double **grid,double resolution,int nbr_mode,int atom,gsl_ma
 int test_point_rmsd(struct pdb_atom *strc, double *actual, float limit, int atom,int mode, int nb_mode, gsl_matrix *matrix,double **grid,int total);
 double find_zero(float a,float b,float c,int what);
 int build_grid_math(double **grid,int nb_mode,float step,float limit,float resolution,struct pdb_atom *strc,int atom,gsl_matrix *matrix);
-
+void mode_switching(gsl_vector *eval,gsl_matrix *evec,int atom1,int atom2,int *mode_list,int nm);
 // Programme
 
 
@@ -31,7 +31,8 @@ int build_grid_math(double **grid,int nb_mode,float step,float limit,float resol
 	int print = 0;
 	int lig = 0;
 	int nconn;
-
+	int mode_list[20];
+	int modef = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]);}
@@ -45,7 +46,21 @@ int build_grid_math(double **grid,int nb_mode,float step,float limit,float resol
  		if (strcmp("-md",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);limit = temp;}
  		if (strcmp("-lig",argv[i]) == 0) {lig = 1;}       
  		if (strcmp("-p",argv[i]) == 0) {print = 1;strcpy(grid_name,argv[i+1]);}
- 		
+ 		if (strcmp("-ml",argv[i]) == 0) {
+ 			printf("I detect a list of modes L:");
+ 			nbr_mode = 0;
+ 			++modef;
+ 			while(1) {
+ 				int temp;
+ 				if (i+nbr_mode+1 > argc-1) {break;}
+ 				int match = sscanf(argv[i+nbr_mode+1],"%d",&temp);
+ 				if (match == 0) {break;}
+ 				++nbr_mode;
+ 				printf("%d ",temp);
+ 				mode_list[nbr_mode-1] = temp-1;
+ 			}
+ 			printf("\nI have now %d modes (-nm)\n",nbr_mode);
+ 		}
  		
  		
  	}
@@ -58,11 +73,11 @@ int build_grid_math(double **grid,int nb_mode,float step,float limit,float resol
  		return(0); 
  	} 
 	
- 	//***************************************************
- 	//*													*
- 	//*Build a structure contaning information on the pdb
- 	//*													*
- 	//***************************************************
+ 	//****************************************************
+ 	//*																									 *
+ 	//*Build a structure contaning information on the pdb*
+ 	//*																									 *
+ 	//****************************************************
  	
  	all = count_atom(file_name);
  	nconn = count_connect(file_name);
@@ -151,7 +166,10 @@ int build_grid_math(double **grid,int nb_mode,float step,float limit,float resol
  	if (verbose == 1) {printf("Writting Things\n");}	 
 	if (verbose == 1) {printf("	Write Grid\n");}	   	
 	write_grid_mat(out_name,grid_m,nb_grid,nbr_mode);
-	if (verbose == 1) {printf("	Write Eigen\n");}  	
+	if (verbose == 1) {printf("	Write Eigen\n");}
+	if (modef != 0) {
+		mode_switching(eval,evec,3*atom,3*atom,mode_list,nbr_mode);
+	}  	
 	write_eigen_mat(eigen_grid, evec,3*atom,3*atom,mode,nbr_mode);
 	//write_matrix_pdb("grid_matrix.pdb", grid_m,nb_grid,nbr_mode);
 	if (verbose == 1) {printf("	Write Motion\n");}	
@@ -439,4 +457,41 @@ int build_grid_math(double **grid,int nb_mode,float step,float limit,float resol
 	return(count);
 	
 	
+}
+
+
+void mode_switching(gsl_vector *eval,gsl_matrix *evec,int atom1,int atom2,int *mode_list,int nm) {
+	// Function qui remplace les mode 7+ par la liste de mode
+
+	gsl_vector *teval = gsl_vector_alloc(3*atom1);
+	gsl_matrix *tevec= gsl_matrix_alloc (3*atom1,3*atom2);
+	int i,j;
+	
+	// Set Eval in temp
+	
+	for (i = 0;i<atom1;++i) {
+		gsl_vector_set(teval,i,gsl_vector_get(eval,i));
+	}
+	for (i = 0;i<atom1;++i) {
+		for (j = 0;j<atom2;++j) {
+			gsl_matrix_set(tevec,i,j,gsl_matrix_get(evec,i,j));
+		}
+	}
+	
+	// Replace in eval
+	
+	for (i=6;i<6+nm;++i) {
+		gsl_vector_set(eval,i,gsl_vector_get(teval,mode_list[i-6]));
+	}
+	
+	// Replace in evec
+	
+	for (i=6;i<6+nm;++i) {
+		for (j = 0;j<atom2;++j) {
+			gsl_matrix_set(evec,i,j,gsl_matrix_get(tevec,mode_list[i-6],j));
+		}
+	}
+	
+
+
 }
