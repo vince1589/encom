@@ -31,9 +31,9 @@ int main(int argc, char *argv[]) {
 	int all; /*Nombre d'atomes dans pdb*/
 	int atom; /*Nombre de carbone CA*/
  	int help_flag = 1;
- 	char file_name[100];
- 	char eigen_name[100] = "eigen.dat";
- 	char out_name[100] = "b_factor.pdb";
+ 	char file_name[500];
+ 	char eigen_name[500] = "eigen.dat";
+ 	char out_name[500] = "b_factor.pdb";
  	int verbose = 0;
 
 	int i;

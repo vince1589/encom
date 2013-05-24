@@ -265,7 +265,8 @@ int calc_region(struct atom PDB[], int PDBtot, int atomlist[], int numatoms,
 	int i;
 
 	for (i = 0; i < all_atom; ++i) {
-		//printf("I:%d\n");
+		//printf("I:%d -> %d\n",i,strc[i].atom_number);
+		if (strc[i].atom_number > 100000) {continue;}
 		pair[strc[i].atom_number] = i;
 
 	}

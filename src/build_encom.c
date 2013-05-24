@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	float init_templaate = 11.1469110430119;
 	float kp_factor = 41644.7785340819;					// Facteur pour poid des angles dièdres
 	int weight_factor = 0;
-	char eigen_name[100] = "eigen.dat";	
+	char eigen_name[500] = "eigen.dat";	
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-inp",argv[i]) == 0) {strcpy(inputname,argv[i+1]);--help_flag;}

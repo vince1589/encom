@@ -48,9 +48,9 @@ int count_eigen(char filename[100]) {
 
 int main(int argc, char *argv[]) {
 	int i;
-	char eigen_name[100] = "eigen.dat";
-	char pca_name[100] = "pca_eigen.dat";
-	char out_name[100] = "b_factor.pdb";
+	char eigen_name[500] = "eigen.dat";
+	char pca_name[500] = "pca_eigen.dat";
+	char out_name[500] = "b_factor.pdb";
 	int atom[2];
 	char file_name[500];
 	int lig = 0;
