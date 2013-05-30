@@ -26,6 +26,7 @@ int main(int argc, char *argv[]) {
 	float kp_factor = 41644.7785340819;					// Facteur pour poid des angles dièdres
 	int weight_factor = 0;
 	char eigen_name[500] = "eigen.dat";	
+	float temperature = 310;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-inp",argv[i]) == 0) {strcpy(inputname,argv[i+1]);--help_flag;}
@@ -39,6 +40,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-kr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);bond_factor = 100*epsilon * bond_factor;}
  		if (strcmp("-kt",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);angle_factor = 20*epsilon * angle_factor;}
  		if (strcmp("-kpf",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); kp_factor = temp;}
+ 		if (strcmp("-temp",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); temperature = temp;}
  		if (strcmp("-w",argv[i]) == 0) {weight_factor = 1;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
  	}
@@ -169,10 +171,13 @@ int main(int argc, char *argv[]) {
 		for (i=0;i<10;++i) {printf("I:%d %.10f\n",i,gsl_vector_get(eval,i));}
 	}
  	write_eigen(eigen_name,evec,eval,3*atom);
- 	float ener = calc_energy(atom,eval);
- 	printf("Energy:%10.5f\n",ener);
- 	printf("Energy/node:%10.5f\n",ener/(float)(atom*3));
- 	
+
+
+		 	
+ 	float ener = calc_energy(atom,eval,temperature);
+ 	printf("Energy:%10.8f\n",ener);
+ 	printf("Energy/node:%10.8f\n",ener/(float)(atom*3));
+
  	gsl_matrix_free(templaate);
 	gsl_matrix_free(inter_m);
 	gsl_matrix_free(vcon);
