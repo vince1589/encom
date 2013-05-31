@@ -1,5 +1,5 @@
 #include "STeM.h"
-void overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t,float beta);
+double overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t,float beta);
 
 
 int main(int argc, char *argv[]) {
@@ -13,12 +13,11 @@ int main(int argc, char *argv[]) {
  	char check_name[500];
  	char eigen_name[100] = "eigen.dat";
  	int verbose = 0;
-	int i;
-	int nbr_mode = 2;
-	int mode = 7;
+	int i,j;
 	int lig = 0;
 	int nconn;
 	float beta = 1000;
+	int scan = 0;
 	float ligalign = 0; // Flag/valeur pour aligner seulement les résidus dans un cutoff du ligand, 0, one le fait pas... > 0... le cutoff
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
@@ -26,11 +25,10 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
  		if (strcmp("-lig",argv[i]) == 0) {lig= 1;} 
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
- 		if (strcmp("-m",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp);mode = temp;}
- 		if (strcmp("-nm",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp);nbr_mode = temp;}
  		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
  		if (strcmp("-ligc",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);ligalign = temp;}
  		if (strcmp("-b",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);beta = temp;}
+ 		if (strcmp("-scan",argv[i]) == 0) {scan = 1;}
  	}
  	
  	if (help_flag == 1) {
@@ -146,15 +144,20 @@ int main(int argc, char *argv[]) {
  	
 	
 	load_eigen(eval,evec,eigen_name,3*atom);
-	
-	
-	// Fit Using Eigenvalue
-	if (nbr_mode == -1) {nbr_mode = 3*atom-7;}
+
 	
 	// Build vector of difference
 
-		
-	overlap_prob(strc_node,strc_node_t,atom,atom_t,evec,align,eval,strc_all_t,all_t,beta);
+	if (scan == 1) {
+		for (i=-5;i<10;++i) {
+			for (j=1;j<10;++j) {
+				beta = pow(j,i);		
+				printf("Beta:%f Probability:%g\n",beta,overlap_prob(strc_node,strc_node_t,atom,atom_t,evec,align,eval,strc_all_t,all_t,beta));
+			}
+		}
+	} else {	
+		printf("Beta:%f Probability:%g\n",beta,overlap_prob(strc_node,strc_node_t,atom,atom_t,evec,align,eval,strc_all_t,all_t,beta));
+	}
 	
 
    
@@ -163,7 +166,7 @@ int main(int argc, char *argv[]) {
 	return(0);
  }
  
- void overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t,float beta) {
+ double overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t,float beta) {
 	int i,j;
  	int nb_mode = atom*3-6;
  	//nb_mode = 10;
@@ -197,7 +200,7 @@ int main(int argc, char *argv[]) {
 		++alit;
 		
  	}
- 	printf("Alit:%d\n",alit);
+ 	//printf("Alit:%d\n",alit);
  	gsl_vector *B = gsl_vector_alloc((alit)*3);
  	for(i=0;i<alit;++i) {
  		//printf("I:%4d Vector:(%8.5f,%8.5f,%8.5f)\n",i,gsl_vector_get(diff,i*3+0),gsl_vector_get(diff,i*3+1),gsl_vector_get(diff,i*3+2));
@@ -208,7 +211,7 @@ int main(int argc, char *argv[]) {
 
 
 	
-	printf("Calculate probability of mode\n");
+	//printf("Calculate probability of mode\n");
 	double repar_func = 0;
 	
 	for(j=0;j<nb_mode;++j) {
@@ -216,9 +219,9 @@ int main(int argc, char *argv[]) {
  		repar_func += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta);
  	
  	}
- 	printf("Reparation function:%g\n",repar_func);
+ //	printf("Reparation function:%g\n",repar_func);
 	
- 	printf("ASSIGNING MODE\n");
+ //	printf("ASSIGNING MODE\n");
 	double overlap_proability = 0.0000000000;
 	double total_prob = 0.00000000;
  	for(j=0;j<nb_mode;++j) {
@@ -227,8 +230,9 @@ int main(int argc, char *argv[]) {
 		overlap_proability += over*pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func;
 		total_prob += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func;
 	}
- 	printf("Probability:%.10g\n",overlap_proability);
+ 	//printf("Probability:%.10g\n",overlap_proability);
 // 	printf("Tot:%.10g\n",total_prob);
  	gsl_vector_free(diff);
+ 	return(overlap_proability);
 
  }
