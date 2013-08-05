@@ -54,12 +54,17 @@ int main(int argc, char *argv[]) {
 	int atom[2];
 	char file_name[500];
 	int lig = 0;
+	int mode = 7;
+	int nm = 10;
 	for (i = 1;i < argc;i++) {
  		if (strcmp("-ieig1",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
 		if (strcmp("-ieig2",argv[i]) == 0)  {strcpy(pca_name,argv[i+1]);}
 		if (strcmp("-o",argv[i]) == 0)  {strcpy(out_name,argv[i+1]);}
 		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);}
-		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}    
+		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
+		if (strcmp("-m",argv[i]) == 0)  {sscanf(argv[i+1],"%d",&mode);}
+		if (strcmp("-nm",argv[i]) == 0)  {sscanf(argv[i+1],"%d",&nm);}
+		
 	}
 	
 	
@@ -130,21 +135,35 @@ int main(int argc, char *argv[]) {
 	
 	printf("Inversing Matrix 1\n");
 	gsl_matrix *k_inverse = gsl_matrix_alloc(atom[0]/3, atom[0]/3); /*Déclare et crée une matrice qui va être le pseudo inverse*/
-	k_inverse_matrix_stem(k_inverse,atom[0]/3,eval,evec);
+	k_inverse_matrix_stem(k_inverse,atom[0]/3,eval,evec,mode,nm);
 	
 	printf("Inversing Matrix 2\n");
 	gsl_matrix *k_inverse_pca = gsl_matrix_alloc(atom[1]/3, atom[1]/3); /*Déclare et crée une matrice qui va être le pseudo inverse*/
-	k_inverse_matrix_stem(k_inverse_pca,atom[1]/3,evalpca,evecpca);
+	k_inverse_matrix_stem(k_inverse_pca,atom[1]/3,evalpca,evecpca,mode,nm);
 	
 	for(i=0;i<atom[0]/3;++i) {
 		float diff = gsl_matrix_get(k_inverse,i,i)-	gsl_matrix_get(k_inverse_pca,i,i);
 		
-		if (sqrt(diff*diff) > 0.0001) {
-		printf("I: %d Diff: %f -> %.4f :: %.4f\n",i,diff,gsl_matrix_get(k_inverse,i,i),	gsl_matrix_get(k_inverse_pca,i,i));
-		}
-		gsl_matrix_set(k_inverse,i,i,diff*10000);
+		//if (sqrt(diff*diff) > 0.0001) {
+		printf("I: %d Diff: %f -> %s %d %s\n",i,diff*1000000000.0,strc_node[i].res_type,strc_node[i].res_number,strc_node[i].chain);
+		//}
+		//gsl_matrix_set(k_inverse,i,i,diff*10000);
 	}
-	
+	int j;
+	char cc_name[50] = "cross_correlation_diff.dat";
+	FILE *file;	
+ 	file = fopen(cc_name,"w");
+	for(i=0;i<atom[0]/3;++i) {
+		for(j=0;j<atom[0]/3;++j) {
+			float diff = gsl_matrix_get(k_inverse,i,j)-	gsl_matrix_get(k_inverse_pca,i,j);
+		
+			//if (sqrt(diff*diff) > 0.0001) {
+			fprintf(file,"%d %d %f\n",i,j,diff*1000000000.0);
+			//}
+
+		}
+	}
+	fclose(file);
 	assign_bfactor(strc_all,k_inverse,all,lig);
 	printf("I write strc\n");
 	write_strc(out_name, strc_all,all);

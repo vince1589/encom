@@ -55,7 +55,7 @@ float corr_eigen(gsl_matrix *evec,gsl_matrix *pca,int atom,int a,int b) {
 
 float over_eigen(gsl_matrix *evec,gsl_matrix *pca,int atom,int aa,int bb) {
 	int i;
-	float a = 0.00000,b = 0.00000,c = 0.0000;
+	float a = 0.00000;
  	float x = 0.000000,z=0.00000;
  	float la=0.0000000000,lb=0.000000000;
  	// Caculate lenght (because of the vector reject)
@@ -91,12 +91,59 @@ int main(int argc, char *argv[]) {
 	char eigen_name[100] = "eigen.dat";
 	char pca_name[100] = "pca_eigen.dat";
 	int atom[2];
-	
+	int mode = 6;
+	int nm = 10;
+	char filename[100] = "undefined";
+	int verbose =1 ;
+	int lig = 0;
 	for (i = 1;i < argc;i++) {
- 		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
-		if (strcmp("-pca",argv[i]) == 0)  {strcpy(pca_name,argv[i+1]);}
+		if (strcmp("-i",argv[i]) == 0) {strcpy(filename,argv[i+1]);}
+		if (strcmp("-lig",argv[i]) == 0) {++lig;}
+ 		if (strcmp("-ieig1",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
+		if (strcmp("-ieig2",argv[i]) == 0)  {strcpy(pca_name,argv[i+1]);}
+		if (strcmp("-m",argv[i]) == 0)  {sscanf(argv[i+1],"%d",&mode);}
+		if (strcmp("-nm",argv[i]) == 0)  {sscanf(argv[i+1],"%d",&nm);}
 	}
-	printf("My Eigen:%s    My Pca:%s\n",eigen_name,pca_name);
+	printf("-ieig1 %s -ieig2 %s -i %s\n",eigen_name,pca_name,filename);
+	if (strcmp("undefined",filename) == 0) {
+		printf("You need to give the WT form pdb\n");
+		return(0);
+	}
+	
+	int all = count_atom(filename);
+ 	int nconn = count_connect(filename);
+ 	
+ 	if (verbose == 1) {printf("Connect:%d\n",nconn);}
+ 	
+	if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
+	
+	// Array qui comprend tous les connects
+	
+	int **connect_h=(int **)malloc(nconn*sizeof(int *)); 
+    for(i=0;i<nconn;i++) { connect_h[i]=(int *)malloc(7*sizeof(int));}
+    
+    assign_connect(filename,connect_h);
+	
+	// Assign tous les atoms
+	
+	struct pdb_atom strc_all[all];
+	int atom_strc = build_all_strc(filename,strc_all); // Retourne le nombre de Node
+	
+	if (verbose == 1) {printf("	Node:%d\n	Atom:%d\n",atom_strc,all);}
+
+	check_lig(strc_all,connect_h,nconn,all);
+
+	// Assign les Nodes
+	
+	if (verbose == 1) {printf("	CA Structure\n");}
+	
+	//atom = count_atom_CA_n(strc_all,all,super_node,lig);
+	if (verbose == 1) {printf("	Node:%d\n",atom_strc);}
+	struct pdb_atom strc_node[atom_strc];
+	atom_strc = build_cord_CA(strc_all, strc_node,all,lig,connect_h,nconn);
+	if (verbose == 1) {printf("	Assign Node:%d\n",atom_strc);}
+	
+	
 	
 	atom[0] = count_eigen(eigen_name);
 	
@@ -115,15 +162,26 @@ int main(int argc, char *argv[]) {
 	printf("Atom:   %d::%d\n",atom[0],atom[1]);
 	if (atom[0] != atom[1]) {printf("I exited, car pas même nombre de Ca entre les eigenvecoctors.... la première structure de build_pca, est la strc de référence pour comparer\n");return(1);}
 	float corr;
+	int k;
 	printf("J:NMA I:PCA\n");
 	//float overlap;
-	for(i=6;i<17;++i) {
-		for(j=6;j<17;++j) {
-			corr = corr_eigen(evec,evecpca,atom[0],j,i);
-			//overlap = over_eigen(evec,evecpca,atom[0],j,i);
-			if (corr*corr > 0.1) {printf("J:%3d I:%3d %8.5f :: %8.5f\n",j,i,corr*corr,corr_eigen(evec,evecpca,atom[0],j,i));}
+	for(i=mode-1;i<nm+mode-1;++i) {
+		for(j=mode-1;j<nm+mode-1;++j) {
+			corr = over_eigen(evec,evecpca,atom[0],j,i);
 			
-	
+			if (corr*corr > 0.2 || i == j) {
+				printf("I:%3d J:%3d %8.5f Val %8.5f :: %8.5f\n",i+1,j+1,corr,gsl_vector_get(eval,i),gsl_vector_get(evalpca,i));
+				float factor = 1.00;
+				if (corr < 0) {factor = -1.00;}
+				if ( i == j) {
+					for(k=0;k<atom[0]/3;++k) {
+						float rmsd = sqrt(pow(gsl_matrix_get(evecpca,k*3,j)-gsl_matrix_get(evec,k*3,i)*factor,2)+
+												 pow(gsl_matrix_get(evecpca,k*3+1,j)-gsl_matrix_get(evec,k*3+1,i)*factor,2)+
+												 pow(gsl_matrix_get(evecpca,k*3+2,j)-gsl_matrix_get(evec,k*3+2,i)*factor,2))/3;
+						if (rmsd > 0.04) {printf("\tK:%d %s %d Rmsd:%.4f (%.2f,%.2f,%.2f) (%.2f,%.2f,%.2f)\n",k,strc_node[k].res_type,strc_node[k].res_number,rmsd,gsl_matrix_get(evecpca,k*3,j),gsl_matrix_get(evecpca,k*3+1,j),gsl_matrix_get(evecpca,k*3+2,j),gsl_matrix_get(evec,k*3,i)*factor,gsl_matrix_get(evec,k*3+1,i)*factor,gsl_matrix_get(evec,k*3+2,i)*factor);}
+					}
+				}	
+			}
 		}
 	}
 	return(1);

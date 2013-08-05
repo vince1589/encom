@@ -81,7 +81,7 @@ void build_2_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_the
 void build_3_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_phi,float factor);
 void build_1st_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_r);
 void build_4h_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double epsi,gsl_matrix *tmp);
-void build_enm(struct pdb_atom *strc, double **hes,int nb_atom,double epsi,gsl_matrix *tmp,float cutoff);
+void build_enm(struct pdb_atom *strc, double **hes,int nb_atom,gsl_matrix *tmp,float cutoff);
 void diagonalyse_matrix (gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc);
 void mass_weight_hessian(gsl_matrix *m,int atom,struct pdb_atom *strc_all);
 void adjust_weight_evec(gsl_matrix *m,int atom,struct pdb_atom *strc);
@@ -104,10 +104,10 @@ void assignArray(gsl_matrix *m,double **a,int count,int count_1);
 void correlate_sp(gsl_matrix *m,struct pdb_atom *strc, int atom);
 int count_atom_CA_n(struct pdb_atom *all,int atom, int node, int ligand);
 float correlate(gsl_matrix *m,struct pdb_atom *strc, int atom);
-void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc);
+void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm);
 void buid_pre(gsl_matrix *m,gsl_matrix *evc,int nb_atom);
 void k_inverse_matrix_stem_temp(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc);
-float calc_energy(int atom,gsl_vector *eval);
+float calc_energy(int atom,gsl_vector *eval,float t);
 
 
 // STeM_lib_rot.c

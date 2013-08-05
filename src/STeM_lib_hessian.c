@@ -644,12 +644,12 @@ void build_4h_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double epsi
  	} 
  }
  
- void build_enm(struct pdb_atom *strc, double **hes,int nb_atom,double epsi,gsl_matrix *tmp,float cutoff) {
+ void build_enm(struct pdb_atom *strc, double **hes,int nb_atom,gsl_matrix *tmp,float cutoff) {
  	int i,j;
  	double bx,by,bz,dist,distijsqr;
  	double temp;
 	//printf("IN BUILD ENM\n");
-	
+	double epsi = 1.0;
  	for (i=1;i<nb_atom+1;++i) {
  		for (j=1;j<nb_atom+1;++j) {
  			

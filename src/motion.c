@@ -102,9 +102,10 @@ int main(int argc, char *argv[]) {
 
 	if (torsion == 0) {
 	 	find_max_ampli(strc_node,evec,mode,atom,max_dist,&max_val,&min_val);
-	 	printf("Max:%f\tMin:%f\n",max_val,min_val);
+	 	
 	 	max_val = max_dist;
 	 	min_val = -max_dist;
+	 	printf("Max:%f\tMin:%f\n",max_val,min_val);
 	 	if (verbose == 1) {printf("Printing Motion\n");}
 	 	print_image_motion(strc_all,evec,mode,max_val,min_val,all,out_name,lig);
 	 } else {

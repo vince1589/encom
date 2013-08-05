@@ -1,6 +1,7 @@
 #include "STeM.h"
 double overlap_prob(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t,float beta);
 
+void overlap_prob_scan(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t);
 
 int main(int argc, char *argv[]) {
 
@@ -149,12 +150,7 @@ int main(int argc, char *argv[]) {
 	// Build vector of difference
 
 	if (scan == 1) {
-		for (i=-5;i<10;++i) {
-			for (j=1;j<10;++j) {
-				beta = pow(j,i);		
-				printf("Beta:%f Probability:%g\n",beta,overlap_prob(strc_node,strc_node_t,atom,atom_t,evec,align,eval,strc_all_t,all_t,beta));
-			}
-		}
+		overlap_prob_scan(strc_node,strc_node_t,atom,atom_t,evec,align,eval,strc_all_t,all_t);
 	} else {	
 		printf("Beta:%f Probability:%g\n",beta,overlap_prob(strc_node,strc_node_t,atom,atom_t,evec,align,eval,strc_all_t,all_t,beta));
 	}
@@ -215,24 +211,96 @@ int main(int argc, char *argv[]) {
 	double repar_func = 0;
 	
 	for(j=0;j<nb_mode;++j) {
-		//printf("%.4f / %.4f\n",-gsl_vector_get(eval,mode+j-1),beta);
+		
  		repar_func += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta);
  	
  	}
- //	printf("Reparation function:%g\n",repar_func);
-	
- //	printf("ASSIGNING MODE\n");
+
 	double overlap_proability = 0.0000000000;
 	double total_prob = 0.00000000;
  	for(j=0;j<nb_mode;++j) {
  		float over = overlap(atom,mode+j-1,evec,diff,align);		
-		//printf("J:%4d %10.6f %10.6f %10.6f\n",j+mode,gsl_vector_get(eval,mode+j-1),over,pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func);
+		printf("J:%d Prob:%g Over:%g\n",j,pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func,over);
 		overlap_proability += over*pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func;
 		total_prob += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func;
 	}
- 	//printf("Probability:%.10g\n",overlap_proability);
-// 	printf("Tot:%.10g\n",total_prob);
+
  	gsl_vector_free(diff);
  	return(overlap_proability);
+
+ }
+ 
+  void overlap_prob_scan(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t,gsl_matrix *evec, int *align,gsl_vector *eval,struct pdb_atom *all_targ,int all_t) {
+	int i,j;
+ 	int nb_mode = atom*3-6;
+ 	//nb_mode = 10;
+ 	int mode = 7;
+		
+	int alit = 0;// Value dans le vecteur diff
+	
+	int ngila[atom_t]; for (i=0;i<atom_t;++i) {ngila[i] = -1;  }
+	for (i=0;i<atom;++i) {
+		if (align[i] !=-1 ){ ngila[align[i]] = i; }
+	}
+
+	center_yes(init,targ,atom,atom_t, align); // Targ rotate, donc pas d'impact sur vecteurs
+	rmsd_yes(targ,init,atom_t, ngila,all_targ,all_t);
+
+	
+ 	gsl_vector *diff     = gsl_vector_alloc(3*atom);
+ 	
+ 	// Minimization
+ 
+	// Construit vector des différences
+
+ 	for(i=0;i<atom;++i) {
+ 		j = align[i];
+ 		if (j == -1) {continue;}
+ 		//printf("Res: %s :: %s Num: %d :: %d\n",init[i].res_type,targ[j].res_type,init[i].res_number,targ[j].res_number);
+ 		gsl_vector_set(diff,alit*3+0,init[i].x_cord - targ[j].x_cord);
+		gsl_vector_set(diff,alit*3+1,init[i].y_cord - targ[j].y_cord);
+		gsl_vector_set(diff,alit*3+2,init[i].z_cord - targ[j].z_cord);
+	//	printf("I:%d J:%d Alit:%d Init:(%f,%f,%f) Targ:(%f,%f,%f) Diff:(%f,%f,%f)\n",i,j,alit,init[i].x_cord,init[i].y_cord,init[i].z_cord,targ[j].x_cord,targ[j].y_cord,targ[j].z_cord,gsl_vector_get(diff,alit*3+0),gsl_vector_get(diff,alit*3+1),gsl_vector_get(diff,alit*3+2));
+		++alit;
+		
+ 	}
+ 	//printf("Alit:%d\n",alit);
+ 	gsl_vector *B = gsl_vector_alloc((alit)*3);
+ 	for(i=0;i<alit;++i) {
+ 		//printf("I:%4d Vector:(%8.5f,%8.5f,%8.5f)\n",i,gsl_vector_get(diff,i*3+0),gsl_vector_get(diff,i*3+1),gsl_vector_get(diff,i*3+2));
+ 		gsl_vector_set(B,i*3+0,gsl_vector_get(diff,i*3+0));
+ 		gsl_vector_set(B,i*3+1,gsl_vector_get(diff,i*3+1));
+ 		gsl_vector_set(B,i*3+2,gsl_vector_get(diff,i*3+2));
+ 	}
+
+
+	
+	//printf("Calculate probability of mode\n");
+		int k;
+	for (i=-5;i<10;++i) {
+			for (k=1;k<10;++k) {
+				float beta = pow(k,i);
+				double repar_func = 0;
+	
+				for(j=0;j<nb_mode;++j) {
+		
+			 		repar_func += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta);
+			 	
+			 	}
+			 
+	
+				double overlap_proability = 0.0000000000;
+				double total_prob = 0.00000000;
+			 	for(j=0;j<nb_mode;++j) {
+			 		float over = overlap(atom,mode+j-1,evec,diff,align);		
+		
+					overlap_proability += over*pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func;
+					total_prob += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func;
+				}
+				printf("Beta:%f Probability:%g\n",beta,overlap_proability);
+		}
+	}
+ 	gsl_vector_free(diff);
+ 
 
  }

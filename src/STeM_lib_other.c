@@ -337,26 +337,26 @@ for(i=0; i < nb_atom_1; ++i) {
  	return(prod_tot/sqrt(std_y*std_x));
  	
  }
- void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc) {
+ void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm) {
  	//gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
  	gsl_matrix_set_all (m, 0);
  	int i,j,k,l;
  	
- 	for (k=0;k<nb_atom*3;++k) {
- 		if  (gsl_vector_get (evl, k) < 0.000001) {continue;}
- 		//printf("K:%d %10.5g\n",k,gsl_vector_get (evl, k));
+ 	for (k=mode;k<mode+nm;++k) {
+ 		if (k > int (evl->size-1)) {break;}
+ 		if  (gsl_vector_get (evl, k) < 0.000001) {
+ 			printf("K = %d -> Eval to small I next:%f\n",k,gsl_vector_get (evl, k));
+ 			continue;
+ 		}
+ 		
  		for (i=0;i<nb_atom;++i) {
- 			j = i;
-	 		//for (j=0;j<nb_atom;++j) {
-	 			//printf("I:%d J:%d\n",i,j);
-	 			for (l=0;l<3;++l) {
-	 				//printf("Value:%10.5g L:%d Looking in %d %d\n",gsl_matrix_get(evc,k,i*3+l),l,k,i*3+l);
-		 			gsl_matrix_set(m,i,j,
-		 				gsl_matrix_get(evc,i*3+l,k)*gsl_matrix_get(evc,j*3+l,k)/gsl_vector_get (evl, k)+gsl_matrix_get(m,i,j)
-		 			);
-		 		}
-		 		//printf(" %10.5g\n",gsl_matrix_get(m,i,j));
-	 		//}
+ 			for (j=0;j<nb_atom;++j) {
+		 		for (l=0;l<3;++l) {	
+			 			gsl_matrix_set(m,i,j,
+			 				gsl_matrix_get(evc,i*3+l,k)*gsl_matrix_get(evc,j*3+l,k)/gsl_vector_get (evl, k)+gsl_matrix_get(m,i,j)
+			 			);
+			 		}
+		 	}
 	 	}
 	 	//break;
  	}
@@ -437,7 +437,7 @@ long time_seed(){
   return s;
 }
 
-float calc_energy(int atom,gsl_vector *eval) {
+float calc_energy(int atom,gsl_vector *eval,float t) {
 	int i;
 	double ental=0.00000;
 	double entro=0.00000;
@@ -446,18 +446,17 @@ float calc_energy(int atom,gsl_vector *eval) {
 	double v;
 	double e =2.7182;
 	double power;
-	double t = 310;
+
 	double k = 1.3806503 *pow(10,-23);
 	double R= 8.31447;
 	double sum = 0.000000000;
 	for (i = 6;i<atom;++i) {
-		v = gsl_vector_get(eval,i)/(5.892*pow(10,-5));
+		v = gsl_vector_get(eval,i);
 		power = pow(e,-h*v/(k*t));
 		ental += 0.5*Na*h*v+(Na*h*v*power)/(1-power);
 		
 		entro += -R * log(1-power)+(Na*h*v*power)/(t*(1-power));
 		sum += log(v);
-		//printf("I:%4d V:%5.2f Ental:%5.2f Entro:%5.2f\n",i,v,ental/1000,entro/1000);
 	}
 	
 	printf("Ental contribution:%10.2f\n",ental/1000);

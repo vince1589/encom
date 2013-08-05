@@ -194,7 +194,7 @@ void all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix *ma, i
 				sprintf(strong,"Strongest interaction:%f Node:%d et %d, Amino:%s %d et %s %d\n",max_inter,strc[k].node,strc[l].node,strc[k].res_type,strc[k].res_number,strc[l].res_type,strc[l].res_number);
 			}
 		
-		//	printf("Node:(%4d,%4d) Temp:%10.5f Total:%10.5f %10.5f\n",strc[k].node,strc[l].node,temp,gsl_matrix_get(ma,strc[k].node,strc[l].node),gsl_matrix_get(ma,strc[l].node,strc[k].node));
+			//printf("Node:(%4d,%4d) ResNumC: %s%d%s %s%d%sTemp:%10.5f Total:%10.5f %10.5f\n",strc[k].node,strc[l].node,strc[k].res_type,strc[k].res_number,strc[k].chain,strc[l].res_type,strc[l].res_number,strc[l].chain,temp,gsl_matrix_get(ma,strc[k].node,strc[l].node),gsl_matrix_get(ma,strc[l].node,strc[k].node));
 			
 			// Regarde les sufaces total en contact par type
 			
