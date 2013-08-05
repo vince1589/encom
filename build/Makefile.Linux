@@ -29,7 +29,7 @@ OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_template.o            \
         STeM_lib_vcon.o
 
-all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss
 	\mv build_encom $W/build_encom
 	\mv b_factor $W/b_factor
 	\mv bfactor_diff $W/bfactor_diff
@@ -39,11 +39,16 @@ all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_p
 	\mv rmsd $W/rmsd
 	\mv fit_prob $W/fit_prob
 	\mv find_rel $W/find_rel
+	\mv anm $W/anm
+	\mv cmp_eigen $W/cmp_eigen
+	\mv fit_gauss $W/fit_gauss
 clean:
 	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
 	clear
 
 # Linking / Create executable
+cmp_eigen: $(OBJ) cmp_eigen.o
+	$(CXX) $(OBJ) cmp_eigen.o $(LIBS) -o cmp_eigen
 find_rel: $(OBJ) find_rel.o
 	$(CXX) $(OBJ) find_rel.o $(LIBS) -o find_rel
 fit_prob: $(OBJ) fit_prob.o
@@ -64,8 +69,17 @@ rmsd: $(OBJ) rmsd.o
 	$(CXX) $(OBJ) rmsd.o $(LIBS) -o rmsd
 build_pca: $(OBJ) build_pca.o
 	$(CXX) $(OBJ) build_pca.o $(LIBS) -o build_pca
+anm: $(OBJ) anm.o
+	$(CXX) $(OBJ) anm.o $(LIBS) -o anm
+fit_gauss: $(OBJ) fit_gauss.o
+	$(CXX) $(OBJ) fit_gauss.o $(LIBS) -o fit_gauss
+
 
 # Build main()
+cmp_eigen.o: $I/cmp_eigen.c
+	$(CXX) $(CXXFLAGS) -c $I/cmp_eigen.c $(INCLUDES)
+anm.o: $I/anm.c
+	$(CXX) $(CXXFLAGS) -c $I/anm.c $(INCLUDES)
 find_rel.o: $I/find_rel.c
 	$(CXX) $(CXXFLAGS) -c $I/find_rel.c $(INCLUDES)
 fit_prob.o: $I/fit_prob.c
@@ -86,6 +100,8 @@ rmsd.o: $I/rmsd.o
 	$(CXX) $(CXXFLAGS) -c $I/rmsd.c $(INCLUDES)
 build_pca.o: $I/build_pca.o
 	$(CXX) $(CXXFLAGS) -c $I/build_pca $(INCLUDES)
+fit_gauss.o: $I/fit_gauss.o
+	$(CXX) $(CXXFLAGS) -c $I/fit_gauss.c $(INCLUDES)
 
 # Build Source STeM_lib
 
