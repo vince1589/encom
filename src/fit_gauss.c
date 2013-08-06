@@ -3,10 +3,13 @@
 void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,struct pdb_atom *strc,int atom, int zmodes)
 {
 	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
-	const double beta = 1.5;
+	const double beta = 0.65;
 	int i,j;
 	
 	int nm = atom*3-zmodes;
+	
+	//int nm = 50;
+	
 	int node = 20;
 	//nm = 4;
 	// Find Q
@@ -17,7 +20,7 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 		gsl_vector_set(eval,i-6,gsl_vector_get(evalt,i));
 	}
 	
-	double evaldiv = gsl_vector_get(eval, (int) (nm-1)/2);
+	double evaldiv = gsl_vector_get(eval, (int) (nm-1)*15/32);
 	
 	/*
 	for(i = 0; i < nm; ++i)
@@ -296,19 +299,19 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 	
 		if (det123 < 0) { det123 *= -1; }
 	
-		long double Damping_Factor = sqrt( pow(2,nm-3) * pow(beta,nm) / (pow(PI,3) * detA) ) / det123;
+		long double Dens_Fac = sqrt( pow(2*beta,nm-3) * pow(beta,3) / (pow(PI,3) * detA) ) / det123;
 	
 		for(i = 0; i < nm; ++i)
 		{
-			Damping_Factor *= gsl_vector_get(eval,i);
+			Dens_Fac *= gsl_vector_get(eval,i);
 		}
 		
-		double ConfEnt = 1.5 - log(Damping_Factor);
+		double ConfEnt = 1.5 - log(Dens_Fac);
 		
 		gsl_vector_set(entro,node,ConfEnt);
 		
 		//printf("\nConstants : \nq = %6.10f\ndet123 = %6.10f\ndetA = %6.10f\nDamping factor = %6.50Lf\nKXX = %6.10f\nKYY = %6.10f\nKZZ = %6.10f\nKXY = %6.10f\nKXZ = %6.10f\nKYZ = %6.10f\n\nDifferential entropy = %20.20Lf\n\n", q, det123, detA, Damping_Factor, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
-		printf("\nConstants : \ndetA = %6.10f\t\tDamping factor = %6.20Lf\nKXX = %6.10f\t\tKYY = %6.10f\t\tKZZ = %6.10f\nKXY = %6.10f\t\tKXZ = %6.10f\t\tKYZ = %6.10f\n\nDifferential entropy = %6.10f\n\n", detA, Damping_Factor, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
+		printf("\nConstants : \ndetA = %6.50f\nDensity factor = %6.20Lf\nKXX = %6.10f\t\tKYY = %6.10f\t\tKZZ = %6.10f\nKXY = %6.10f\t\tKXZ = %6.10f\t\tKYZ = %6.10f\n\nDifferential entropy = %6.10f\n\n", detA, Dens_Fac, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
 	}
 }
 
@@ -408,14 +411,18 @@ int main(int argc, char *argv[])
 
 	// Correlation
 	
+	double lbfactmes = 0;
 	double bfactmes = 0;
 	double diffentmes = 0;
 	
 	gsl_vector *bfacs = gsl_vector_alloc(atom);
+	gsl_vector *lbfacs = gsl_vector_alloc(atom);
 	gsl_vector *entro2 = gsl_vector_alloc(atom);
 	
 	for(k=0;k<atom;++k)
 	{
+		lbfactmes += log(strc_node[k].b_factor);
+		gsl_vector_set(lbfacs, k, log(strc_node[k].b_factor));
 		bfactmes += strc_node[k].b_factor;
 		gsl_vector_set(bfacs, k, strc_node[k].b_factor);
 		diffentmes += gsl_vector_get(entro,k);
@@ -423,28 +430,46 @@ int main(int argc, char *argv[])
 	}
 	
 	bfactmes /= atom;
+	lbfactmes /= atom;
 	diffentmes /= atom;
 	
 	for(k=0;k<atom;++k)
 	{
 		gsl_vector_set(bfacs, k, gsl_vector_get(bfacs,k) - bfactmes);
+		gsl_vector_set(lbfacs, k, gsl_vector_get(lbfacs,k) - lbfactmes);
 		gsl_vector_set(entro2, k, gsl_vector_get(entro2,k) - diffentmes);
 	}
 	
 	double correl = 0;
+	double lcorrel = 0;
 	bfactmes = 0;
+	lbfactmes = 0;
 	diffentmes = 0;
+	
+	// printf("Differential entropy vs b-factors (b,S) :\n");
 	
 	for(k=0;k<atom;++k)
 	{
 		correl += gsl_vector_get(entro2,k)*gsl_vector_get(bfacs,k);
+		lcorrel += gsl_vector_get(entro2,k)*gsl_vector_get(lbfacs,k);
 		bfactmes += gsl_vector_get(bfacs,k)*gsl_vector_get(bfacs,k);
+		lbfactmes += gsl_vector_get(lbfacs,k)*gsl_vector_get(lbfacs,k);
 		diffentmes += gsl_vector_get(entro2,k)*gsl_vector_get(entro2,k);
 		
-		printf("{%6.10f,%6.10f}\n",gsl_vector_get(bfacs,k),gsl_vector_get(entro2,k));
+		// printf("{%6.10f,%6.10f},",gsl_vector_get(bfacs,k),gsl_vector_get(entro2,k));
 	}
+	
+	// printf("\nDifferential entropy vs ln(b-factor)s (ln(b),S) :\n");
+	/*
+	for(k=0;k<atom;++k)
+	{
+		printf("{%6.10f,%6.10f},",gsl_vector_get(lbfacs,k),gsl_vector_get(entro2,k));
+	}
+	*/
 	
 	correl *= 1/(sqrt(diffentmes*bfactmes));
 	
-	printf("\nDifferential entropy to b-factor correlation : %6.10f\n\n", correl);
+	lcorrel *= 1/(sqrt(diffentmes*lbfactmes));
+	
+	printf("\nDifferential entropy to b-factor correlation : %6.10f\nDifferential entropy to ln(b-factor) correlation : %6.10f\n", correl,lcorrel);
 }
