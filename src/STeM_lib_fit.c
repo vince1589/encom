@@ -4,7 +4,8 @@
 #include <gsl/gsl_eigen.h>
 #include <time.h>
 #include <gsl/gsl_linalg.h>
- 
+#include <gsl/gsl_sort.h>
+#include <gsl/gsl_sort_vector.h>
  
  
 int node_align(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align) {
@@ -1428,4 +1429,307 @@ float fit_svd(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int a
  	return(energy);
  }
 
-
+void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta)
+{
+	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
+	
+	int i, j, node;
+	
+	int nm = atom*3 - 6;
+	
+	for (node = 0;node<atom;++node)
+	{
+		// printf("Node %3i\n", node);
+		gsl_matrix *GJ = gsl_matrix_alloc(3,nm+3);
+		gsl_matrix_set_all(GJ,0);
+		
+		// Set Rx,Ry,Rz
+		for(i=0;i<3;++i)
+		{
+			gsl_matrix_set(GJ,i,nm+i,1);
+		}
+		
+		// Set evec
+		
+		// printf("Set GJ\n");
+		
+		for (j = 0;j<nm;++j)
+		{
+			for(i=0;i<3;++i)
+			{
+				gsl_matrix_set(GJ,i,j,gsl_matrix_get(evec,i+node*3,j+6));
+			}
+		}
+		
+		// printf("GJ is set\n");
+		
+		double div1 = gsl_matrix_get(GJ,0,0);
+		double div2 = gsl_matrix_get(GJ,1,0);
+		double div3 = gsl_matrix_get(GJ,2,0);
+		
+		for (i = 0;i<nm+3;++i)
+		{
+			gsl_matrix_set(GJ,1,i,gsl_matrix_get(GJ,1,i)-gsl_matrix_get(GJ,0,i)/div1*div2);		
+			gsl_matrix_set(GJ,2,i,gsl_matrix_get(GJ,2,i)-gsl_matrix_get(GJ,0,i)/div1*div3);
+		}
+		
+		// Print matrix
+		// printf("\nElim_1\n");
+		
+		// for (j = 0 ; j<3;++j)
+		// {
+			// for (i = 0;i<nm+3;++i)
+			// {
+			// 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
+			// }
+			
+			// printf("\n");
+		// }
+		
+		
+		// Elimine A dans ligne 1 et 3
+		
+		div1 = gsl_matrix_get(GJ,0,1);
+		div2 = gsl_matrix_get(GJ,1,1);
+		div3 = gsl_matrix_get(GJ,2,1);
+		
+		for (i = 0;i<nm+3;++i)
+		{
+			gsl_matrix_set(GJ,0,i,gsl_matrix_get(GJ,0,i)-gsl_matrix_get(GJ,1,i)/div2*div1);
+			
+			gsl_matrix_set(GJ,2,i,gsl_matrix_get(GJ,2,i)-gsl_matrix_get(GJ,1,i)/div2*div3);
+		}
+		
+		// Print matrix
+		// printf("\nElim_2\n");
+		// for (j = 0 ; j<3;++j)
+		// {
+			// for (i = 0;i<nm+3;++i)
+			// {
+			// 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
+			// }
+		
+			// printf("\n");
+		// }
+		
+			// Elimine A dans ligne 1 et 2
+		
+		div1 = gsl_matrix_get(GJ,0,2);
+		div2 = gsl_matrix_get(GJ,1,2);
+		div3 = gsl_matrix_get(GJ,2,2);
+		
+		for (i = 0;i<nm+3;++i)
+		{
+			gsl_matrix_set(GJ,0,i,gsl_matrix_get(GJ,0,i)-gsl_matrix_get(GJ,2,i)/div3*div1);
+		
+			gsl_matrix_set(GJ,1,i,gsl_matrix_get(GJ,1,i)-gsl_matrix_get(GJ,2,i)/div3*div2);
+		}
+		
+		// Print matrix
+		/* printf("\nElim_3\n");
+		 for (j = 0 ; j<3;++j)
+		 {
+			 for (i = 0;i<nm+3;++i)
+			 {
+			 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
+			 }
+			
+			 printf("\n");
+		 }*/
+		
+		// printf("Calc det123\n");
+		
+		double det123 = gsl_matrix_get(GJ,0,0)*gsl_matrix_get(GJ,1,1)*gsl_matrix_get(GJ,2,2);
+		
+		// Set 012 diagonal to 1
+		
+		div1 = gsl_matrix_get(GJ,0,0);
+		div2 = gsl_matrix_get(GJ,1,1);
+		div3 = gsl_matrix_get(GJ,2,2);
+		
+		for (i = 0;i<nm+3;++i)
+		{
+			gsl_matrix_set(GJ,0,i,gsl_matrix_get(GJ,0,i)/div1);
+			gsl_matrix_set(GJ,1,i,gsl_matrix_get(GJ,1,i)/div2);
+			gsl_matrix_set(GJ,2,i,gsl_matrix_get(GJ,2,i)/div3);	
+		}
+		
+		// Print matrix
+		/* printf("\nNormal\n");
+		 for (j = 0 ; j<3;++j)
+		 {
+			 for (i = 0;i<nm+3;++i)
+			 {
+				 printf("%6.3f ",gsl_matrix_get(GJ,j,i));
+			 }
+			
+			 printf("\n");
+		 }
+		
+		 printf("\n");*/
+		// Visualisation de l'exposant
+		
+		// Matrice K de transformation energetique
+		
+		// printf("Set K\n");
+		
+		gsl_matrix *K = gsl_matrix_alloc(nm,nm);
+		gsl_matrix_set_all(K,0);
+		
+		for (i=0;i<nm;++i)
+		{
+			for (j=0;j<nm;++j)
+			{
+				gsl_matrix_set(K, i, j, beta * ( pow(gsl_vector_get(eval,6),2) * gsl_matrix_get(GJ,0,i+3) * gsl_matrix_get(GJ,0,j+3) + pow(gsl_vector_get(eval,7),2) * gsl_matrix_get(GJ,1,i+3) * gsl_matrix_get(GJ,1,j+3) + pow(gsl_vector_get(eval,8),2) * gsl_matrix_get(GJ,2,i+3) * gsl_matrix_get(GJ,2,j+3) ));
+			}
+		}
+		
+		gsl_matrix_free(GJ);
+		
+		// Matrice A d'energie-correlation (des covariances)
+		
+		// printf("Set A\n");
+		
+		gsl_matrix *A = gsl_matrix_alloc(nm-3,nm-3);
+		gsl_matrix_set_all(A,0);
+		
+		for (i=0;i<nm-3;++i)
+		{
+			for (j=0;j<nm-3;++j)
+			{
+				gsl_matrix_set(A, i, j, 2 * gsl_matrix_get(K,i,j));
+			}
+		}
+	
+		for (i=0;i<nm-3;++i)
+		{
+			gsl_matrix_set(A, i, i, gsl_matrix_get(A,i,i) + 2 * beta * pow(gsl_vector_get(eval,i+9),2));
+		}
+		
+		/*
+		printf("\nMatrice A\n");
+		for (i=0;i<nm-3;++i)
+		{
+			for (j=0;j<nm-3;++j)
+			{
+				 printf("%6.10f ",gsl_matrix_get(A,i,j));
+			}
+			
+			printf("\n");
+		 }
+		 */
+		
+		// make Cholesky decomposition of matrix A
+		
+		gsl_linalg_cholesky_decomp(A);
+		
+		// get cholesky matrix diagonal (product of diagonal elements will give sqrt(detA))
+		
+		// printf("Set predet\n");
+		
+		gsl_vector *predet = gsl_vector_alloc(nm-3);
+		
+		for(i = 0; i < nm-3; ++i)
+		{
+			gsl_vector_set(predet, i, gsl_matrix_get(A,i,i));
+		}
+		
+		gsl_sort_vector(predet);
+		
+		// invert matrix A
+		
+		gsl_linalg_cholesky_invert(A);
+		
+		/*
+		 printf("\nMatrice I A\n");
+		 for (i=0;i<nm-3;++i)
+		 {
+			 for(j=0;j<nm-3;++j)
+			 {
+			 	printf("%6.10f ",gsl_matrix_get(IA,i,j));
+			 }
+		
+			 printf("\n");
+		 }
+		 */
+		
+		// get XYZ covariances
+		
+		double KXX = 0;
+		double KYY = 0;
+		double KZZ = 0;
+		double KXY = 0;
+		double KXZ = 0;
+		double KYZ = 0;
+	
+		for (i=0;i<nm-3;++i)
+		{
+			for (j=0;j<nm-3;++j)
+			{
+				KXX += 2 * gsl_matrix_get(K,i,nm-3) * gsl_matrix_get(K,j,nm-3)* gsl_matrix_get(A,i,j);
+				KYY += 2 * gsl_matrix_get(K,i,nm-2) * gsl_matrix_get(K,j,nm-2)* gsl_matrix_get(A,i,j);
+				KZZ += 2 * gsl_matrix_get(K,i,nm-1) * gsl_matrix_get(K,j,nm-1) * gsl_matrix_get(A,i,j);
+				KXY += 2 * (gsl_matrix_get(K,i,nm-3) * gsl_matrix_get(K,j,nm-2) + gsl_matrix_get(K,i,nm-2) * gsl_matrix_get(K,j,nm-3)) * gsl_matrix_get(A,i,j);
+				KXZ += 2 * (gsl_matrix_get(K,i,nm-3) * gsl_matrix_get(K,j,nm-1) + gsl_matrix_get(K,i,nm-1) * gsl_matrix_get(K,j,nm-3)) * gsl_matrix_get(A,i,j);
+				KYZ += 2 * (gsl_matrix_get(K,i,nm-2) * gsl_matrix_get(K,j,nm-1) + gsl_matrix_get(K,i,nm-1) * gsl_matrix_get(K,j,nm-2)) * gsl_matrix_get(A,i,j);
+			}
+		}
+		
+		gsl_matrix_free(A);
+		
+		KXX -= gsl_matrix_get(K,nm-3,nm-3);
+		KYY -= gsl_matrix_get(K,nm-2,nm-2);
+		KZZ -= gsl_matrix_get(K,nm-1,nm-1);
+		KXY -= gsl_matrix_get(K,nm-3,nm-2) + gsl_matrix_get(K,nm-2,nm-3);
+		KXZ -= gsl_matrix_get(K,nm-3,nm-1) + gsl_matrix_get(K,nm-1,nm-3);
+		KYZ -= gsl_matrix_get(K,nm-2,nm-1) + gsl_matrix_get(K,nm-1,nm-2);
+		
+		gsl_matrix_free(K);
+		
+		KXX *= -1;
+		KYY *= -1;
+		KZZ *= -1;
+		KXY *= -1;
+		KXZ *= -1;
+		KYZ *= -1;
+	
+		if (det123 < 0) { det123 *= -1; }
+	
+		long double Dens_Fac = sqrt( pow(beta/PI,3) ) / det123;
+		
+		// multiply Dens_Fac with (product of eigenvalues)/sqrt(detA)
+		
+		for(i = 0; i < nm-3; ++i)
+		{
+			Dens_Fac *= sqrt(2*beta)*gsl_vector_get(eval,i+9)/gsl_vector_get(predet,i);
+		}
+		
+		Dens_Fac *= gsl_vector_get(eval,6)*gsl_vector_get(eval,7)*gsl_vector_get(eval,8);
+		
+		/*
+		gsl_vector_set(entro,node,ConfEnt);
+		
+		printf("Node:%d\n",node);
+		
+		//printf("\nConstants : \nq = %6.10f\ndet123 = %6.10f\ndetA = %6.10f\nDamping factor = %6.50Lf\nKXX = %6.10f\nKYY = %6.10f\nKZZ = %6.10f\nKXY = %6.10f\nKXZ = %6.10f\nKYZ = %6.10f\n\nDifferential entropy = %20.20Lf\n\n", q, det123, detA, Damping_Factor, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
+		*/
+		printf("\nDifferential entropy = %6.10f\t\tDensity factor = %6.20Lf\n\nKXX = %6.10f\t\tKYY = %6.10f\t\tKZZ = %6.10f\t\tKXY = %6.10f\t\tKXZ = %6.10f\t\tKYZ = %6.10f\n\n", 1.5 - log(Dens_Fac), Dens_Fac, KXX, KYY, KZZ, KXY, KXZ, KYZ);
+		
+		
+		// Assign density fector and entropy to node
+		
+		init[node].entro = 1.5 - log(Dens_Fac);
+		
+		init[node].dens = Dens_Fac;
+		
+		init[node].covar[0] = 2*KXX;
+		init[node].covar[1] = 2*KYY;
+		init[node].covar[2] = 2*KZZ;
+		init[node].covar[3] = KXY;
+		init[node].covar[4] = KXZ;
+		init[node].covar[5] = KYZ;
+		
+		// printf("Done\n");
+	}
+	// printf("EXIT\n");
+}

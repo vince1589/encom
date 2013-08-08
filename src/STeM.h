@@ -6,7 +6,8 @@
 #include <time.h>
 #include <gsl/gsl_linalg.h>
 
-struct pdb_atom {
+struct pdb_atom 
+{
 	 	int atom_number; /*Numéro d'atomes*/
 	 	float x_cord; /*Coordoné en x*/
 	 	float y_cord; /*Coordoné en y*/
@@ -21,6 +22,9 @@ struct pdb_atom {
 	 	int node;
 	 	int node_c[6];
 	 	float mass;
+		double entro; // Statistical entropy of the node
+		double dens; // Density factor of the node's probability density function
+		double covar[6]; // KXX KYY KZZ KXY KXZ KYZ
 };
 
 
@@ -60,6 +64,8 @@ void fit_math(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struc
 void fit_vince(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *eval, int *align, int nb_mode, int mode);
 void nrg_rmsd(struct pdb_atom *init,int atom,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void fit_mc_torsion(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int atom_t,int all_t,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
+void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta);
+
 
 // STeM_lib_grid_motion.c
 //	STeM grid_motion

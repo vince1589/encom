@@ -2,6 +2,7 @@
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_sort_vector.h>
 
+/*
 void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,struct pdb_atom *strc,int atom, int zmodes)
 {
 	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
@@ -22,7 +23,7 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 		gsl_vector_set(eval,i-6,gsl_vector_get(evalt,i));
 	}
 	
-	/*
+	(/*)
 	double evaldiv = 0;
 	
 	// double evaldiv = gsl_vector_get(eval, (int) (nm-1)*(41+nm/170)/100);
@@ -40,7 +41,7 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 	{
 		gsl_vector_set(eval,i,gsl_vector_get(eval,i)/evaldiv);
 	}
-	*/
+	(end/*)
 	
 	for (node = 0;node<atom;++node)
 	{
@@ -136,7 +137,7 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 			 }
 		
 			 printf("\n");
-		 }*/
+		 }(end/*)
 		
 		double det123 = gsl_matrix_get(GJ,0,0)*gsl_matrix_get(GJ,1,1)*gsl_matrix_get(GJ,2,2);
 	
@@ -165,7 +166,7 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 			 printf("\n");
 		 }
 	
-		 printf("\n");*/
+		 printf("\n");(end/*)
 		// Visualisation de l'exposant
 
 		// Matrice K de transformation energetique
@@ -212,7 +213,7 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 			
 			printf("\n");
 		 }
-		 */
+		 (end/*)
 		
 		// make Cholesky decomposition of matrix A
 		
@@ -234,49 +235,6 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 		gsl_linalg_cholesky_invert(A);
 		
 		/*
-		// Matrix inversion (IA)
-		int s;
-		gsl_matrix *IA = gsl_matrix_alloc(nm-3,nm-3);
-		gsl_matrix_set_all(IA,0);
-		gsl_permutation *perm = gsl_permutation_alloc (nm-3);
-		
-		
-		// Adjust size of all A elements
-		gsl_matrix *B = gsl_matrix_alloc(nm-3,nm-3);
-		gsl_matrix_set_all(B,0);
-		
-		for (i=0;i<nm-3;++i)
-		{
-			for (j=0;j<nm-3;++j)
-			{
-				gsl_matrix_set(B, i, j, 0.0006 * gsl_matrix_get(A,i,j));
-			}
-		}
-		
-		gsl_permutation *permtemp = gsl_permutation_alloc (nm-3);
-		int stemp;
-	
-		// Make new LU decomposition of matrix m
-		gsl_linalg_LU_decomp (B, permtemp, &stemp);
-		
-		
-		// Make LU decomposition of matrix m
-		gsl_linalg_LU_decomp (A, perm, &s);
-
-		// Invert the matrix m
-		gsl_linalg_LU_invert (A, perm, IA);
-		
-		// Get derterminant
-		double detA = gsl_linalg_LU_det(A, s);
-		
-		gsl_matrix_free(A);
-		
-		gsl_permutation_free(perm);
-		*/
-		
-		
-		
-		/*
 		 printf("\nMatrice I A\n");
 		 for (i=0;i<nm-3;++i)
 		 {
@@ -287,7 +245,7 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 		
 			 printf("\n");
 		 }
-		 */
+		 (end/*)
 		
 		// get XYZ covariances
 		
@@ -354,7 +312,7 @@ void calculate_entropie(gsl_vector *entro,gsl_vector *evalt,gsl_matrix *evec,str
 		printf("\nDifferential entropy = %6.10f\t\tDensity factor = %6.20Lf\n\nKXX = %6.10f\t\tKYY = %6.10f\t\tKZZ = %6.10f\t\tKXY = %6.10f\t\tKXZ = %6.10f\t\tKYZ = %6.10f\n\n", ConfEnt, Dens_Fac, KXX, KYY, KZZ, KXY, KXZ, KYZ);
 	}
 }
-
+*/
 
 int main(int argc, char *argv[])
 {
@@ -370,7 +328,7 @@ int main(int argc, char *argv[])
 	
 	int nconn;
 	int lig = 0;
-
+	
 	for (i = 1;i < argc;i++) {
 		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
 		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]);}
@@ -408,6 +366,7 @@ int main(int argc, char *argv[])
 	// Assign tous les atoms
 	
 	struct pdb_atom strc_all[all];
+	
 	atom = build_all_strc(file_name,strc_all); // Retourne le nombre de Node
 	
 	if (verbose == 1) {printf("	Node:%d\n	Atom:%d\n",atom,all);}
@@ -438,16 +397,7 @@ int main(int argc, char *argv[])
 	gsl_matrix *evec= gsl_matrix_alloc (3*atom,3*atom);
 	load_eigen(eval,evec,eigen_name,3*atom);
 	
-	gsl_vector *entro = gsl_vector_alloc(atom);
-	
-	int nullmodes = 0;
-	
-	while(gsl_vector_get(eval,nullmodes) < 0.01)
-	{
-		nullmodes++;
-	}
-	
-	calculate_entropie(entro,eval,evec,strc_node,atom,nullmodes);
+	gen_gauss(strc_node,evec,eval,atom,0.0000001);
 
 	// Correlation
 	
@@ -457,7 +407,7 @@ int main(int argc, char *argv[])
 	
 	gsl_vector *bfacs = gsl_vector_alloc(atom);
 	gsl_vector *lbfacs = gsl_vector_alloc(atom);
-	gsl_vector *entro2 = gsl_vector_alloc(atom);
+	gsl_vector *entro = gsl_vector_alloc(atom);
 	
 	for(k=0;k<atom;++k)
 	{
@@ -465,8 +415,8 @@ int main(int argc, char *argv[])
 		gsl_vector_set(lbfacs, k, log(strc_node[k].b_factor));
 		bfactmes += strc_node[k].b_factor;
 		gsl_vector_set(bfacs, k, strc_node[k].b_factor);
-		diffentmes += gsl_vector_get(entro,k);
-		gsl_vector_set(entro2, k, gsl_vector_get(entro,k));
+		diffentmes += strc_node[k].entro;
+		gsl_vector_set(entro, k, strc_node[k].entro);
 	}
 	
 	bfactmes /= atom;
@@ -477,7 +427,7 @@ int main(int argc, char *argv[])
 	{
 		gsl_vector_set(bfacs, k, gsl_vector_get(bfacs,k) - bfactmes);
 		gsl_vector_set(lbfacs, k, gsl_vector_get(lbfacs,k) - lbfactmes);
-		gsl_vector_set(entro2, k, gsl_vector_get(entro2,k) - diffentmes);
+		gsl_vector_set(entro, k, gsl_vector_get(entro,k) - diffentmes);
 	}
 	
 	double correl = 0;
@@ -490,11 +440,11 @@ int main(int argc, char *argv[])
 	
 	for(k=0;k<atom;++k)
 	{
-		correl += gsl_vector_get(entro2,k)*gsl_vector_get(bfacs,k);
-		lcorrel += gsl_vector_get(entro2,k)*gsl_vector_get(lbfacs,k);
+		correl += gsl_vector_get(entro,k)*gsl_vector_get(bfacs,k);
+		lcorrel += gsl_vector_get(entro,k)*gsl_vector_get(lbfacs,k);
 		bfactmes += gsl_vector_get(bfacs,k)*gsl_vector_get(bfacs,k);
 		lbfactmes += gsl_vector_get(lbfacs,k)*gsl_vector_get(lbfacs,k);
-		diffentmes += gsl_vector_get(entro2,k)*gsl_vector_get(entro2,k);
+		diffentmes += gsl_vector_get(entro,k)*gsl_vector_get(entro,k);
 		
 		// printf("{%6.10f,%6.10f},",gsl_vector_get(bfacs,k),gsl_vector_get(entro2,k));
 	}
