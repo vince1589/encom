@@ -96,11 +96,11 @@ fit_svd.o: $I/fit_svd.c
 	$(CXX) $(CXXFLAGS) -c $I/fit_svd.c $(INCLUDES)
 motion.o: $I/motion.c
 	$(CXX) $(CXXFLAGS) -c $I/motion.c $(INCLUDES)
-rmsd.o: $I/rmsd.o
+rmsd.o: $I/rmsd.c
 	$(CXX) $(CXXFLAGS) -c $I/rmsd.c $(INCLUDES)
-build_pca.o: $I/build_pca.o
+build_pca.o: $I/build_pca.c
 	$(CXX) $(CXXFLAGS) -c $I/build_pca $(INCLUDES)
-fit_gauss.o: $I/fit_gauss.o
+fit_gauss.o: $I/fit_gauss.c
 	$(CXX) $(CXXFLAGS) -c $I/fit_gauss.c $(INCLUDES)
 
 # Build Source STeM_lib
