@@ -24,7 +24,9 @@ struct pdb_atom
 	 	float mass;
 		double entro; // Statistical entropy of the node
 		double dens; // Density factor of the node's probability density function
-		double covar[6]; // KXX KYY KZZ KXY KXZ KYZ
+		double incovar[6]; // KXX KYY KZZ KXY KXZ KYZ
+		double global_evecs[3][3]; /* Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors).
+						The module of each eigenvector is equal to the standard deviation of the distribution in its direction.*/
 };
 
 
@@ -65,6 +67,7 @@ void fit_vince(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,stru
 void nrg_rmsd(struct pdb_atom *init,int atom,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void fit_mc_torsion(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int atom_t,int all_t,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta);
+double over_prob(struct pdb_atom *atm1, struct pdb_atom *atm2);
 
 
 // STeM_lib_grid_motion.c
