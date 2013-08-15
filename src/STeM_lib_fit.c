@@ -255,18 +255,49 @@ int node_align_low(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int at
 
 }
  
-void rotate_all(gsl_matrix *rota,struct pdb_atom *all_init,int all) {
-	int j;
+void rotate_all(gsl_matrix *rota,struct pdb_atom *all_init,int all)
+{
+	int i,j,k,l;
+	
 	double temp_x, temp_y, temp_z;
-	for(j=0;j<all;++j) {
- 			temp_x = all_init[j].x_cord;
- 			temp_y = all_init[j].y_cord;
- 			temp_z = all_init[j].z_cord;
- 			all_init[j].x_cord = gsl_matrix_get(rota,0,0) * temp_x + gsl_matrix_get(rota,1,0) * temp_y + gsl_matrix_get(rota,2,0) * temp_z;
- 			all_init[j].y_cord = gsl_matrix_get(rota,0,1) * temp_x + gsl_matrix_get(rota,1,1) * temp_y + gsl_matrix_get(rota,2,1) * temp_z;
- 			all_init[j].z_cord = gsl_matrix_get(rota,0,2) * temp_x + gsl_matrix_get(rota,1,2) * temp_y + gsl_matrix_get(rota,2,2) * temp_z;
- 			
- 		}
+	
+	for(i=0;i<all;++i)
+	{
+		temp_x = all_init[i].x_cord;
+		temp_y = all_init[i].y_cord;
+		temp_z = all_init[i].z_cord;
+		
+		all_init[i].x_cord = gsl_matrix_get(rota,0,0) * temp_x + gsl_matrix_get(rota,1,0) * temp_y + gsl_matrix_get(rota,2,0) * temp_z;
+		all_init[i].y_cord = gsl_matrix_get(rota,0,1) * temp_x + gsl_matrix_get(rota,1,1) * temp_y + gsl_matrix_get(rota,2,1) * temp_z;
+		all_init[i].z_cord = gsl_matrix_get(rota,0,2) * temp_x + gsl_matrix_get(rota,1,2) * temp_y + gsl_matrix_get(rota,2,2) * temp_z;
+		
+		gsl_matrix *neweigen = gsl_matrix_alloc(3,3);
+		
+		for(j = 0; j < 3; j++)
+		{
+			for(k = 0; k < 3; k++)
+			{
+				double eigenjk = 0;
+				
+				for(l = 0; l < 3; l++)
+				{
+					eigenjk += gsl_matrix_get(rota,l,j)*all_init[i].global_evecs[l][k];
+				}
+				
+				gsl_matrix_set(neweigen, j, k, eigenjk);
+			}
+		}
+		
+		for(j = 0; j < 3; j++)
+		{
+			for(k = 0; k < 3; k++)
+			{
+				all_init[i].global_evecs[j][k] = gsl_matrix_get(neweigen, j, k);
+			}
+		}
+		
+		gsl_matrix_free(neweigen);
+	}
 
 }
 
@@ -1719,31 +1750,24 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		printf("\nDifferential entropy = %6.10f\n\n", 1.5 - log(Dens_Fac));
 		
 		
-		// Assign density factor, entropy and inverse covariance matrix to node
+		// Assign density factor and entropy
 		
 		init[node].entro = 1.5 - log(Dens_Fac);
 		
 		init[node].dens = Dens_Fac;
 		
-		init[node].incovar[0] = 2*KXX;
-		init[node].incovar[1] = 2*KYY;
-		init[node].incovar[2] = 2*KZZ;
-		init[node].incovar[3] = KXY;
-		init[node].incovar[4] = KXZ;
-		init[node].incovar[5] = KYZ;
-		
-		// Assign global eigenvectors (main axes weighted with s.d.) to node
+		// Assign global eigenvectors (main axes) and global variances to node
 		
 		gsl_matrix *incov1 = gsl_matrix_alloc(3,3);
 		
 		gsl_matrix_set_all(incov1,0);
 		
-		gsl_matrix_set(incov1, 0, 0, init[node].incovar[0]);
-		gsl_matrix_set(incov1, 1, 1, init[node].incovar[1]);
-		gsl_matrix_set(incov1, 2, 2, init[node].incovar[2]);
-		gsl_matrix_set(incov1, 0, 1, init[node].incovar[3]); gsl_matrix_set(incov1, 1, 0, init[node].incovar[3]);
-		gsl_matrix_set(incov1, 0, 2, init[node].incovar[4]); gsl_matrix_set(incov1, 2, 0, init[node].incovar[4]);
-		gsl_matrix_set(incov1, 1, 2, init[node].incovar[5]); gsl_matrix_set(incov1, 2, 1, init[node].incovar[5]);
+		gsl_matrix_set(incov1, 0, 0, 2*KXX);
+		gsl_matrix_set(incov1, 1, 1, 2*KYY);
+		gsl_matrix_set(incov1, 2, 2, 2*KZZ);
+		gsl_matrix_set(incov1, 0, 1, KXY); gsl_matrix_set(incov1, 1, 0, KXY);
+		gsl_matrix_set(incov1, 0, 2, KXZ); gsl_matrix_set(incov1, 2, 0, KXZ);
+		gsl_matrix_set(incov1, 1, 2, KYZ); gsl_matrix_set(incov1, 2, 1, KYZ);
 		
 		
 		/*
@@ -1825,12 +1849,14 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		printf("\n\n");
 		*/
 		
-		for(i = 0; i < 3; i++)
+		for(j = 0; j < 3; j++)
 		{
-			for(j = 0; j < 3; j++)
+			for(i = 0; i < 3; i++)
 			{
-				init[node].global_evecs[i][j] = gsl_matrix_get(glevecs, i, j) * sqrt(gsl_vector_get(mainvars, j));
+				init[node].global_evecs[i][j] = gsl_matrix_get(glevecs, i, j);
 			}
+			
+			init[node].main_vars[j] = gsl_vector_get(mainvars, j);
 		}
 		
 		/*
@@ -1854,68 +1880,62 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 	// printf("EXIT\n");
 }
 
-
-double over_prob(struct pdb_atom *atm1, struct pdb_atom *atm2)
+void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12) // Builds inverse conjugate covariance matrix, conjugate density factor and delta-r for use with over_prob and proxim_prob; 
 {
 	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
 	
-	double radius = 4;
+	int i,j,k;
 	
-	double evalrange = radius*2;
-	
-	int i,j,k,r,s;
-	
-	gsl_matrix *incov1 = gsl_matrix_alloc(3,3);
-	gsl_matrix *incov2 = gsl_matrix_alloc(3,3);
-	
-	gsl_matrix_set(incov1, 0, 0, atm1->incovar[0]);
-	gsl_matrix_set(incov1, 1, 1, atm1->incovar[1]);
-	gsl_matrix_set(incov1, 2, 2, atm1->incovar[2]);
-	gsl_matrix_set(incov1, 0, 1, atm1->incovar[3]); gsl_matrix_set(incov1, 1, 0, atm1->incovar[3]);
-	gsl_matrix_set(incov1, 0, 2, atm1->incovar[4]); gsl_matrix_set(incov1, 2, 0, atm1->incovar[4]);
-	gsl_matrix_set(incov1, 1, 2, atm1->incovar[5]); gsl_matrix_set(incov1, 2, 1, atm1->incovar[5]);
-	
-	gsl_matrix_set(incov2, 0, 0, atm2->incovar[0]);
-	gsl_matrix_set(incov2, 1, 1, atm2->incovar[1]);
-	gsl_matrix_set(incov2, 2, 2, atm2->incovar[2]);
-	gsl_matrix_set(incov2, 0, 1, atm2->incovar[3]); gsl_matrix_set(incov2, 1, 0, atm2->incovar[3]);
-	gsl_matrix_set(incov2, 0, 2, atm2->incovar[4]); gsl_matrix_set(incov2, 2, 0, atm2->incovar[4]);
-	gsl_matrix_set(incov2, 1, 2, atm2->incovar[5]); gsl_matrix_set(incov2, 2, 1, atm2->incovar[5]);
-	
-	gsl_linalg_cholesky_decomp(incov1);
-	gsl_linalg_cholesky_decomp(incov2);
-	
-	gsl_linalg_cholesky_invert(incov1);
-	gsl_linalg_cholesky_invert(incov2);
+	gsl_matrix *cov12 = gsl_matrix_alloc(3,3);
 	
 	for(i = 0; i < 3; i++)
 	{
 		for(j = 0; j < 3; j++)
 		{
-			gsl_matrix_set(incov1, i, j, gsl_matrix_get(incov1, i, j) + gsl_matrix_get(incov2, i, j));
+			double covar12 = 0;
+			
+			for(k = 0; k < 3; k++)
+			{
+				covar12 += atm1->global_evecs[i][k]*atm1->global_evecs[j][k]*atm1->main_vars[k] + atm2->global_evecs[i][k]*atm2->global_evecs[j][k]*atm2->main_vars[k];
+			}
+			
+			gsl_matrix_set(cov12, i, j, covar12);
 		}
 	}
 	
-	gsl_matrix_free(incov2);
+	gsl_linalg_cholesky_decomp(cov12);
 	
-	gsl_linalg_cholesky_decomp(incov1);
-	
-	double conj_dens = 1/sqrt(pow(2*PI,3));
+	*conj_dens12 = 1/sqrt(pow(2*PI,3));
 	
 	for(i = 0; i < 3; i++)
 	{
-		conj_dens /= gsl_matrix_get(incov1, i, i);
+		*conj_dens12 /= gsl_matrix_get(cov12, i, i);
 	}
 	
-	gsl_linalg_cholesky_invert(incov1);
+	gsl_linalg_cholesky_invert(cov12);
 	
-	double delx = atm2->x_cord - atm1->x_cord;
-	double dely = atm2->y_cord - atm1->y_cord;
-	double delz = atm2->z_cord - atm1->z_cord;
+	for(i = 0; i < 3; i++)
+	{
+		for(j = 0; j < 3; j++)
+		{
+			gsl_matrix_set(incov12, i, j, gsl_matrix_get(cov12, i, j));
+		}
+	}
+	
+	gsl_vector_set(delr, 0, atm2->x_cord - atm1->x_cord);
+	gsl_vector_set(delr, 1, atm2->y_cord - atm1->y_cord);
+	gsl_vector_set(delr, 2, atm2->z_cord - atm1->z_cord);
+}
+
+double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps) // Returns probability of overlap between two atoms. Must have run conj_prob_init beforehand.
+{
+	int i,j,k,r,s;
 	
 	double overprob = 0;
 	
-	int nsteps = 70; // To optimize
+	// Ajouter un if(minrad == 0)
+	/*
+	double evalrange = 2*maxrad;
 	
 	for(i = 0; i < nsteps; i++)
 	{
@@ -1928,9 +1948,9 @@ double over_prob(struct pdb_atom *atm1, struct pdb_atom *atm2)
 					gsl_vector *evpos = gsl_vector_alloc(3);
 					gsl_vector_set_all(evpos, 0);
 					
-					gsl_vector_set(evpos, 0, delx - evalrange/2 + (2*i + 1)*evalrange/(2 * nsteps));
-					gsl_vector_set(evpos, 1, dely - evalrange/2 + (2*j + 1)*evalrange/(2 * nsteps));
-					gsl_vector_set(evpos, 2, delz - evalrange/2 + (2*k + 1)*evalrange/(2 * nsteps));
+					gsl_vector_set(evpos, 0, gsl_vector_get(delr, 0) - evalrange/2 + (2*i + 1)*evalrange/(2 * nsteps));
+					gsl_vector_set(evpos, 1, gsl_vector_get(delr, 1) - evalrange/2 + (2*j + 1)*evalrange/(2 * nsteps));
+					gsl_vector_set(evpos, 2, gsl_vector_get(delr, 2) - evalrange/2 + (2*k + 1)*evalrange/(2 * nsteps));
 					
 					double argexp = 0;
 					
@@ -1938,7 +1958,7 @@ double over_prob(struct pdb_atom *atm1, struct pdb_atom *atm2)
 					{
 						for(s = 0; s < 3; s++)
 						{
-							argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov1, r, s);
+							argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov12, r, s);
 						}
 					}
 					
@@ -1946,11 +1966,316 @@ double over_prob(struct pdb_atom *atm1, struct pdb_atom *atm2)
 					
 					argexp *= -0.5;
 					
-					overprob += conj_dens*exp(argexp)*pow(evalrange/nsteps, 3);
+					overprob += conj_dens12*exp(argexp)*pow(evalrange/nsteps, 3);
 				}
 			}
 		}
 	}
 	
 	return overprob;
+	*/
+	
+	const double reduct = 0.7071067811865475244008443621048490392848359376884740365883398689953662392310535194251937671638207864; // sqrt(PI)/2
+	
+	
+	//Exceptions
+	if(minrad == maxrad)
+	{
+		return 0;
+	}
+	else
+	{
+		if(minrad > maxrad)
+		{
+			return 0;
+		}
+	}
+	
+	if(minrad == 0)
+	{
+		double evalrange = 2*maxrad;
+		
+		for(i = 0; i < nsteps; i++)
+		{
+			for(j = 0; j < nsteps; j++)
+			{
+				for(k = 0; k < nsteps; k++)
+				{
+					if(sqrt(pow((2*i + 1)*evalrange/(2 * nsteps) - evalrange/2, 2) + pow((2*j + 1)*evalrange/(2 * nsteps) - evalrange/2, 2) + pow((2*k + 1)*evalrange/(2 * nsteps) - evalrange/2, 2)) <= maxrad)
+					{
+						gsl_vector *evpos = gsl_vector_alloc(3);
+						gsl_vector_set_all(evpos, 0);
+						
+						gsl_vector_set(evpos, 0, gsl_vector_get(delr, 0) - evalrange/2 + (2*i + 1)*evalrange/(2 * nsteps));
+						gsl_vector_set(evpos, 1, gsl_vector_get(delr, 1) - evalrange/2 + (2*j + 1)*evalrange/(2 * nsteps));
+						gsl_vector_set(evpos, 2, gsl_vector_get(delr, 2) - evalrange/2 + (2*k + 1)*evalrange/(2 * nsteps));
+						
+						double argexp = 0;
+						
+						for(r = 0; r < 3; r++)
+						{
+							for(s = 0; s < 3; s++)
+							{
+								argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov12, r, s);
+							}
+						}
+						
+						gsl_vector_free(evpos);
+						
+						argexp *= -0.5;
+						
+						overprob += conj_dens12*exp(argexp)*pow(evalrange/nsteps, 3);
+					}
+				}
+			}
+		}
+		
+		return overprob;
+	}
+	else
+	{
+		// Generate lower bound of evaluation
+		double minev = minrad * reduct;
+		
+		
+		// Generate all volume ratios of all three zones of evaluation where evaluation points will be scattered
+		double rat_1 = (maxrad - minev) * pow(maxrad, 2) / (pow(maxrad, 3) - pow(minev, 3));
+		double rat_2 = minev * (maxrad - minev) * maxrad / (pow(maxrad, 3) - pow(minev, 3));
+		double rat_3 = pow(minev, 2) * (maxrad - minev) / (pow(maxrad, 3) - pow(minev, 3));
+		
+		//Calculate probability in the first zones (z caps)
+		// printf("Part 1 :\n");
+		
+		int nz = round(pow(rat_1 * pow(nsteps, 3) * pow(maxrad - minev, 2) / pow(maxrad, 2), 1/3.0));
+		
+		if(nz < 1)
+		{
+			nz = 1;
+		}
+		
+		// printf("nz : %1i\t\t", nz);
+		
+		int ny = round(sqrt(rat_1 * pow(nsteps, 3) / nz));
+		
+		if(ny < 1)
+		{
+			ny = 1;
+		}
+		
+		int nx = ny;
+		
+		// printf("nx and ny : %1i\n", nx);
+		
+		for(i = 0; i < nx; i++)
+		{
+			for(j = 0; j < ny; j++)
+			{
+				for(k = 0; k < nz; k++)
+				{
+					if(sqrt(pow((2 * i + 1) * maxrad / nx - maxrad, 2) + pow((2 * j + 1) * maxrad / ny - maxrad, 2) + pow(minev + (2 * k + 1) * (maxrad - minev) / (2 * nz), 2)) > minrad && sqrt(pow((2 * i + 1) * maxrad / nsteps - maxrad, 2) + pow((2 * i + 1) * maxrad / nsteps - maxrad, 2) + pow(minev + (2 * k + 1) * (maxrad - minev) / (2 * nz), 2)) < maxrad)
+					{
+						gsl_vector *evpos = gsl_vector_alloc(3);
+						gsl_vector_set_all(evpos, 0);
+						
+						gsl_vector_set(evpos, 0, gsl_vector_get(delr, 0) - maxrad + (2 * i + 1) * maxrad / nx);
+						gsl_vector_set(evpos, 1, gsl_vector_get(delr, 1) - maxrad + (2 * j + 1) * maxrad / ny);
+						gsl_vector_set(evpos, 2, gsl_vector_get(delr, 2) + minev + (2 * k + 1) * (maxrad - minev) / (2 * nz));
+						
+						double argexp = 0;
+						
+						for(r = 0; r < 3; r++)
+						{
+							for(s = 0; s < 3; s++)
+							{
+								argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov12, r, s);
+							}
+						}
+						
+						argexp *= -0.5;
+						
+						overprob += conj_dens12*exp(argexp) * pow(2 * maxrad / nx, 2) * (maxrad - minev) / nz;
+						
+						gsl_vector_set(evpos, 0, gsl_vector_get(delr, 0) - maxrad + (2 * i + 1) * maxrad / nx);
+						gsl_vector_set(evpos, 1, gsl_vector_get(delr, 1) - maxrad + (2 * j + 1) * maxrad / ny);
+						gsl_vector_set(evpos, 2, gsl_vector_get(delr, 2) - minev - (2 * k + 1) * (maxrad - minev) / (2 * nz));
+						
+						argexp = 0;
+						
+						for(r = 0; r < 3; r++)
+						{
+							for(s = 0; s < 3; s++)
+							{
+								argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov12, r, s);
+							}
+						}
+						
+						gsl_vector_free(evpos);
+						
+						argexp *= -0.5;
+						
+						overprob += conj_dens12*exp(argexp) * pow(2 * maxrad / nx, 2) * (maxrad - minev) / nz;
+					}
+				}
+			}
+		}
+		
+		// printf("Part 2 :\n");
+		
+		nz = round(pow(rat_2 * pow(nsteps, 3) * pow(minev, 2) / (maxrad * (maxrad - minev)), 1/3.0));
+		
+		if(nz < 1)
+		{
+			nz = 1;
+		}
+		
+		// printf("nz : %1i\t\t", nz);
+		
+		ny = round(nz * (maxrad - minev) / minev);
+		
+		if(ny < 1)
+		{
+			ny = 1;
+		}
+		
+		// printf("ny : %1i\t\t", ny);
+		
+		nx = round(nz * maxrad / minev);
+		
+		if(nx < 1)
+		{
+			nx = 1;
+		}
+		
+		// printf("nx : %1i\n", nx);
+		
+		for(i = 0; i < nx; i++)
+		{
+			for(j = 0; j < ny; j++)
+			{
+				for(k = 0; k < nz; k++)
+				{
+					if(sqrt(pow((2 * i + 1) * maxrad / nx - maxrad, 2) + pow(minev + (2 * j + 1) * (maxrad - minev) / (2 * ny), 2) + pow((2 * k + 1) * minev / nz - minev, 2)) > minrad && sqrt(pow((2 * i + 1) * maxrad / nx - maxrad, 2) + pow(minev + (2 * j + 1) * (maxrad - minev) / (2 * ny), 2) + pow((2 * k + 1) * minev / nz - minev, 2)) < maxrad)
+					{
+						gsl_vector *evpos = gsl_vector_alloc(3);
+						gsl_vector_set_all(evpos, 0);
+						
+						gsl_vector_set(evpos, 0, gsl_vector_get(delr, 0) - maxrad + (2 * i + 1) * maxrad / nx);
+						gsl_vector_set(evpos, 1, gsl_vector_get(delr, 1) + minev + (2 * j + 1) * (maxrad - minev) / (2 * ny));
+						gsl_vector_set(evpos, 2, gsl_vector_get(delr, 2) - minev + (2 * k + 1) * minev / nz);
+						
+						double argexp = 0;
+						
+						for(r = 0; r < 3; r++)
+						{
+							for(s = 0; s < 3; s++)
+							{
+								argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov12, r, s);
+							}
+						}
+						
+						argexp *= -0.5;
+						
+						overprob += conj_dens12*exp(argexp) * 2 * minev / nz * (maxrad - minev) / ny * 2 * maxrad / nx;
+						
+						gsl_vector_set(evpos, 0, gsl_vector_get(delr, 0) - maxrad + (2 * i + 1) * maxrad / nx);
+						gsl_vector_set(evpos, 1, gsl_vector_get(delr, 1) - minev - (2 * j + 1) * (maxrad - minev) / (2 * ny));
+						gsl_vector_set(evpos, 2, gsl_vector_get(delr, 2) - minev + (2 * k + 1) * minev / nz);
+						
+						argexp = 0;
+						
+						for(r = 0; r < 3; r++)
+						{
+							for(s = 0; s < 3; s++)
+							{
+								argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov12, r, s);
+							}
+						}
+						
+						gsl_vector_free(evpos);
+						
+						argexp *= -0.5;
+						
+						overprob += conj_dens12*exp(argexp) * 2 * minev / nz * (maxrad - minev) / ny * 2 * maxrad / nx;
+					}
+				}
+			}
+		}
+		
+		// printf("Part 3 :\n");
+		
+		nz = round(pow(rat_3 * pow(nsteps, 3) * minev / (maxrad - minev), 1/3.0));
+		
+		if(nz < 1)
+		{
+			nz = 1;
+		}
+		
+		// printf("nz and ny : %1i\t\t", nz);
+		
+		ny = nz;
+		
+		nx = round(nz * maxrad / minev);
+		
+		if(nx < 1)
+		{
+			nx = 1;
+		}
+		
+		// printf("nx : %1i\n", nx);
+		
+		for(i = 0; i < nx; i++)
+		{
+			for(j = 0; j < ny; j++)
+			{
+				for(k = 0; k < nz; k++)
+				{
+					if(sqrt(pow((2 * i + 1) * maxrad / nx - maxrad, 2) + pow(minev + (2 * j + 1) * (maxrad - minev) / (2 * ny), 2) + pow((2 * k + 1) * minev / nz - minev, 2)) > minrad && sqrt(pow((2 * i + 1) * maxrad / nx - maxrad, 2) + pow(minev + (2 * j + 1) * (maxrad - minev) / (2 * ny), 2) + pow((2 * k + 1) * minev / nz - minev, 2)) < maxrad)
+					{
+						gsl_vector *evpos = gsl_vector_alloc(3);
+						gsl_vector_set_all(evpos, 0);
+						
+						gsl_vector_set(evpos, 0, gsl_vector_get(delr, 0) + minev + (2 * i + 1) * (maxrad - minev) / (2 * nx));
+						gsl_vector_set(evpos, 1, gsl_vector_get(delr, 1) - minev + (2 * j + 1) * minev / ny);
+						gsl_vector_set(evpos, 2, gsl_vector_get(delr, 2) - minev + (2 * k + 1) * minev / nz);
+						
+						double argexp = 0;
+						
+						for(r = 0; r < 3; r++)
+						{
+							for(s = 0; s < 3; s++)
+							{
+								argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov12, r, s);
+							}
+						}
+						
+						argexp *= -0.5;
+						
+						overprob += conj_dens12 * exp(argexp) * pow(2 * minev / nz, 2) * (maxrad - minev) / nx;
+						
+						gsl_vector_set(evpos, 0, gsl_vector_get(delr, 0) - minev - (2 * i + 1) * (maxrad - minev) / (2 * nx));
+						gsl_vector_set(evpos, 1, gsl_vector_get(delr, 1) - minev + (2 * j + 1) * minev / ny);
+						gsl_vector_set(evpos, 2, gsl_vector_get(delr, 2) - minev + (2 * k + 1) * minev / nz);
+						
+						argexp = 0;
+						
+						for(r = 0; r < 3; r++)
+						{
+							for(s = 0; s < 3; s++)
+							{
+								argexp += gsl_vector_get(evpos, r)*gsl_vector_get(evpos, s)*gsl_matrix_get(incov12, r, s);
+							}
+						}
+						
+						gsl_vector_free(evpos);
+						
+						argexp *= -0.5;
+						
+						overprob += conj_dens12 * exp(argexp) * pow(2 * minev / nz, 2) * (maxrad - minev) / nx;
+					}
+				}
+			}
+		}
+		
+		return overprob;
+	}
 }

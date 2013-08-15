@@ -24,7 +24,9 @@ struct pdb_atom
 	 	float mass;
 		double entro; // Statistical entropy of the node
 		double dens; // Density factor of the node's probability density function
-		double incovar[6]; // KXX KYY KZZ KXY KXZ KYZ
+		
+		/* Eigenrepresentation of the covariance matrix. Do not use as is in a probability density function, for its inverse must first be calculated by inverting its variances and recomposing the matrix */
+		double main_vars[3]; /* Global variances associated with each global eigenvector. Magnitude of movement along the eigenvector i is equal to sqrt(main_vars[i]) */
 		double global_evecs[3][3]; /* Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors).
 						The module of each eigenvector is equal to the standard deviation of the distribution in its direction.*/
 };
@@ -67,7 +69,8 @@ void fit_vince(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,stru
 void nrg_rmsd(struct pdb_atom *init,int atom,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void fit_mc_torsion(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int atom_t,int all_t,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta);
-double over_prob(struct pdb_atom *atm1, struct pdb_atom *atm2);
+void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12);
+double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps);
 
 
 // STeM_lib_grid_motion.c
