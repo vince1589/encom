@@ -498,6 +498,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	
  	return(rmsd/t_atom);
  }
+ 
  float rmsd_yes(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all) {
  	// Fonction qui suimperpose deux structures en utilisant single value decomposition
  	// Centre les deux structures autour des atomes dans align et rotate init et init all pour fitter !
@@ -679,6 +680,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	
  	return(rmsd/t_atom);
  }
+ 
  void apply_eigen(struct pdb_atom *strc,int atom,gsl_matrix *m,int mode,float amplitude) {
  	int k;
  //	amplitude = 0;
@@ -699,7 +701,6 @@ double gsl_matrix_Det3D(gsl_matrix *M){
 	}
  }
  
-  
  float vector_lenght(gsl_vector *d,int atom) {
  	int i;
  	float a = 0;
@@ -1132,6 +1133,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
 		printf("%4d %10.5f\n",j+mode,gsl_vector_get(eval,j+mode)/rmsd);
 	}
 }
+ 
  void center_yes(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t, int *align) {
  	
  	int i,j,k; // Dummy
@@ -1200,7 +1202,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  
  }
 
-  double get_diedre(int node,struct pdb_atom *init,int atom,int ty) {
+double get_diedre(int node,struct pdb_atom *init,int atom,int ty) {
 	// Function qui retourne l'angle diedre d'une node (-1) pour avant et 1 pour l'autre
 	if (ty != 1 && ty != -1) {return(0);}
 	if (node -1 < 0) {return(0);}
@@ -1543,7 +1545,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			// printf("\n");
 		// }
 		
-			// Elimine A dans ligne 1 et 2
+		// Elimine A dans ligne 1 et 2
 		
 		div1 = gsl_matrix_get(GJ,0,2);
 		div2 = gsl_matrix_get(GJ,1,2);
@@ -1600,9 +1602,9 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		 printf("\n");*/
 		// Visualisation de l'exposant
 		
-		// Matrice K de transformation energetique
-		
 		// printf("Set K\n");
+		
+		// Initialize kappa matrix (equal to kappa, except for the first n-3 term of the diagonal)
 		
 		gsl_matrix *K = gsl_matrix_alloc(nm,nm);
 		gsl_matrix_set_all(K,0);
@@ -1617,7 +1619,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		gsl_matrix_free(GJ);
 		
-		// Matrice A d'energie-correlation (des covariances)
+		// Initialize A covariance matrix (amplitude covariances, equal to kappa_ij with correct diagonal)
 		
 		// printf("Set A\n");
 		
@@ -1650,11 +1652,11 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		 }
 		 */
 		
-		// make Cholesky decomposition of matrix A
+		// Make Cholesky decomposition of matrix A
 		
 		gsl_linalg_cholesky_decomp(A);
 		
-		// get cholesky matrix diagonal (product of diagonal elements will give sqrt(detA))
+		// Get cholesky matrix diagonal (product of diagonal elements will give sqrt(detA))
 		
 		// printf("Set predet\n");
 		
@@ -1667,7 +1669,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		gsl_sort_vector(predet);
 		
-		// invert matrix A
+		// Invert matrix A
 		
 		gsl_linalg_cholesky_invert(A);
 		
@@ -1684,7 +1686,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		 }
 		 */
 		
-		// get XYZ covariances
+		// Get XYZ covariances
 		
 		double KXX = 0;
 		double KYY = 0;
@@ -1692,7 +1694,9 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		double KXY = 0;
 		double KXZ = 0;
 		double KYZ = 0;
-	
+		
+		// This part corresponds to sum(sum(k_ai * k_bj * sig_ij, j = 1...nm-3), i = 1...nm-3), or xi_ab (and 2 * xi_ab for XY, XZ and YZ)
+		
 		for (i=0;i<nm-3;++i)
 		{
 			for (j=0;j<nm-3;++j)
@@ -1708,6 +1712,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		gsl_matrix_free(A);
 		
+		// This part substracts kappa_ab to xi_ab (2* for XY, XZ and YZ)
+		
 		KXX -= gsl_matrix_get(K,nm-3,nm-3);
 		KYY -= gsl_matrix_get(K,nm-2,nm-2);
 		KZZ -= gsl_matrix_get(K,nm-1,nm-1);
@@ -1717,15 +1723,21 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		gsl_matrix_free(K);
 		
+		// Inverts the sign of xi_ab - kappa_ab (in the equation, the covariances are kappa_ab - xi_ab)
+		
 		KXX *= -1;
 		KYY *= -1;
 		KZZ *= -1;
 		KXY *= -1;
 		KXZ *= -1;
 		KYZ *= -1;
-	
+		
+		// Gets the absolute value of det123, if needed
+		
 		if (det123 < 0) { det123 *= -1; }
-	
+		
+		// Initialize Dens_Fac (d in the equation)
+		
 		long double Dens_Fac = sqrt( pow(beta/PI,3) ) / det123;
 		
 		// multiply Dens_Fac with (product of eigenvalues)/sqrt(detA)
@@ -1746,9 +1758,10 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		//printf("\nConstants : \nq = %6.10f\ndet123 = %6.10f\ndetA = %6.10f\nDamping factor = %6.50Lf\nKXX = %6.10f\nKYY = %6.10f\nKZZ = %6.10f\nKXY = %6.10f\nKXZ = %6.10f\nKYZ = %6.10f\n\nDifferential entropy = %20.20Lf\n\n", q, det123, detA, Damping_Factor, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
 		*/
-		printf("Node:%d\n",node);
-		printf("\nDifferential entropy = %6.10f\n\n", 1.5 - log(Dens_Fac));
 		
+		printf("Node:%d\n",node);
+		
+		printf("\nDifferential entropy = %6.10f\n\n", 1.5 - log(Dens_Fac));
 		
 		// Assign density factor and entropy
 		
@@ -1756,10 +1769,9 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		init[node].dens = Dens_Fac;
 		
-		// Assign global eigenvectors (main axes) and global variances to node
+		// Initialize inverse covariance matrix
 		
 		gsl_matrix *incov1 = gsl_matrix_alloc(3,3);
-		
 		gsl_matrix_set_all(incov1,0);
 		
 		gsl_matrix_set(incov1, 0, 0, 2*KXX);
@@ -1768,7 +1780,6 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		gsl_matrix_set(incov1, 0, 1, KXY); gsl_matrix_set(incov1, 1, 0, KXY);
 		gsl_matrix_set(incov1, 0, 2, KXZ); gsl_matrix_set(incov1, 2, 0, KXZ);
 		gsl_matrix_set(incov1, 1, 2, KYZ); gsl_matrix_set(incov1, 2, 1, KYZ);
-		
 		
 		/*
 		printf("Inverse covariance matrix :\n");
@@ -1785,6 +1796,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		printf("\n");
 		*/
+		
+		// Invert inverse covariance matrix
 		
 		gsl_linalg_cholesky_decomp(incov1);
 		
@@ -1806,12 +1819,12 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		printf("\n");
 		*/
 		
-		gsl_matrix *glevecs = gsl_matrix_alloc(3,3);
+		// Set workspace to get eigenvectors and eigenvalues
 		
+		gsl_matrix *glevecs = gsl_matrix_alloc(3,3);
 		gsl_matrix_set_all(glevecs,0);
 		
 		gsl_vector *mainvars = gsl_vector_alloc(3);
-		
 		gsl_vector_set_all(mainvars,0);
 		
 		gsl_eigen_symmv_workspace *solver = gsl_eigen_symmv_alloc(3);
@@ -1819,7 +1832,6 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		gsl_eigen_symmv(incov1, mainvars, glevecs, solver);
 		
 		gsl_matrix_free(incov1);
-		
 		gsl_eigen_symmv_free(solver);
 		
 		/*
@@ -1848,6 +1860,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		printf("\n\n");
 		*/
+		
+		// Assign global eigenvectors (main axes) and global variances to node
 		
 		for(j = 0; j < 3; j++)
 		{
@@ -1886,6 +1900,8 @@ void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *in
 	
 	int i,j,k;
 	
+	// Build the covariance matrix
+	
 	gsl_matrix *cov12 = gsl_matrix_alloc(3,3);
 	
 	for(i = 0; i < 3; i++)
@@ -1903,6 +1919,8 @@ void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *in
 		}
 	}
 	
+	// Make a Cholesky decomposition of the matrix and uses the decomposition to divide conj_dens12 by sqrt(det(cov12))
+	
 	gsl_linalg_cholesky_decomp(cov12);
 	
 	*conj_dens12 = 1/sqrt(pow(2*PI,3));
@@ -1911,6 +1929,8 @@ void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *in
 	{
 		*conj_dens12 /= gsl_matrix_get(cov12, i, i);
 	}
+	
+	// Invert the matrix and stores it in incov12
 	
 	gsl_linalg_cholesky_invert(cov12);
 	
@@ -1922,12 +1942,14 @@ void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *in
 		}
 	}
 	
+	// Store delta_x, delta_y and delta_z in delr
+	
 	gsl_vector_set(delr, 0, atm2->x_cord - atm1->x_cord);
 	gsl_vector_set(delr, 1, atm2->y_cord - atm1->y_cord);
 	gsl_vector_set(delr, 2, atm2->z_cord - atm1->z_cord);
 }
 
-double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps) // Returns probability of overlap between two atoms. Must have run conj_prob_init beforehand.
+double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps) // -----> Must have run conj_prob_init beforehand. <-------
 {
 	int i,j,k,r,s;
 	
@@ -2043,7 +2065,8 @@ double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, do
 		double rat_2 = minev * (maxrad - minev) * maxrad / (pow(maxrad, 3) - pow(minev, 3));
 		double rat_3 = pow(minev, 2) * (maxrad - minev) / (pow(maxrad, 3) - pow(minev, 3));
 		
-		//Calculate probability in the first zones (z caps)
+		//Calculate probability in the first zone (z planks, with X element of [delta_x - maxrad, delta_x + maxrad], y element of [delta_y - maxrad, delta_y + maxrad] and z element of [delta_z - maxrad, delta_z - minev] U [delta_z + minev, delta_z + maxrad])
+		
 		// printf("Part 1 :\n");
 		
 		int nz = round(pow(rat_1 * pow(nsteps, 3) * pow(maxrad - minev, 2) / pow(maxrad, 2), 1/3.0));
@@ -2118,6 +2141,8 @@ double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, do
 				}
 			}
 		}
+		
+		//Calculate probability in the second zone (y sides, with X element of [delta_x - maxrad, delta_x + maxrad], y element of [delta_y - maxrad, delta_y - minev] U [delta_y + minev, delta_y + maxrad] and z element of [delta_z - minev, delta_z + minev])
 		
 		// printf("Part 2 :\n");
 		
@@ -2200,6 +2225,8 @@ double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, do
 				}
 			}
 		}
+		
+		//Calculate probability in the second zone (x plugs, with X element of [delta_x - maxrad, delta_x - minev] U [delta_x + minev, delta_x + maxrad], y element of [delta_y - minev, delta_y + minev] and z element of [delta_z - minev, delta_z + minev])
 		
 		// printf("Part 3 :\n");
 		

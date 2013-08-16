@@ -6,7 +6,9 @@ int main(int argc, char *argv[])
 {
 	int all; /*Nombre d'atomes dans pdb*/
 	int atom; /*Nombre de carbone CA*/
-	int help_flag = 1;
+	int help_flag = 0;
+	int printev = 0;
+	int prox = 0;
 	int all_t; /*Nombre d'atomes dans pdb*/
 	int atom_t; /*Nombre de carbone CA*/
 	char file_name[500];
@@ -31,10 +33,14 @@ int main(int argc, char *argv[])
 		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
 		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
 		if (strcmp("-ligc",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);ligalign = temp;}
+		if (strcmp("-prox", argv[i]) == 0) { prox = 1; }
+		if (strcmp("-prev", argv[i]) == 0) { printev = 1; }
 	}
 	
-	if (help_flag == 0) { } else {
-		printf("****************************\nHelp Section\n-i\tFile Input (PDB)\n-o\tOutput Name Motion\n-ieig\tFile Name Eigen\n-v\tVerbose\n-sp\tSuper Node Mode (CA, N, C)\n-m\tMode\n-nm\tNombre de mode\n-lig\tTient compte duligand (sauf HOH)\n****************************\n");
+	if (help_flag == 1)
+	{
+		printf("****************************\nHelp Section\n-i\tFile Input (PDB)\n-o\tOutput Name Motion\n-ieig\tFile Name Eigen\n-v\tVerbose\n-sp\tSuper Node Mode (CA, N, C)\n-m\tMode\n-nm\tNombre de mode\n-lig\tTient compte duligand (sauf HOH)\n-prox\tAffiche la probabilite que deux CA puissent interagir\n-prev\tAffiche les directions principales du mouvement de chaque CA ponderees par leur ecart-type\n****************************\n");
+		
 		return(0); 
 	}
 	
@@ -45,16 +51,18 @@ int main(int argc, char *argv[])
 	//***************************************************
 	
 	all = count_atom(file_name);
+	
 	nconn = count_connect(file_name);
-
+	
 	if (verbose == 1) {printf("Connect:%d\n",nconn);}
-
+	
 	if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
 	
 	// Array qui comprend tous les connects
 	
-	int **connect_h=(int **)malloc(nconn*sizeof(int *)); 
-	for(i=0;i<nconn;i++) { connect_h[i]=(int *)malloc(7*sizeof(int));}
+	int **connect_h=(int **)malloc(nconn*sizeof(int *));
+	
+	for(i=0;i<nconn;i++) { connect_h[i] = (int *)malloc(7*sizeof(int)); }
 	
 	assign_connect(file_name,connect_h);
 	
@@ -64,36 +72,39 @@ int main(int argc, char *argv[])
 	
 	atom = build_all_strc(file_name,strc_all); // Retourne le nombre de Node
 	
-	if (verbose == 1) {printf("	Node:%d\n	Atom:%d\n",atom,all);}
+	if (verbose == 1) { printf("	Node:%d\n	Atom:%d\n",atom,all); }
 	
 	check_lig(strc_all,connect_h,nconn,all);
-
+	
 	// Assign les Nodes
 	
-	if (verbose == 1) {printf("	CA Structure\n");}
+	if (verbose == 1) { printf("	CA Structure\n"); }
 	
 	//atom = count_atom_CA_n(strc_all,all,super_node,lig);
-	if (verbose == 1) {printf("	Node:%d\n",atom);}
+	if (verbose == 1) { printf("	Node:%d\n",atom); }
+	
 	struct pdb_atom strc_node[atom];
+	
 	atom = build_cord_CA(strc_all, strc_node,all,lig,connect_h,nconn);
-	if (verbose == 1) {printf("	Assign Node:%d\n",atom);}
+	
+	if (verbose == 1) { printf("	Assign Node:%d\n",atom); }
 	
 	/*
 	//Construit la structure a comparer
- 	nconn = 0;
- 	all_t = count_atom(check_name);
- 	nconn = count_connect(check_name);
- 	if (verbose == 1) {printf("Sec file:%s\n",check_name);}
- 	if (verbose == 1) {printf("Connect:%d\n",nconn);}
- 	
+	nconn = 0;
+	all_t = count_atom(check_name);
+	nconn = count_connect(check_name);
+	if (verbose == 1) {printf("Sec file:%s\n",check_name);}
+	if (verbose == 1) {printf("Connect:%d\n",nconn);}
+	
 	if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
 	
 	// Array qui comprend tous les connects
 	
 	int **connect_t=(int **)malloc(nconn*sizeof(int *)); 
-    for(i=0;i<nconn;i++) { connect_t[i]=(int *)malloc(7*sizeof(int));}
-    
-    assign_connect(check_name,connect_t);
+	for(i=0;i<nconn;i++) { connect_t[i]=(int *)malloc(7*sizeof(int));}
+	
+	assign_connect(check_name,connect_t);
 	
 	// Assign tous les atoms
 	
@@ -108,38 +119,46 @@ int main(int argc, char *argv[])
 	
 	if (verbose == 1) {printf("	Node:%d\n",atom_t);}
 	struct pdb_atom strc_node_t[atom_t];
-
+	
 	atom_t = build_cord_CA(strc_all_t, strc_node_t,all_t,lig,connect_t,nconn);
 	if (verbose == 1) {printf("	Assign Node:%d\n",atom_t);}
- 
- 	int align[atom];
- 	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
- 	if (verbose == 1) {printf("Score: %d/%d\n",score,atom);}
-	//if (atom_t != atom) {printf("Not the same number of Node... Terminating\n");return(0);}
 	
-	if (score/atom < 0.8) {
- 		printf("Low Score... Will try an homemade alignement !!!\n");
- 		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
- 		
- 	}
-	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);	
-	if (ligalign > 0) {
-
+	int align[atom];
+	
+	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
+	
+	if (verbose == 1) { printf("Score: %d/%d\n",score,atom); }
+	
+	//if (atom_t != atom) { printf("Not the same number of Node... Terminating\n");return(0); }
+	
+	if (score/atom < 0.8)
+	{
+		printf("Low Score... Will try an homemade alignement !!!\n");
+		
+		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
+	}
+	
+	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
+	
+	if (ligalign > 0)
+	{
 		score = node_align_lig(strc_node,atom,strc_node_t,atom_t,align,strc_all,all,strc_all_t,all_t,ligalign);
 		
 		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
 	}
 	*/
 	//***************************************************
- 	//*													*
- 	//* Load eigenvector et eigenvalue					*
- 	//*													*
- 	//***************************************************
- 	
- 	if (verbose == 1) {printf("Loading Eigenvector\n");}
- 	
- 	gsl_vector *eval = gsl_vector_alloc(3*atom);
+	//*													*
+	//* Load eigenvector et eigenvalue					*
+	//*													*
+	//***************************************************
+	
+	if (verbose == 1) {printf("Loading Eigenvector\n");}
+	
+	gsl_vector *eval = gsl_vector_alloc(3*atom);
+	
 	gsl_matrix *evec= gsl_matrix_alloc (3*atom,3*atom);
+	
 	load_eigen(eval,evec,eigen_name,3*atom);
 	
 	gen_gauss(strc_node,evec,eval,atom,0.0000001);
@@ -154,7 +173,7 @@ int main(int argc, char *argv[])
 	gsl_vector *lbfacs = gsl_vector_alloc(atom);
 	gsl_vector *entro = gsl_vector_alloc(atom);
 	
-	for(k=0;k<atom;++k)
+	for(k = 0; k < atom; k++)
 	{
 		bfactmes += strc_node[k].b_factor;
 		lbfactmes += log(strc_node[k].b_factor);
@@ -178,6 +197,7 @@ int main(int argc, char *argv[])
 	
 	double correl = 0;
 	double lcorrel = 0;
+	
 	bfactmes = 0;
 	lbfactmes = 0;
 	diffentmes = 0;
@@ -188,6 +208,7 @@ int main(int argc, char *argv[])
 	{
 		correl += gsl_vector_get(entro,k)*gsl_vector_get(bfacs,k);
 		lcorrel += gsl_vector_get(entro,k)*gsl_vector_get(lbfacs,k);
+		
 		bfactmes += gsl_vector_get(bfacs,k)*gsl_vector_get(bfacs,k);
 		lbfactmes += gsl_vector_get(lbfacs,k)*gsl_vector_get(lbfacs,k);
 		diffentmes += gsl_vector_get(entro,k)*gsl_vector_get(entro,k);
@@ -207,106 +228,119 @@ int main(int argc, char *argv[])
 	
 	lcorrel *= 1/(sqrt(diffentmes*lbfactmes));
 	
-	printf("Differential entropy to b-factor correlation : %6.10f\nDifferential entropy to ln(b-factor) correlation : %6.10f\n", correl,lcorrel);
+	printf("Differential entropy to b-factor correlation : %6.10f\nDifferential entropy to ln(b-factor) correlation : %6.10f\n", correl, lcorrel);
 	
-	// Display probability of overlap between all nodes
-	
-	double minrad = 3.2;
-	
-	double maxrad = 5.0; // Must be larger than minrad
-	
-	for(i = 1; i < atom; i++)
+	if(prox == 1)
 	{
-		for(j = 0; j < i; j++)
-		{
-			gsl_matrix *conj_var_inv = gsl_matrix_alloc(3,3);
-			gsl_matrix_set_all(conj_var_inv, 0);
-			
-			gsl_vector *delta_pos = gsl_vector_alloc(3);
-			gsl_vector_set_all (delta_pos, 0);
-			
-			double conj_dens = 0;
-			
-			conj_prob_init(&strc_node[i], &strc_node[j], conj_var_inv, delta_pos, &conj_dens);
-			
-			/*
-			printf("Inverse conjugate covariance matrix :\n", i);
+		// Display the probability of all nodes to be from minrad to maxrad angstroms apart.
 		
-			for(k = 0; k < 3; k++)
+		double minrad = 3.2;
+		
+		double maxrad = 5.0; // Must be larger than minrad
+		
+		for(i = 1; i < atom; i++)
+		{
+			for(j = 0; j < i; j++)
 			{
-				for(int l = 0; l < 3; l++)
+				// Initialize the objects needed for joint probability
+				
+				gsl_matrix *conj_var_inv = gsl_matrix_alloc(3,3);
+				gsl_matrix_set_all(conj_var_inv, 0);
+				
+				gsl_vector *delta_pos = gsl_vector_alloc(3);
+				gsl_vector_set_all (delta_pos, 0);
+				
+				double conj_dens = 0;
+				
+				conj_prob_init(&strc_node[i], &strc_node[j], conj_var_inv, delta_pos, &conj_dens);
+				
+				/*
+				printf("Inverse conjugate covariance matrix :\n", i);
+			
+				for(k = 0; k < 3; k++)
 				{
-					printf("%6.10f\t", gsl_matrix_get(conj_var_inv, k, l));
+					for(int l = 0; l < 3; l++)
+					{
+						printf("%6.10f\t", gsl_matrix_get(conj_var_inv, k, l));
+					}
+					
+					printf("\n");
 				}
 				
 				printf("\n");
-			}
-			
-			printf("\n");
-			*/
-			
-			// printf("\nConjugate density : %6.10f\n", conj_dens);
-			
-			gsl_vector *evpos = gsl_vector_alloc(3);
-			gsl_vector_set_all(evpos, 0);
-			
-			gsl_vector_set(evpos, 0, gsl_vector_get(delta_pos, 0));
-			gsl_vector_set(evpos, 1, gsl_vector_get(delta_pos, 1));
-			gsl_vector_set(evpos, 2, gsl_vector_get(delta_pos, 2));
-			
-			double delta_rad = sqrt(pow(gsl_vector_get(evpos, 0), 2) + pow(gsl_vector_get(evpos, 1), 2) + pow(gsl_vector_get(evpos, 2), 2));
-			
-			if(minrad < delta_rad)
-			{
-				if(maxrad < delta_rad)
+				*/
+				
+				// printf("\nConjugate density : %6.10f\n", conj_dens);
+				
+				// Calculates the maximum probability density of the evaluation range
+				
+				gsl_vector *evpos = gsl_vector_alloc(3);
+				gsl_vector_set_all(evpos, 0);
+				
+				gsl_vector_set(evpos, 0, gsl_vector_get(delta_pos, 0));
+				gsl_vector_set(evpos, 1, gsl_vector_get(delta_pos, 1));
+				gsl_vector_set(evpos, 2, gsl_vector_get(delta_pos, 2));
+				
+				double delta_rad = sqrt(pow(gsl_vector_get(evpos, 0), 2) + pow(gsl_vector_get(evpos, 1), 2) + pow(gsl_vector_get(evpos, 2), 2));
+				
+				if(minrad < delta_rad)
 				{
-					gsl_vector_scale(evpos, 1 - maxrad / delta_rad);
+					if(maxrad < delta_rad)
+					{
+						gsl_vector_scale(evpos, 1 - maxrad / delta_rad);
+					}
+					else
+					{
+						gsl_vector_set_all(evpos, 0);
+					}
 				}
 				else
 				{
-					gsl_vector_set_all(evpos, 0);
+					gsl_vector_scale(evpos, 1 - minrad / delta_rad);
 				}
-			}
-			else
-			{
-				gsl_vector_scale(evpos, 1 - minrad / delta_rad);
-			}
-			
-			double argexp = 0;
-			
-			for(k = 0; k < 3; k++)
-			{
-				for(l = 0; l < 3; l++)
+				
+				double argexp = 0;
+				
+				for(k = 0; k < 3; k++)
 				{
-					argexp += gsl_vector_get(evpos, k)*gsl_vector_get(evpos, l)*gsl_matrix_get(conj_var_inv, k, l);
+					for(l = 0; l < 3; l++)
+					{
+						argexp += gsl_vector_get(evpos, k)*gsl_vector_get(evpos, l)*gsl_matrix_get(conj_var_inv, k, l);
+					}
 				}
-			}
-			
-			gsl_vector_free(evpos);
-			
-			argexp *= -0.5;
-			
-			double max_est = conj_dens*exp(argexp);
-			
-			double proxprob = 0;
-			
-			if(max_est >= 0.0000000001)
-			{
-				proxprob = proxim_prob(conj_var_inv, delta_pos, conj_dens, minrad, maxrad, 70);
-			}
-			
-			gsl_vector_free(delta_pos);
-			gsl_matrix_free(conj_var_inv);
-			
-			if(proxprob > 0)
-			{
-				printf("\nAtoms %1i and %1i :\n", i, j);
 				
-				printf("Distance : %6.11f\t\tMax density of overlap : %6.10f\n", sqrt(pow(strc_node[j].x_cord - strc_node[i].x_cord, 2) + pow(strc_node[j].y_cord - strc_node[i].y_cord, 2) + pow(strc_node[j].z_cord - strc_node[i].z_cord, 2)), max_est);
+				gsl_vector_free(evpos);
 				
-				printf("P(%1.2f < delta-r < %1.2f) = %6.10f\n", minrad, maxrad, proxprob);
+				argexp *= -0.5;
+				
+				double max_est = conj_dens*exp(argexp);
+				
+				// Evaluates the probability of nodes i and j to be from minrad to maxrad angstroms apart if max_est >= 0.0000000001
+				
+				double proxprob = 0;
+				
+				if(max_est >= 0.0000000001)
+				{
+					proxprob = proxim_prob(conj_var_inv, delta_pos, conj_dens, minrad, maxrad, 70);
+				}
+				
+				gsl_vector_free(delta_pos);
+				gsl_matrix_free(conj_var_inv);
+				
+				// Displays the probability density
+				
+				if(proxprob > 0)
+				{
+					printf("\nAtoms %2i and %2i :\t", i, j);
+					
+					printf("Distance : %6.11f\t\t", sqrt(pow(strc_node[j].x_cord - strc_node[i].x_cord, 2) + pow(strc_node[j].y_cord - strc_node[i].y_cord, 2) + pow(strc_node[j].z_cord - strc_node[i].z_cord, 2)));
+					
+					printf("P(%1.2f < delta-r < %1.2f) = %6.10f", minrad, maxrad, proxprob);
+				}
 			}
 		}
+		
+		printf("\n");
 	}
 	
 	/*
@@ -340,34 +374,37 @@ int main(int argc, char *argv[])
 	}
 	*/
 	
-	/*
-	printf("Test :\n\n[");
-	
-	for(i = 0; i < atom; i++)
+	if(printev == 1)
 	{
-		/*
-		printf("Weighted eigenvector matrix for node %4i :\n", i);
+		printf("Eigenvectors with position :\n\n[");
 		
-		for(j = 0; j < 3; j++)
+		for(i = 0; i < atom; i++)
 		{
-			for(k = 0; k < 3; k++)
+			/*
+			printf("Weighted eigenvector matrix for node %4i :\n", i);
+			
+			for(j = 0; j < 3; j++)
 			{
-				printf("%6.10f\t", strc_node[i].global_evecs[j][k]);
+				for(k = 0; k < 3; k++)
+				{
+					printf("%6.10f\t", strc_node[i].global_evecs[j][k]);
+				}
+				
+				printf("\n");
 			}
 			
 			printf("\n");
+			*/
+			
+			
+			
+			printf("[[%6.10f,%6.10f,%6.10f],[%6.10f,%6.10f,%6.10f]],", strc_node[i].x_cord, strc_node[i].y_cord, strc_node[i].z_cord, strc_node[i].global_evecs[0][0] * sqrt(strc_node[i].main_vars[0]), strc_node[i].global_evecs[1][0] * sqrt(strc_node[i].main_vars[0]), strc_node[i].global_evecs[2][0] * sqrt(strc_node[i].main_vars[0]));
+			printf("[[%6.10f,%6.10f,%6.10f],[%6.10f,%6.10f,%6.10f]],", strc_node[i].x_cord, strc_node[i].y_cord, strc_node[i].z_cord, strc_node[i].global_evecs[0][1] * sqrt(strc_node[i].main_vars[1]), strc_node[i].global_evecs[1][1] * sqrt(strc_node[i].main_vars[1]), strc_node[i].global_evecs[2][1] * sqrt(strc_node[i].main_vars[1]));
+			printf("[[%6.10f,%6.10f,%6.10f],[%6.10f,%6.10f,%6.10f]],", strc_node[i].x_cord, strc_node[i].y_cord, strc_node[i].z_cord, strc_node[i].global_evecs[0][2] * sqrt(strc_node[i].main_vars[2]), strc_node[i].global_evecs[1][2] * sqrt(strc_node[i].main_vars[2]), strc_node[i].global_evecs[2][2] * sqrt(strc_node[i].main_vars[2]));
 		}
 		
-		printf("\n");
-		
-		
-		printf("[[%6.10f,%6.10f,%6.10f],[%6.10f,%6.10f,%6.10f]],", strc_node[i].x_cord, strc_node[i].y_cord, strc_node[i].z_cord, strc_node[i].global_evecs[0][0], strc_node[i].global_evecs[1][0], strc_node[i].global_evecs[2][0]);
-		printf("[[%6.10f,%6.10f,%6.10f],[%6.10f,%6.10f,%6.10f]],", strc_node[i].x_cord, strc_node[i].y_cord, strc_node[i].z_cord, strc_node[i].global_evecs[0][1], strc_node[i].global_evecs[1][1], strc_node[i].global_evecs[2][1]);
-		printf("[[%6.10f,%6.10f,%6.10f],[%6.10f,%6.10f,%6.10f]],", strc_node[i].x_cord, strc_node[i].y_cord, strc_node[i].z_cord, strc_node[i].global_evecs[0][2], strc_node[i].global_evecs[1][2], strc_node[i].global_evecs[2][2]);
+		printf("\b]\n\n");
 	}
-	
-	printf("]\n\n");
-	*/
 	
 	/*
 	int alit = 0;// Value dans le vecteur diff
