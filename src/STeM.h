@@ -13,8 +13,8 @@ struct pdb_atom
 	 	float y_cord; /*Coordoné en y*/
 	 	float z_cord; /*Coordoné en z*/
 	 	char atom_prot_type[6]; /*Si carbone alpha, oxygène, etc.*/
-	 	unsigned int res_number; /*Numéro de résidus*/
-	 	unsigned int atom_type; /*Atom (=1) ou hétéroatome (=2) ou ligand (=3) ou ADN/ARN (=4) ou ADN/ARN HET (=5)*/
+	 	int res_number; /*Numéro de résidus*/
+	 	int atom_type; /*Atom (=1) ou hétéroatome (=2) ou ligand (=3) ou ADN/ARN (=4) ou ADN/ARN HET (=5)*/
 	 	char res_type[6]; /*Type de resisdus*/
 	 	float b_factor; /*b_factor*/
 	 	char chain[6];
@@ -25,10 +25,11 @@ struct pdb_atom
 		double entro; // Statistical entropy of the node
 		double dens; // Density factor of the node's probability density function
 		
-		/* Eigenrepresentation of the covariance matrix. Do not use as is in a probability density function, for its inverse must first be calculated by inverting its variances and recomposing the matrix */
-		double main_vars[3]; /* Global variances associated with each global eigenvector. Magnitude of movement along the eigenvector i is equal to sqrt(main_vars[i]) */
-		double global_evecs[3][3]; /* Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors).
-						The module of each eigenvector is equal to the standard deviation of the distribution in its direction.*/
+		//Eigenrepresentation of the covariance matrix. Do not use as is in a probability density function, for its inverse must first be calculated by inverting its variances and recomposing the matrix
+		double main_vars[3]; //Global variances associated with each global eigenvector. Magnitude of movement along the eigenvector i is equal to sqrt(main_vars[i])
+		double global_evecs[3][3]; // Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors) The module of each eigenvector is equal 1
+		float avec[3][3]; // Evec of anisou
+		float aval[3]; // Eval of anisou
 };
 
 
@@ -71,6 +72,7 @@ void fit_mc_torsion(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all
 void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta);
 void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12);
 double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps);
+int load_anisou(struct pdb_atom *strc,char filename[100],int atom);
 
 
 // STeM_lib_grid_motion.c

@@ -559,7 +559,7 @@ int count_atom(char filename[100]) {
  			if ((node == 3) && ((strncmp(structure[index].atom_prot_type," C  ",4) == 0))) {structure[index].node = n+1;}
  			if ((node == 3) && ((strncmp(structure[index].atom_prot_type," O  ",4) == 0))) {structure[index].node = n+1;}
  			//printf("Node:%d	Atom:-%s- Res:-%s- Num:%d\n",structure[index].node,structure[index].atom_prot_type,structure[index].res_type,structure[index].res_number);*/
- 			//printf("Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d\n",structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node);
+ 			//printf("Index:%d Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d\n",index,structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node);
  			++index;
 			
 	 	
@@ -695,108 +695,4 @@ int count_atom(char filename[100]) {
  }
  
  
- 
-  /*int build_cord_CA(struct pdb_atom *all, struct pdb_atom *CA, int atom, int node, int ligand,int **con, int ncon) {
- 	int i,j,l,k=-1;
- 	int n; // Counter to assign node
- 	int node_flag = 0;
- 	if (node == 1) {n = 0;}
- 	if (node == 3) {n = 1;}
- 	if (all[0].atom_type == 3) {n = 0;}
- 	for (i=0;i<atom;++i) {for (j=0;j<6;++j) {all[i].node_c[j] = -1;}}
- 	for (i=0;i<atom;++i) {
- 		if (strncmp(all[i].atom_prot_type," CA ",4) == 0) {++node_flag;}
- 		if (strncmp(all[i].atom_prot_type," P  ",4) == 0 && all[i].atom_type == 4) {++node_flag;}
- 		//printf("Type:-%s- et atom_type:%d Flag:%d\n",all[i].atom_prot_type,all[i].atom_type,node_flag);
- 		if (strncmp(all[i].res_type,"HOH",3) == 0) {continue;}
- 		
-		if (node_flag != 0) {
-			
-				if 	((strcmp(all[i].chain, all[i-1].chain) != 0) || 
-					 (all[i].res_number != all[i-1].res_number)  ||
-					 (all[i].atom_type == 3)					 ||
-					 ((all[i].res_number == all[i-1].res_number) && (strcmp(all[i].res_type,all[i-1].res_type) != 0)) ||
-					 (strncmp(all[i].atom_prot_type," P  ",4) == 0 && all[i].atom_type == 4)
-					 )
-				{
-					if (node == 1 ||  all[i].atom_type == 3) {++n;}
-					if (node == 3 && all[i].atom_type != 3) {++n;++n;++n;}
-				}			
-			
-		}
- 		all[i].node = n;
- 		if ((node == 3) && ((strncmp(all[i].atom_prot_type," N  ",4) == 0))) {all[i].node = n-1;}
- 		if ((node == 3) && ((strncmp(all[i].atom_prot_type," C  ",4) == 0))) {all[i].node = n+1;}
- 		if ((node == 3) && ((strncmp(all[i].atom_prot_type," O  ",4) == 0))) {all[i].node = n+1;}
- 		
- 		//printf("Node:%d	Atom:%d	Type:%s	Res num:%d	Res Type:%s Con:%d %d %d Type:%d\n",all[i].node,all[i].atom_number,all[i].atom_prot_type,all[i].res_number,all[i].res_type,all[i].node_c[0],all[i].node_c[1],all[i].node_c[2],all[i].atom_type);
- 		
- 		if ((strncmp(all[i].atom_prot_type," CA ",4) == 0) || 
- 			((node == 3) && ((strncmp(all[i].atom_prot_type," N  ",4) == 0) || (strncmp(all[i].atom_prot_type," C  ",4) == 0))) ||
- 			((ligand == 1) && (all[i].atom_type == 3)) ||  (strncmp(all[i].atom_prot_type," P  ",4) == 0 && all[i].atom_type == 4)) {
- 			++k;
- 			//printf("K:%d Node:%d	Atom:%d	Type:%s	Res num:%d	Res Type:%s Con:%d %d %d Type:%d\n",k,all[i].node,all[i].atom_number,all[i].atom_prot_type,all[i].res_number,all[i].res_type,all[i].node_c[0],all[i].node_c[1],all[i].node_c[2],all[i].atom_type);
- 			for (j=0;j<6;++j) {CA[k].node_c[j] = all[i].node_c[j];}
- 			CA[k].node = all[i].node;
- 			CA[k].atom_number = all[i].atom_number;
-	 		CA[k].res_number = all[i].res_number;
-	 		CA[k].atom_type = all[i].atom_type;
-	 		CA[k].b_factor = all[i].b_factor;
 
-	 			
-	 		CA[k].x_cord = all[i].x_cord;
-	 		CA[k].y_cord = all[i].y_cord;
-	 		CA[k].z_cord = all[i].z_cord;
-	 		
-	 		strcpy(CA[k].atom_prot_type,all[i].atom_prot_type);
-	 		strcpy(CA[k].res_type,all[i].res_type);
-	 		strcpy(CA[k].chain,all[i].chain);
-	 		
-	 		
-	 			 		
-	 		
-	 	} 
- 	}
-
- 	// Check For Connection
- 	int flag;
- 	for (i=0;i<k+1;++i) {
- 		
- 		for (l=i+1;l<k+1;++l) {
- 	
- 		if (i == l) {continue;}
- 		//printf("I TEST:%d	%d	Type:%d	%d\n",i,l,CA[i].atom_type,CA[l].atom_type);
- 		if (i == 45) {flag = check_covalent_DNA(CA,all,k,atom,i,l);}
-		if (CA[i].atom_type == 1 || CA[i].atom_type == 2 || CA[i].atom_type == 4) {
-			//if (i+20 < l) {continue;}
-			if ( CA[i].atom_type == 4) {flag = check_covalent_DNA(CA,all,k,atom,i,l);} else {flag = check_covalent_CA(CA,all,k,atom,i,l);}
-			
-			if (flag == 1) {
-				for(n=0;n<6;++n) {
-					if (CA[i].node_c[n] == -1) {CA[i].node_c[n] = CA[l].node;break;}
-		 		}
-		 		for(n=0;n<6;++n) {
-					if (CA[l].node_c[n] == -1) {CA[l].node_c[n] = CA[i].node;break;}
-		 		}
-		 		continue;
-			 }
-		}
- 		if (CA[i].atom_type == 3) {
-	 		if (covalent_bond(CA[i].atom_number,CA[l].atom_number,con,ncon) != 0) {
-	 			for(n=0;n<6;++n) {
-					if (CA[i].node_c[n] == -1) {CA[i].node_c[n] = CA[l].node;break;}
-		 		}
-		 		for(n=0;n<6;++n) {
-					if (CA[l].node_c[n] == -1) {CA[l].node_c[n] = CA[i].node;break;}
-		 		}
-		 		continue;
-	 		}
- 		}
- 	
- 	}}
- 	
- 	
- 	//for (i=0;i<k+1;++i) {printf("CA	I:%d Type:%d Node:%d	Atom:%d	Type:%s	Res num:%d	Res Type:%s Con:%d %d %d %d %d %d\n",i,CA[i].atom_type,CA[i].node,CA[i].atom_number,CA[i].atom_prot_type,CA[i].res_number,CA[i].res_type,CA[i].node_c[0],CA[i].node_c[1],CA[i].node_c[2],CA[i].node_c[3],CA[i].node_c[4],CA[i].node_c[5]);}
- 	return(k+1);
- 
- }*/

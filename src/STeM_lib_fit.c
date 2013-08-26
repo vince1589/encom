@@ -9,7 +9,7 @@
  
  
 int node_align(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align) {
-	int i,j,l;
+	int i,j;
 	int score;
 
 
@@ -163,7 +163,7 @@ int next_cons(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t,
 int node_align_low(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align) {
 	int i,j,l;
 	int score;
-	int num;
+
 	int cons;
 	//printf("Atom:%d Atom_t:%d\n",atom,atom_t);
 	for(i=0;i<atom;++i) {
@@ -328,7 +328,7 @@ void rotate_all(gsl_matrix *rota,struct pdb_atom *all_init,int all)
  }
 
 double gsl_matrix_Det3D(gsl_matrix *M){
-  int i,j;
+
   double det;
 
   //  guide to indexes: 0=x, 1=y, 2=z
@@ -368,12 +368,12 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  float rmsd_no(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align) {
  	// Fonction qui suimperpose deux structures en utilisant single value decomposition
  	
- 	int i,j,k; // Dummy
+ 	int i,k; // Dummy
  	int t_atom;	
  	double cen_init[3],cen_targ[3];
  	double rmsd;
 	int d;
-	int temp;
+
 	//printf("IN FUNCTION\n");
  	gsl_matrix *init_v = gsl_matrix_alloc(atom,3);
  	gsl_matrix *targ_v = gsl_matrix_alloc(3,atom);
@@ -503,12 +503,12 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	// Fonction qui suimperpose deux structures en utilisant single value decomposition
  	// Centre les deux structures autour des atomes dans align et rotate init et init all pour fitter !
  	
- 	int i,j,k; // Dummy
+ 	int i,k; // Dummy
  	int t_atom;	
  	double cen_init[3],cen_targ[3];
  	double rmsd;
 	int d;
-	int temp;
+
 	
  	gsl_matrix *init_v = gsl_matrix_alloc(atom,3);
  	gsl_matrix *targ_v = gsl_matrix_alloc(3,atom);
@@ -689,7 +689,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	for(k=0;k<atom;++k) {
  		//printf("K:%d %f %f %f\n",k,strc[k].x_cord,strc[k].y_cord,strc[k].z_cord);
  		//printf("K:%d Mode:%d	Node:%d	Place:%d	Amplit:%f Atom type:%s Res:%s\n",k,mode,strc[k].node,strc[k].node*3,amplitude,strc[k].atom_prot_type,strc[k].res_type);
- 		if (strc[k].node < 0 || strc[k].node*3+2 > m->size1) {
+ 		if (strc[k].node < 0 || strc[k].node*3+2 > int (m->size1)) {
  			//printf("K:%d Mode:%d	Node:%d	Place:%d	Amplit:%f Atom type:%s Res:%s\n",k,mode,strc[k].node,strc[k].node*3,amplitude,strc[k].atom_prot_type,strc[k].res_type);
  			continue;
  		}
@@ -738,19 +738,19 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	
 
 
-	int i,j,l,k;
+	int i,j,l;
  	long seed; 
- 	int mc; // Nombre de Step de Monte Carlo
+
  	float newstrc,old = 9999999;
  	int mode;
- 	double random;
+
  	float step;
  	//FILE *file;
  	//file = fopen("motion_align.pdb","w");
  	struct pdb_atom store_init[atom];
- 	struct pdb_atom work_init[atom];
-	//seed = time_seed();
- 	gsl_matrix *rota     = gsl_matrix_alloc(3,3);
+
+
+
  	gsl_vector *diff     = gsl_vector_alloc(3*atom);
  	
  	// Store Init dans store init
@@ -880,19 +880,19 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	
 
 
-	int i,j,l,k;
- 	long seed; //seed = time_seed();
- 	int mc; // Nombre de Step de Monte Carlo
+	int i,j,l;
+
+
  	float newstrc,old = 9999999;
  	int mode;
- 	double random;
- 	float step;
+
+
  		mode = 6;
 	int nb_mode = 2;
  	//FILE *file;
  	//file = fopen("motion_align.pdb","w");
  	struct pdb_atom store_init[atom];
- 	struct pdb_atom work_init[atom];
+
 
  	gsl_vector *diff     = gsl_vector_alloc(3*atom);
  	gsl_matrix *T   = gsl_matrix_alloc(3*atom,1);
@@ -990,7 +990,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  }
  
   void fit_vince(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval) {
-	int i,j,l,k,m;
+	int i,j,l,k;
  	float newstrc,old;
 	double amp[nb_mode];
 	float quad[3];
@@ -1100,7 +1100,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  
  void nrg_rmsd(struct pdb_atom *init,int atom,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval) {
 	
-	int i,j,l,k;
+	int i,j,l;
 	float rmsd;
 	struct pdb_atom store_init[atom];
 	
@@ -1136,7 +1136,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  
  void center_yes(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t, int *align) {
  	
- 	int i,j,k; // Dummy
+ 	int i,k; // Dummy
  	int t_atom;	
  	double cen_init[3],cen_targ[3];
 	int d;
@@ -1207,7 +1207,7 @@ double get_diedre(int node,struct pdb_atom *init,int atom,int ty) {
 	if (ty != 1 && ty != -1) {return(0);}
 	if (node -1 < 0) {return(0);}
 
-	int i;
+
 	gsl_vector *a = gsl_vector_alloc(3);
 	gsl_vector *b = gsl_vector_alloc(3);
 	gsl_vector *c = gsl_vector_alloc(3);
@@ -1343,11 +1343,11 @@ void apply_eigen_rot(struct pdb_atom *old,gsl_matrix *evec,int mode,int atom,int
 
 
 float fit_svd(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int atom_t,int all_t,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval) {
-	int i,j,l,k,m;
+	int i,j,l;
  	float newstrc,old;
 	double amp[nb_mode];
-	float quad[3];
-	float b,a;
+
+
 	int alit = 0;// Value dans le vecteur diff
 	int ngila[atom_t]; for (i=0;i<atom_t;++i) {ngila[i] = -1;  }
 	for (i=0;i<atom;++i) {
@@ -1759,9 +1759,9 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		//printf("\nConstants : \nq = %6.10f\ndet123 = %6.10f\ndetA = %6.10f\nDamping factor = %6.50Lf\nKXX = %6.10f\nKYY = %6.10f\nKZZ = %6.10f\nKXY = %6.10f\nKXZ = %6.10f\nKYZ = %6.10f\n\nDifferential entropy = %20.20Lf\n\n", q, det123, detA, Damping_Factor, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
 		*/
 		
-		printf("Node:%d\n",node);
+	//	printf("Node:%d Differential entropy = %6.10f\n",node,1.5 - log(Dens_Fac);
 		
-		printf("\nDifferential entropy = %6.10f\n\n", 1.5 - log(Dens_Fac));
+
 		
 		// Assign density factor and entropy
 		
@@ -1827,12 +1827,10 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		gsl_vector *mainvars = gsl_vector_alloc(3);
 		gsl_vector_set_all(mainvars,0);
 		
-		gsl_eigen_symmv_workspace *solver = gsl_eigen_symmv_alloc(3);
-		
-		gsl_eigen_symmv(incov1, mainvars, glevecs, solver);
-		
+
+		diagonalyse_matrix (incov1,3, mainvars,glevecs);
 		gsl_matrix_free(incov1);
-		gsl_eigen_symmv_free(solver);
+
 		
 		/*
 		printf("Eigenvector matrix :\n");
@@ -2305,4 +2303,113 @@ double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, do
 		
 		return overprob;
 	}
+}
+
+int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
+	
+	// Fonction qui load les anisou et les diagonalyse et les store dans la strc (pour pouvoir comparer avec ceux deriver)
+	int found = 0;
+	int i;
+	char line[82];	
+	FILE *file; /*Pointe le file défini par la fonction*/
+ 	file = fopen(filename,"r"); /*Ouvre le fichier*/
+ 	
+ 	
+ 	while(fgets(line,82,file)) {
+ 		// On ne veut que les Anisou
+ 		
+ 		if (strncmp("ANISOU",line,6) != 0) {continue;}
+ 		// Il arrive parfois qu'il existe d'autre conformation d'acides aminées... On ne tient compte que des conformations A
+ 		
+ 		if ((line[16] == ' ') || (line[16] == 'A')) { } else {continue;}
+ 		
+ 		// On ignore les Hydrogènes (pas tenu compte ds Vcon)
+ 		
+ 		if (line[13] == 'H') { continue;}
+ 		
+ 		// On veut pas l'eau non plus (p-e a rajouter)
+ 		
+ 		if (line[17] == 'H' && 	line[18] == 'O' && line[19] == 'H') {continue;}
+ 		//printf("%s",line);
+		char resn[6]; 
+		int temp_count;
+		for (temp_count = 17; temp_count < 20;++temp_count) {
+ 			resn[temp_count-17] = line[temp_count];
+ 			resn[temp_count-16] = '\0';
+ 		}
+		
+		//Copy la CHAIN
+	 	char chain[6]; 
+	 	for (temp_count = 21; temp_count < 22;++temp_count) {
+	 		chain[temp_count-21] = line[temp_count];
+	 		chain[temp_count-20] = '\0';
+	 	}
+	 	
+	 	//Copy le nom de l'atom
+	 	char aname[6]; 	
+ 		for (temp_count = 12; temp_count < 17;++temp_count) {
+ 			aname[temp_count-12] = line[temp_count];
+ 			aname[temp_count-11] = '\0';
+ 		}	 		
+		char *line_ptr;
+		line_ptr = line;
+		int res;
+		sscanf((line_ptr+23),"%d",&res);
+		
+		// On veut retrouver l'atome correspondant dans la strc
+
+		for(i=0;i<atom;++i) {
+			//printf("I:%d %d != %d\n",i,strc[i].atom_prot_type,res);
+			if (strc[i].res_number == res && strncmp(strc[i].chain,chain,1) == 0 && strncmp(strc[i].atom_prot_type,aname,4) == 0 && strncmp(strc[i].res_type,resn,4) == 0) {
+						
+				// Parse anisou
+				
+				float a11;
+				float a22;
+				float a33;
+				float a12;
+				float a13;
+				float a23;
+				gsl_matrix *todiag = gsl_matrix_alloc(3,3);
+				if (6 == sscanf((line_ptr+29),"%f %f %f %f %f %f",&a11,&a22,&a33,&a12,&a13,&a23)) {
+					// Diago
+					gsl_matrix_set(todiag,0,0,a11);
+					gsl_matrix_set(todiag,1,1,a22);
+					gsl_matrix_set(todiag,2,2,a33);
+					
+					// Off diago
+					
+					gsl_matrix_set(todiag,0,1,a12);
+					gsl_matrix_set(todiag,1,0,a12);		
+					
+					gsl_matrix_set(todiag,0,2,a13);
+					gsl_matrix_set(todiag,2,0,a13);
+					
+					gsl_matrix_set(todiag,1,2,a23);
+					gsl_matrix_set(todiag,2,1,a23);	
+					
+					//printf("%f %f %f %f %f %f\n",a11,a22,a33,a12,a13,a23);
+					gsl_vector *eval = gsl_vector_alloc(3);
+					gsl_matrix *evec = gsl_matrix_alloc(3,3);
+					diagonalyse_matrix (todiag,3, eval,evec);
+					int k,l;
+					for (k=0;k<3;++k) {
+						for (l=0;l<3;++l) {
+							//printf("(%d,%d) = %f\n",k,l,gsl_matrix_get(evec,k,l));
+							strc[i].avec[k][l] = gsl_matrix_get(evec,k,l);
+						}
+						strc[i].aval[k] = gsl_vector_get(eval,k);
+					}
+					++found;
+				} else {
+					printf("Cannot parse:%s",line);
+				}
+				
+			}
+		}
+		
+
+	}
+	fclose(file);
+	return(found);
 }
