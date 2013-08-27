@@ -175,14 +175,22 @@ int main(int argc, char *argv[])
 			 	a = sqrt(a*a);
 			 
 			 	//printf("I:%d %f %f %f Over:%f\n",i,psens[0],psens[1],psens[2],(a/sqrt(b*c)));
-			 	if (a/sqrt(b*c) > max) {
+			 	if (a/sqrt(b*c) > max ) {
+			 		int small = 0;
+			 		if (a/sqrt(b*c) - max < 0.00001) {
+			 			if ((gsl_vector_get(psum,0) > 0 && gsl_vector_get(esum,0) < 0) || (gsl_vector_get(psum,1) > 0 && gsl_vector_get(esum,1) < 0) || (gsl_vector_get(psum,2) > 0 && gsl_vector_get(esum,2) < 0) || (gsl_vector_get(psum,0) < 0 && gsl_vector_get(esum,0) > 0) || (gsl_vector_get(psum,1) < 0 && gsl_vector_get(esum,1) > 0) || (gsl_vector_get(psum,2) < 0 && gsl_vector_get(esum,2) > 0)) {
+			 				++small;
+			 			}
+			 		}
+			 		if (small == 0) {
 			 		for (k = 0;k<3;++k) {
 			 			gsl_vector_set(gsens_evec,i*3+k,gsl_vector_get(psum,k));
 			 			gsl_vector_set(gsens_exp,i*3+k,gsl_vector_get(esum,k));
-			 		//	printf("Max:%f I:%d E:%f %f %f V:%f %f %f\n",a/sqrt(b*c),i,psens[0],psens[1],psens[2],gsl_vector_get(psum,0),gsl_vector_get(psum,1),gsl_vector_get(psum,2));
-			 		}
 			 		
+			 		}
+			 			//printf("Max:%f I:%d E:%f %f %f V:%f %f %f E:%f %f %f\n",a/sqrt(b*c),i,psens[0],psens[1],psens[2],gsl_vector_get(psum,0),gsl_vector_get(psum,1),gsl_vector_get(psum,2),gsl_vector_get(esum,0),gsl_vector_get(esum,1),gsl_vector_get(esum,2));
 			 		max = a/sqrt(b*c);
+			 		}
 			 	}
 
 			 	psens[0] += 2.0;
