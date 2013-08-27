@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 	gen_gauss(strc_node,evec,eval,atom,beta);
 
 	printf("Eval correlation\n");
-	outlier_bfact(strc_node,atom,atom/10);
+	outlier_bfact(strc_node,atom,(int)atom/10+0.5);
 	
 
 	// General direction vector comparison
@@ -118,32 +118,45 @@ int main(int argc, char *argv[])
 	gsl_vector * gsens_evec = gsl_vector_alloc(atom*3);
 	gsl_vector * gsens_exp = gsl_vector_alloc(atom*3);
 	gsl_vector_set_all(gsens_evec,0);
+	
+	
+	
 	for(i=0;i<atom;++i) {
 		int l;
 		float max = 0;
 		for (l=0;l<3;++l) {
-			esens[l] = 1.0;
+			esens[l] = -1.0;
 			psens[l] = -1.0;
 		}
 		// For each atom we want to try all direction of 
 	
 		
-		for (l=0;l<9;++l) {
+		for (l=0;l<8;++l) {
 			gsl_vector *esum = gsl_vector_alloc(3);
 			gsl_vector *psum = gsl_vector_alloc(3);
 			gsl_vector_set_all(esum,0);
 			gsl_vector_set_all(psum,0);
 			int k;
 			for (k=0;k<3;++k) {
-				gsl_vector_set(psum,0,gsl_vector_get(psum,0)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[k][0]*psens[k]);
-				gsl_vector_set(psum,1,gsl_vector_get(psum,1)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[k][1]*psens[k]);
-				gsl_vector_set(psum,2,gsl_vector_get(psum,2)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[k][2]*psens[k]);
+				
+				gsl_vector_set(psum,0,gsl_vector_get(psum,0)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[k][0]*psens[0]);
+				gsl_vector_set(psum,1,gsl_vector_get(psum,1)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[k][1]*psens[1]);
+				gsl_vector_set(psum,2,gsl_vector_get(psum,2)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[k][2]*psens[2]);
+				//printf("\tpsum:%f %f %f\n",gsl_vector_get(psum,0),gsl_vector_get(psum,1),gsl_vector_get(psum,2));
+				gsl_vector_set(esum,0,gsl_vector_get(esum,0)+strc_node[i].aval[k]*strc_node[i].avec[k][0]*esens[0]);
+				gsl_vector_set(esum,1,gsl_vector_get(esum,1)+strc_node[i].aval[k]*strc_node[i].avec[k][1]*esens[1]);
+				gsl_vector_set(esum,2,gsl_vector_get(esum,2)+strc_node[i].aval[k]*strc_node[i].avec[k][2]*esens[2]);
+				
+				/*gsl_vector_set(psum,0,gsl_vector_get(psum,0)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[0][k]*psens[k]);
+				gsl_vector_set(psum,1,gsl_vector_get(psum,1)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[1][k]*psens[k]);
+				gsl_vector_set(psum,2,gsl_vector_get(psum,2)+strc_node[i].main_vars[k]*strc_node[i].global_evecs[2][k]*psens[k]);
 			
-				gsl_vector_set(esum,0,gsl_vector_get(esum,0)+strc_node[i].main_vars[k]*strc_node[i].avec[k][0]*esens[k]);
-				gsl_vector_set(esum,1,gsl_vector_get(esum,1)+strc_node[i].main_vars[k]*strc_node[i].avec[k][1]*esens[k]);
-				gsl_vector_set(esum,2,gsl_vector_get(esum,2)+strc_node[i].main_vars[k]*strc_node[i].avec[k][2]*esens[k]);
+				gsl_vector_set(esum,0,gsl_vector_get(esum,0)+strc_node[i].aval[k]*strc_node[i].avec[0][k]*esens[k]);
+				gsl_vector_set(esum,1,gsl_vector_get(esum,1)+strc_node[i].aval[k]*strc_node[i].avec[1][k]*esens[k]);
+				gsl_vector_set(esum,2,gsl_vector_get(esum,2)+strc_node[i].aval[k]*strc_node[i].avec[2][k]*esens[k]);*/
 			
 			}
+				
 				float elen = vector_lenght(esum,3);
 				float plen = vector_lenght(psum,3);
 
@@ -166,9 +179,12 @@ int main(int argc, char *argv[])
 			 		for (k = 0;k<3;++k) {
 			 			gsl_vector_set(gsens_evec,i*3+k,gsl_vector_get(psum,k));
 			 			gsl_vector_set(gsens_exp,i*3+k,gsl_vector_get(esum,k));
+			 		//	printf("Max:%f I:%d E:%f %f %f V:%f %f %f\n",a/sqrt(b*c),i,psens[0],psens[1],psens[2],gsl_vector_get(psum,0),gsl_vector_get(psum,1),gsl_vector_get(psum,2));
 			 		}
+			 		
 			 		max = a/sqrt(b*c);
 			 	}
+
 			 	psens[0] += 2.0;
 			 	if (psens[0] > 1.0) {
 			 		psens[0] = -1.0;
@@ -187,6 +203,7 @@ int main(int argc, char *argv[])
 		for(k=0;k<3;++k) {
 			strc_node[i].aval[k] = gsl_vector_get(gsens_exp,i*3+k);
 			strc_node[i].main_vars[k] = gsl_vector_get(gsens_evec,i*3+k);
+		//	printf("strc_node[%d].main_vars[%d] = %f de lindex %d\n",i,k,gsl_vector_get(gsens_evec,i*3+k),i*3+k);
 		}
 	}
 	printf("Evec Corr\n");
@@ -217,7 +234,7 @@ void outlier_bfact(struct pdb_atom *strc, int atom,int next) {
 			float besl[4];
 			besl[0] = 0.0;
 			besl[1] = 0.0;
-
+			float total = 0.0;
 			for(i = 0;i<atom;++i) {
 				if (i == it) {continue;}
 				int nf = 0;
@@ -226,13 +243,16 @@ void outlier_bfact(struct pdb_atom *strc, int atom,int next) {
 				}
 				if (nf != 0) {continue;}
 				for (k = 0 ;k<3;++k) {
-
-					avg[0] += strc[i].main_vars[k]/(atom*3);
-					avg[1] += strc[i].aval[k]/(atom*3);
+				//	printf("%d %d %f %f\n",i,k,strc[i].main_vars[k],strc[i].aval[k]);
+					avg[0] += strc[i].main_vars[k];
+					avg[1] += strc[i].aval[k];
+					total += 1.0;
 					besl[0] += strc[i].aval[k]*strc[i].aval[k];
 					besl[1] += strc[i].aval[k]*strc[i].main_vars[k];
 				}
 			}
+			avg[0] /= total;
+			avg[1] /= total;
 			float cor[3];
 			cor[0] = 0;
 			cor[1] = 0;

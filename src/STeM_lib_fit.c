@@ -1751,13 +1751,11 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		gsl_vector_free(predet);
 		
-		/*
-		gsl_vector_set(entro,node,ConfEnt);
+
 		
 		
-		
-		//printf("\nConstants : \nq = %6.10f\ndet123 = %6.10f\ndetA = %6.10f\nDamping factor = %6.50Lf\nKXX = %6.10f\nKYY = %6.10f\nKZZ = %6.10f\nKXY = %6.10f\nKXZ = %6.10f\nKYZ = %6.10f\n\nDifferential entropy = %20.20Lf\n\n", q, det123, detA, Damping_Factor, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
-		*/
+		//printf("\nConstants : \n\ndet123 = %6.10f\ndetA = %6.10f\nDamping factor = %6.50Lf\nKXX = %6.10f\nKYY = %6.10f\nKZZ = %6.10f\nKXY = %6.10f\nKXZ = %6.10f\nKYZ = %6.10f\n\nDifferential entropy = %20.20Lf\n\n", det123, detA, Damping_Factor, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
+
 		
 	//	printf("Node:%d Differential entropy = %6.10f\n",node,1.5 - log(Dens_Fac);
 		
@@ -1832,8 +1830,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		gsl_matrix_free(incov1);
 
 		
-		/*
-		printf("Eigenvector matrix :\n");
+		
+	/*	printf("Eigenvector matrix :\n");
 		
 		for(i = 0; i < 3; i++)
 		{
@@ -1846,9 +1844,9 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		}
 		
 		printf("\n");
-		*/
 		
-		/*
+		
+		
 		printf("Eigenvalues :\n");
 		
 		for(i = 0; i < 3; i++)
