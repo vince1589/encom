@@ -1613,7 +1613,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		{
 			for (j=0;j<nm;++j)
 			{
-				gsl_matrix_set(K, i, j, beta * ( pow(gsl_vector_get(eval,6),2) * gsl_matrix_get(GJ,0,i+3) * gsl_matrix_get(GJ,0,j+3) + pow(gsl_vector_get(eval,7),2) * gsl_matrix_get(GJ,1,i+3) * gsl_matrix_get(GJ,1,j+3) + pow(gsl_vector_get(eval,8),2) * gsl_matrix_get(GJ,2,i+3) * gsl_matrix_get(GJ,2,j+3) ));
+				gsl_matrix_set(K, i, j, beta * ( pow(gsl_vector_get(eval,6),1) * gsl_matrix_get(GJ,0,i+3) * gsl_matrix_get(GJ,0,j+3) + pow(gsl_vector_get(eval,7),1) * gsl_matrix_get(GJ,1,i+3) * gsl_matrix_get(GJ,1,j+3) + pow(gsl_vector_get(eval,8),1) * gsl_matrix_get(GJ,2,i+3) * gsl_matrix_get(GJ,2,j+3) ));
 			}
 		}
 		
@@ -1636,7 +1636,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 	
 		for (i=0;i<nm-3;++i)
 		{
-			gsl_matrix_set(A, i, i, gsl_matrix_get(A,i,i) + 2 * beta * pow(gsl_vector_get(eval,i+9),2));
+			gsl_matrix_set(A, i, i, gsl_matrix_get(A,i,i) + 2 * beta * pow(gsl_vector_get(eval,i+9),1));
 		}
 		
 		/*
@@ -1744,10 +1744,10 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		for(i = 0; i < nm-3; ++i)
 		{
-			Dens_Fac *= sqrt(2*beta)*gsl_vector_get(eval,i+9)/gsl_vector_get(predet,i);
+			Dens_Fac *= sqrt(2*beta*gsl_vector_get(eval,i+9))/gsl_vector_get(predet,i);
 		}
 		
-		Dens_Fac *= gsl_vector_get(eval,6)*gsl_vector_get(eval,7)*gsl_vector_get(eval,8);
+		Dens_Fac *= sqrt(gsl_vector_get(eval,6)*gsl_vector_get(eval,7)*gsl_vector_get(eval,8));
 		
 		gsl_vector_free(predet);
 		
