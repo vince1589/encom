@@ -28,8 +28,7 @@ struct pdb_atom
 		//Eigenrepresentation of the covariance matrix. Do not use as is in a probability density function, for its inverse must first be calculated by inverting its variances and recomposing the matrix
 		double main_vars[3]; //Global variances associated with each global eigenvector. Magnitude of movement along the eigenvector i is equal to sqrt(main_vars[i])
 		double global_evecs[3][3]; // Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors) The module of each eigenvector is equal 1
-		double avec[3][3]; // Evec of anisou
-		double aval[3]; // Eval of anisou
+
 };
 
 
@@ -51,6 +50,7 @@ void boinc_all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix 
 
 // STeM_lib_fit.c
 //	STeM fit
+void translate_strc(struct pdb_atom *init,int all,gsl_vector *trans);
 int node_align(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align);
 int node_align_low(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align);
 int node_align_lig(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align,struct pdb_atom *strc_all,int all,struct pdb_atom *strc_all_t,int atom_all,float cutoff);
@@ -69,12 +69,12 @@ void fit_math(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struc
 void fit_vince(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *eval, int *align, int nb_mode, int mode);
 void nrg_rmsd(struct pdb_atom *init,int atom,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void fit_mc_torsion(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int atom_t,int all_t,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
-void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta);
-void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12);
+void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta,int nm);
+int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12);
 double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps);
 int load_anisou(struct pdb_atom *strc,char filename[100],int atom);
-
-
+double density_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,gsl_vector *pos);
+void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int atom2,int *align,int next);
 // STeM_lib_grid_motion.c
 //	STeM grid_motion
 void write_matrix_pdb(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1);
@@ -112,7 +112,7 @@ void load_eigen_grid(gsl_vector *v,gsl_matrix *m,char filename[100],int atom, in
 void write_eigen_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1,int mode, int nbr_mode);
 void write_grid_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1);
 double dot_p(double a[3], double b[3]);
-void write_strc(char filename[100], struct pdb_atom *newstrc,int nb_atom);
+float write_strc(char filename[100], struct pdb_atom *newstrc,int nb_atom,float factor);
 void write_strc_b(char filename[100], struct pdb_atom *old,int nb_atom,gsl_matrix *m, int node);
 void assignArray(gsl_matrix *m,double **a,int count,int count_1);
 void correlate_sp(gsl_matrix *m,struct pdb_atom *strc, int atom);
@@ -122,7 +122,7 @@ void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix
 void buid_pre(gsl_matrix *m,gsl_matrix *evc,int nb_atom);
 void k_inverse_matrix_stem_temp(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc);
 float calc_energy(int atom,gsl_vector *eval,float t);
-
+void assign_anisou_all(struct pdb_atom *init,int atom,struct pdb_atom *strc,int all);
 
 // STeM_lib_rot.c
 //	STeM rot
@@ -138,7 +138,7 @@ void rotate_phi(gsl_matrix *rota,struct pdb_atom *all_init,int all,int node);
 void rotate_psy(gsl_matrix *rota,struct pdb_atom *all_init,int all,int node);
 void print_matrix(gsl_matrix *mat);
 void rotate_bb(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,int *align);
-
+void center_strc(int all,struct pdb_atom *all_init);
 
 // STeM_lib_STRC.c
 //	STeM STRC

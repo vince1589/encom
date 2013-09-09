@@ -170,7 +170,30 @@ int node_align_low(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int at
 		align[i] = -1;
 	}
 		
-
+		// Essaie de juste ajouter des shift et cherche le meilleur match, tient pas compte des gap !
+		int max_sc = 0;
+		int max_id = 0;
+		for(j=-atom_t;j<atom_t;++j) {
+			score = 0;
+			
+			for(i=0;i<atom;++i) {
+				if (i+j < 0) {continue;}
+				if (i+j > atom_t-1) {continue;}
+				if (strcmp(strc[i].res_type,strc_t[i+j].res_type) == 0) {
+					++score;
+				}
+				
+			}
+			if (score > max_sc) {max_sc = score;max_id = j;}
+		}
+		//printf("Max:%d Shift:%d\n",max_sc,max_id);
+		for(i=0;i<atom;++i) {
+			if (i+max_id < 0) {continue;}
+			if (i+max_id> atom_t-1) {continue;}
+			if (strcmp(strc[i].res_type,strc_t[i+max_id].res_type) == 0) {
+					align[i] = i+max_id;
+			}
+		}
 		
 		//Retourne un score
 		score = 0;
@@ -277,7 +300,7 @@ void rotate_all(gsl_matrix *rota,struct pdb_atom *all_init,int all)
 		{
 			for(k = 0; k < 3; k++)
 			{
-				double eigenjk = 0;
+				double eigenjk = 0.0;
 				
 				for(l = 0; l < 3; l++)
 				{
@@ -355,7 +378,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  		for(j=0;j<b_two;++j) {
  		val = 0.0;
  		for(k=0;k<a_two;++k) {
- 			//printf("K:%d\n",k);
+ 		//	printf("A(%d,%d) B(%d,%d)\n",i,k,k,j);
  			val += gsl_matrix_get(a,i,k)*gsl_matrix_get(b,k,j);
  		}
  		//printf("I:%d	J:%d	Val:%f\n",i,j,val);
@@ -1462,17 +1485,16 @@ float fit_svd(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int a
  	return(energy);
  }
 
-void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta)
+void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta,int nm)
 {
 	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
 	
 	int i, j, node;
 	
-	int nm = atom*3 - 6;
 	
 	for (node = 0;node<atom;++node)
 	{
-		// printf("Node %3i\n", node);
+		//printf("Node %3i\n", node);
 		gsl_matrix *GJ = gsl_matrix_alloc(3,nm+3);
 		gsl_matrix_set_all(GJ,0);
 		
@@ -1482,6 +1504,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			gsl_matrix_set(GJ,i,nm+i,1);
 		}
 		
+
+	//	}
 		// Set evec
 		
 		// printf("Set GJ\n");
@@ -1490,9 +1514,13 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		{
 			for(i=0;i<3;++i)
 			{
+			//	printf("%f ",gsl_matrix_get(evec,i+node*3,j+6));
 				gsl_matrix_set(GJ,i,j,gsl_matrix_get(evec,i+node*3,j+6));
 			}
+			//printf("\n");
 		}
+		
+		//gsl_matrix_swap_columns (GJ, 2, 5);
 		
 		// printf("GJ is set\n");
 		
@@ -1507,17 +1535,17 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		}
 		
 		// Print matrix
-		// printf("\nElim_1\n");
+	/*	 printf("\nElim_1\n");
 		
-		// for (j = 0 ; j<3;++j)
-		// {
-			// for (i = 0;i<nm+3;++i)
-			// {
-			// 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
-			// }
+		 for (j = 0 ; j<3;++j)
+		 {
+			 for (i = 0;i<6;++i)
+			 {
+			 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
+			 }
 			
-			// printf("\n");
-		// }
+			 printf("\n");
+		 }*/
 		
 		
 		// Elimine A dans ligne 1 et 3
@@ -1534,16 +1562,16 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		}
 		
 		// Print matrix
-		// printf("\nElim_2\n");
-		// for (j = 0 ; j<3;++j)
-		// {
-			// for (i = 0;i<nm+3;++i)
-			// {
-			// 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
-			// }
+		/* printf("\nElim_2\n");
+		 for (j = 0 ; j<3;++j)
+		 {
+			 for (i = 0;i<6;++i)
+			 {
+			 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
+			 }
 		
-			// printf("\n");
-		// }
+			 printf("\n");
+		 }*/
 		
 		// Elimine A dans ligne 1 et 2
 		
@@ -1562,7 +1590,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		/* printf("\nElim_3\n");
 		 for (j = 0 ; j<3;++j)
 		 {
-			 for (i = 0;i<nm+3;++i)
+			 for (i = 0;i<6;++i)
 			 {
 			 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
 			 }
@@ -1613,7 +1641,10 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		{
 			for (j=0;j<nm;++j)
 			{
-				gsl_matrix_set(K, i, j, beta * ( pow(gsl_vector_get(eval,6),1) * gsl_matrix_get(GJ,0,i+3) * gsl_matrix_get(GJ,0,j+3) + pow(gsl_vector_get(eval,7),1) * gsl_matrix_get(GJ,1,i+3) * gsl_matrix_get(GJ,1,j+3) + pow(gsl_vector_get(eval,8),1) * gsl_matrix_get(GJ,2,i+3) * gsl_matrix_get(GJ,2,j+3) ));
+			
+				
+				gsl_matrix_set(K, i, j, beta * ( pow(gsl_vector_get(eval,6),2) * gsl_matrix_get(GJ,0,i+3) * gsl_matrix_get(GJ,0,j+3) + pow(gsl_vector_get(eval,7),2) * gsl_matrix_get(GJ,1,i+3) * gsl_matrix_get(GJ,1,j+3) + pow(gsl_vector_get(eval,8),2) * gsl_matrix_get(GJ,2,i+3) * gsl_matrix_get(GJ,2,j+3) ));
+				
 			}
 		}
 		
@@ -1630,32 +1661,37 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		{
 			for (j=0;j<nm-3;++j)
 			{
+				
 				gsl_matrix_set(A, i, j, 2 * gsl_matrix_get(K,i,j));
 			}
 		}
 	
 		for (i=0;i<nm-3;++i)
 		{
-			gsl_matrix_set(A, i, i, gsl_matrix_get(A,i,i) + 2 * beta * pow(gsl_vector_get(eval,i+9),1));
+			
+			gsl_matrix_set(A, i, i, gsl_matrix_get(A,i,i) + 2 * beta * pow(gsl_vector_get(eval,i+9),2));
 		}
 		
-		/*
-		printf("\nMatrice A\n");
-		for (i=0;i<nm-3;++i)
+		
+		/*printf("\nMatrice A\n");
+		for (i=0;i<5;++i)
 		{
 			for (j=0;j<nm-3;++j)
 			{
-				 printf("%6.10f ",gsl_matrix_get(A,i,j));
+				 printf("%.2f ",gsl_matrix_get(A,i,j));
 			}
 			
 			printf("\n");
-		 }
-		 */
+		 }*/
+		 
 		
 		// Make Cholesky decomposition of matrix A
-		
-		gsl_linalg_cholesky_decomp(A);
-		
+		gsl_set_error_handler_off ();
+		if (gsl_matrix_get(A,0,0) <= 0.0) {continue;}
+		//printf("Node:%d A(0,0) = %f,%f et %f\n",node,gsl_matrix_get(A,0,0),gsl_matrix_get(A,1,1),gsl_matrix_get(A,2,2));
+		//if (gsl_matrix_get(A,0,0) > 10000.0 || gsl_matrix_get(A,1,1) > 10000.0 || gsl_matrix_get(A,2,2) > 10000.0) {printf("I Next node %d, because funny Gauss-Jordan, need to find a fix soon\n",node);continue;}
+		int error = gsl_linalg_cholesky_decomp(A);
+		if (error == GSL_EDOM) {printf("Found a error\n");continue;} 
 		// Get cholesky matrix diagonal (product of diagonal elements will give sqrt(detA))
 		
 		// printf("Set predet\n");
@@ -1779,8 +1815,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		gsl_matrix_set(incov1, 0, 2, KXZ); gsl_matrix_set(incov1, 2, 0, KXZ);
 		gsl_matrix_set(incov1, 1, 2, KYZ); gsl_matrix_set(incov1, 2, 1, KYZ);
 		
-		/*
-		printf("Inverse covariance matrix :\n");
+		
+	/*	printf("Inverse covariance matrix :\n");
 		
 		for(i = 0; i < 3; i++)
 		{
@@ -1792,8 +1828,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			printf("\n");
 		}
 		
-		printf("\n");
-		*/
+		printf("\n");*/
+		
 		
 		// Invert inverse covariance matrix
 		
@@ -1801,8 +1837,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		gsl_linalg_cholesky_invert(incov1);
 		
-		/*
-		printf("Covariance matrix :\n");
+		
+/*		printf("Covariance matrix :\n");
 		
 		for(i = 0; i < 3; i++)
 		{
@@ -1814,8 +1850,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			printf("\n");
 		}
 		
-		printf("\n");
-		*/
+		printf("\n");*/
+		
 		
 		// Set workspace to get eigenvectors and eigenvalues
 		
@@ -1854,8 +1890,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			printf("%6.10f\t", gsl_vector_get(mainvars, i));
 		}
 		
-		printf("\n\n");
-		*/
+		printf("\n\n");*/
+		
 		
 		// Assign global eigenvectors (main axes) and global variances to node
 		
@@ -1869,8 +1905,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			init[node].main_vars[j] = gsl_vector_get(mainvars, j);
 		}
 		
-		/*
-		printf("Weighted eigenvector matrix :\n");
+		
+		/*printf("Weighted eigenvector matrix :\n");
 		
 		for(i = 0; i < 3; i++)
 		{
@@ -1890,7 +1926,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 	// printf("EXIT\n");
 }
 
-void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12) // Builds inverse conjugate covariance matrix, conjugate density factor and delta-r for use with over_prob and proxim_prob; 
+int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12) // Builds inverse conjugate covariance matrix, conjugate density factor and delta-r for use with over_prob and proxim_prob; 
 {
 	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
 	
@@ -1908,6 +1944,7 @@ void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *in
 			
 			for(k = 0; k < 3; k++)
 			{
+				//printf("%f*%f * %f+%f*%f*%f\n",atm1->global_evecs[i][k],atm1->global_evecs[j][k],atm1->main_vars[k] , atm2->global_evecs[i][k],atm2->global_evecs[j][k],atm2->main_vars[k]);
 				covar12 += atm1->global_evecs[i][k]*atm1->global_evecs[j][k]*atm1->main_vars[k] + atm2->global_evecs[i][k]*atm2->global_evecs[j][k]*atm2->main_vars[k];
 			}
 			
@@ -1916,7 +1953,7 @@ void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *in
 	}
 	
 	// Make a Cholesky decomposition of the matrix and uses the decomposition to divide conj_dens12 by sqrt(det(cov12))
-	
+	if (gsl_matrix_get(cov12,0,0)<0.000001) {return(-1);}
 	gsl_linalg_cholesky_decomp(cov12);
 	
 	*conj_dens12 = 1/sqrt(pow(2*PI,3));
@@ -1937,12 +1974,45 @@ void conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *in
 			gsl_matrix_set(incov12, i, j, gsl_matrix_get(cov12, i, j));
 		}
 	}
-	
+	gsl_matrix_free(cov12);
 	// Store delta_x, delta_y and delta_z in delr
 	
 	gsl_vector_set(delr, 0, atm2->x_cord - atm1->x_cord);
 	gsl_vector_set(delr, 1, atm2->y_cord - atm1->y_cord);
 	gsl_vector_set(delr, 2, atm2->z_cord - atm1->z_cord);
+	
+	return(1);
+	
+}
+
+
+double density_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,gsl_vector *pos) {
+	// Retourne la densite de probabilite a cette position la
+
+	// D(a,b,c) = conj_dens12*e^(-1/2 * ((a,b,c) - pos)T * incov * ((a,b,c) - pos)
+	double e = 2.71828182845904523536028747135266249775724709369995;
+	gsl_matrix *at = gsl_matrix_alloc(1,3); 
+	gsl_matrix *a = gsl_matrix_alloc(3,1); 
+	gsl_matrix *temp = gsl_matrix_alloc(1,3);
+	gsl_matrix *one = gsl_matrix_alloc(1,1);
+	
+	int i;
+	for (i = 0;i<3;++i) {
+		gsl_matrix_set(at,0,i,gsl_vector_get(pos,i)-gsl_vector_get(delr,i));
+		gsl_matrix_set(a,i,0,gsl_vector_get(pos,i)-gsl_vector_get(delr,i));
+	}
+	
+	
+	multiplie_matrix(at,1,3,incov12,3,3,temp);
+
+	multiplie_matrix(temp,1,3,a,3,1,one);
+	
+	float ans = gsl_matrix_get(one,0,0);
+	gsl_matrix_free(at);
+	gsl_matrix_free(a);
+	gsl_matrix_free(temp);
+	gsl_matrix_free(one);
+	return(pow(e,ans*-1/2)*conj_dens12);
 }
 
 double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps) // -----> Must have run conj_prob_init beforehand. <-------
@@ -2362,14 +2432,14 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
 						
 				// Parse anisou
 				
-				float a11;
-				float a22;
-				float a33;
-				float a12;
-				float a13;
-				float a23;
+				int a11;
+				int a22;
+				int a33;
+				int a12;
+				int a13;
+				int a23;
 				gsl_matrix *todiag = gsl_matrix_alloc(3,3);
-				if (6 == sscanf((line_ptr+29),"%f %f %f %f %f %f",&a11,&a22,&a33,&a12,&a13,&a23)) {
+				if (6 == sscanf((line_ptr+29),"%d %d %d %d %d %d",&a11,&a22,&a33,&a12,&a13,&a23)) {
 					// Diago
 					gsl_matrix_set(todiag,0,0,a11);
 					gsl_matrix_set(todiag,1,1,a22);
@@ -2394,9 +2464,9 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
 					for (k=0;k<3;++k) {
 						for (l=0;l<3;++l) {
 							//printf("(%d,%d) = %f\n",k,l,gsl_matrix_get(evec,k,l));
-							strc[i].avec[k][l] = gsl_matrix_get(evec,k,l);
+							strc[i].global_evecs[k][l] = gsl_matrix_get(evec,k,l);
 						}
-						strc[i].aval[k] = gsl_vector_get(eval,k);
+						strc[i].main_vars[k] = gsl_vector_get(eval,k);
 					}
 					++found;
 				} else {
@@ -2410,4 +2480,111 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
 	}
 	fclose(file);
 	return(found);
+}
+
+
+void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int atom2,int *align,int next) {
+	int it;
+	int it_max = atom;
+	int k;
+	int i;
+	int remove[next];
+	for (i = 0;i<next;++i) {
+		remove[i] = -1;
+	}
+	int l = 0;
+	for (l=0;l<next;++l) {
+		int mind = -1;
+		float max = -2.0;
+		for (it=-1;it<it_max;++it) {
+			if (it == 1 && l !=0) {continue;}
+			
+			float avg[2];
+	
+			avg[0] = 0.0;
+			avg[1] = 0.0;
+	
+			float besl[4];
+			besl[0] = 0.0;
+			besl[1] = 0.0;
+			float total = 0.0;
+			for(i = 0;i<atom;++i) {
+				if (align[i] == -1) {continue;}
+				int mat = align[i];
+				if (i == it) {continue;}
+				int nf = 0;
+				for (k = 0;k<next;++k) {
+					if (i == remove[k]) {++nf;}
+				}
+				if (nf != 0) {continue;}
+				if (init[i].main_vars[0] < 0) {continue;}
+				if (targ[mat].main_vars[0] < 0) {continue;}
+				for (k = 0 ;k<3;++k) {
+				
+					avg[0] += init[i].main_vars[k];
+					avg[1] += targ[mat].main_vars[k];
+					total += 1.0;
+					besl[0] += targ[mat].main_vars[k]*targ[mat].main_vars[k];
+					besl[1] += targ[mat].main_vars[k]*init[i].main_vars[k];
+				}
+			}
+			avg[0] /= total;
+			avg[1] /= total;
+			float cor[3];
+			cor[0] = 0;
+			cor[1] = 0;
+			cor[2] = 0;
+		
+			for(i = 0;i<atom;++i) {
+				if (align[i] == -1) {continue;}
+				int mat = align[i];
+				int k;
+				if (i == it) {continue;}
+				int nf = 0;
+				for (k = 0;k<next;++k) {
+					if (i == remove[k]) {++nf;}
+				}
+				if (nf != 0) {continue;}
+				for (k = 0 ;k<3;++k) {
+					cor[0] += (init[i].main_vars[k]-avg[0])*(targ[mat].main_vars[k]-avg[1]);
+					cor[1] += (init[i].main_vars[k]-avg[0])*(init[i].main_vars[k]-avg[0]);
+					cor[2] += (targ[mat].main_vars[k]-avg[1])*(targ[mat].main_vars[k]-avg[1]);
+				}
+		
+			}
+	
+			// Find y = ax + b
+	
+			if (it == -1 && l==0) {
+				printf("Init:%f\n",cor[0]/sqrt(cor[1])/sqrt(cor[2]));
+			}
+			if (max < cor[0]/sqrt(cor[1])/sqrt(cor[2])) {
+				max = cor[0]/sqrt(cor[1])/sqrt(cor[2]);
+				mind = it;
+			//	printf("IT:%d Eval Cor:%f  ",it,cor[0]/sqrt(cor[1])/sqrt(cor[2]));
+		
+			//	float slope = (besl[1] - avg[1]*atom*3 * avg[0]) / (besl[0] - avg[1]*atom*3 * avg[1]);
+			//	float inter = avg[0] - slope * avg[1];
+			//	printf("A = %f B = %f Xm = %f Ym = %f\n",slope,inter	,avg[1],avg[0]);
+			}
+		}
+		if (mind != -1) {printf("Remove:%d Max:%f Mind:%d %s%d%s %s%d%s\n",l+1,max,mind,init[mind].res_type,init[mind].res_number,init[mind].chain,targ[align[mind]].res_type,targ[align[mind]].res_number,targ[align[mind]].chain);
+		remove[l] = mind;
+		}
+	}
+}
+
+
+void translate_strc(struct pdb_atom *init,int all,gsl_vector *trans) {
+	int i;
+
+	for(i=0;i<all;++i) {
+		init[i].x_cord += gsl_vector_get(trans,0);
+		init[i].y_cord += gsl_vector_get(trans,1);
+		init[i].z_cord += gsl_vector_get(trans,2);
+		
+	}
+
+
+
 }

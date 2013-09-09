@@ -233,7 +233,7 @@ void check_lig(struct pdb_atom *strc,int **con,int ncon, int atom) {
 }
 
 void copy_strc(struct pdb_atom *target, struct pdb_atom *initial, int atom) {
-        int i, j;
+        int i, j,k;
         for (i = 0; i < atom; i++) {
                 target[i].atom_number = initial[i].atom_number;
                 target[i].x_cord = initial[i].x_cord;
@@ -249,6 +249,12 @@ void copy_strc(struct pdb_atom *target, struct pdb_atom *initial, int atom) {
                 target[i].node = initial[i].node;
                 for (j = 0; j < 6; ++j) {
                         target[i].node_c[j] = initial[i].node_c[j];
+                }
+                for(j=0;j<3;++j) {
+                	target[i].main_vars[j] = initial[i].main_vars[j];
+                	for(k=0;k<3;++k) {
+                		target[i].global_evecs[j][k] = initial[i].global_evecs[j][k];
+                	}
                 }
         }
 }
@@ -504,6 +510,9 @@ int count_atom(char filename[100]) {
 	 	structure[index].atom_number = at_nb;
 	 	structure[index].res_number = res;
 	 	structure[index].b_factor = b_factor;
+	 	structure[index].main_vars[0] = -1;
+	 	structure[index].main_vars[1] = -1;
+	 	structure[index].main_vars[2] = -1;
 	 		
 		// Copy le Residu Type
 
@@ -559,7 +568,7 @@ int count_atom(char filename[100]) {
  			if ((node == 3) && ((strncmp(structure[index].atom_prot_type," C  ",4) == 0))) {structure[index].node = n+1;}
  			if ((node == 3) && ((strncmp(structure[index].atom_prot_type," O  ",4) == 0))) {structure[index].node = n+1;}
  			//printf("Node:%d	Atom:-%s- Res:-%s- Num:%d\n",structure[index].node,structure[index].atom_prot_type,structure[index].res_type,structure[index].res_number);*/
- 			//printf("Index:%d Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d\n",index,structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node);
+ 			printf("Index:%d Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d\n",index,structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node);
  			++index;
 			
 	 	
@@ -636,6 +645,10 @@ int count_atom(char filename[100]) {
 	 	structure[index].res_number = res;
 	 	structure[index].b_factor = b_factor;
 	 		
+	 	structure[index].main_vars[0] = -1;	
+	 	structure[index].main_vars[1] = -1;	
+	 	structure[index].main_vars[2] = -1;	
+	 		
 		// Copy le Residu Type
 
  		for (temp_count = 17; temp_count < 20;++temp_count) {
@@ -683,7 +696,8 @@ int count_atom(char filename[100]) {
 		structure[index].node = n;
 		if (structure[index].mass == 0.00) {
   			printf("Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d Mass:%8f\n",structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node,structure[index].mass);	
-  		}	
+  		}
+  	//printf("Index:%d Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d Mass:%8f Cord:%f %f %f\n",index,structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node,structure[index].mass,structure[index].x_cord,structure[index].y_cord,structure[index].z_cord);	
 		//printf("%s N:%d\n",line,n);
 		strcpy(pline,line);
  		++index;

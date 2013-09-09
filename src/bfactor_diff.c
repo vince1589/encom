@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
 	fclose(file);
 	assign_bfactor(strc_all,k_inverse,all,lig);
 	printf("I write strc\n");
-	write_strc(out_name, strc_all,all);
+	write_strc(out_name, strc_all,all,1.0);
 	
 	
 	return(1);

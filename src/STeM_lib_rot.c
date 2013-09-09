@@ -264,3 +264,31 @@ void print_matrix(gsl_matrix *mat) {
 	 }
 	 printf("Final:%f	",old);
  }
+ 
+ 
+ 
+void center_strc(int all,struct pdb_atom *strc) {
+	float x =0.0;
+	float y= 0.0;
+	float z= 0.0;
+	float tot = 0.0;
+	int i;
+	
+	for(i=0;i<all;++i) {
+		x += strc[i].x_cord;
+		y += strc[i].y_cord;
+		z += strc[i].z_cord;
+		tot += 1.0;
+	}
+	x /= tot;
+	y /= tot;
+	z /= tot;
+	
+	for(i=0;i<all;++i) {
+		strc[i].x_cord -= x;
+		strc[i].y_cord -= y;
+		strc[i].z_cord -= z;
+	}
+	
+	
+}
