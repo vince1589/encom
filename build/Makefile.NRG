@@ -42,6 +42,10 @@ all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_p
 	\mv anm $W/anm
 	\mv cmp_eigen $W/cmp_eigen
 	\mv fit_gauss $W/fit_gauss
+        \mv cmp_anisou $W/cmp_anisou
+        \mv AniCleft $W/AniCleft
+
+
 clean:
 	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
 	clear
@@ -73,6 +77,10 @@ anm: $(OBJ) anm.o
 	$(CXX) $(OBJ) anm.o $(LIBS) -o anm
 fit_gauss: $(OBJ) fit_gauss.o
 	$(CXX) $(OBJ) fit_gauss.o $(LIBS) -o fit_gauss
+cmp_anisou: $(OBJ) cmp_anisou.o
+        $(CXX) $(OBJ) cmp_anisou.o $(LIBS) -o cmp_anisou
+AniCleft: $(OBJ) AniCleft.o
+        $(CXX) $(OBJ) AniCleft.o $(LIBS) -o AniCleft
 
 
 # Build main()
@@ -102,6 +110,10 @@ build_pca.o: $I/build_pca.c
 	$(CXX) $(CXXFLAGS) -c $I/build_pca $(INCLUDES)
 fit_gauss.o: $I/fit_gauss.c
 	$(CXX) $(CXXFLAGS) -c $I/fit_gauss.c $(INCLUDES)
+cmp_anisou.o: $I/cmp_anisou.c
+        $(CXX) $(CXXFLAGS) -c $I/cmp_anisou.c $(INCLUDES)
+AniCleft.o: $I/AniCleft.c
+        $(CXX) $(CXXFLAGS) -c $I/AniCleft.c $(INCLUDES)
 
 # Build Source STeM_lib
 
