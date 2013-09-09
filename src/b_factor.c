@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
 
 	assign_bfactor(strc_all,k_inverse,all,lig);
 	
-	write_strc(out_name, strc_all,all);
+	write_strc(out_name, strc_all,all,1.0);
 		
 	gsl_matrix_free(k_inverse);
 	

@@ -289,7 +289,7 @@ int main(int argc, char *argv[]) {
 	rmsd_hack(strc_node,strc_node_t,atom, align,strc_all,all);
 	//rmsd_hack(strc_node_t,strc_node_t,atom, align,strc_all,all);
 	if (print_flag != 0) {
-		write_strc(out_name,strc_all,all);
+		write_strc(out_name,strc_all,all,1.0);
 	}
 	
 	return(1);
