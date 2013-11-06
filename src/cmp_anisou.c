@@ -1,5 +1,8 @@
 #include "STeM.h"
 
+
+
+
 int main(int argc, char *argv[]) {
 	int all; /*Nombre d'atomes dans pdb*/
 	int atom; /*Nombre de carbone CA*/

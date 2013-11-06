@@ -262,6 +262,7 @@ void copy_strc(struct pdb_atom *target, struct pdb_atom *initial, int atom) {
 int count_atom(char filename[100]) {
  	FILE *file;
  	file = fopen(filename,"r");
+ 	if (file == NULL) {return(0);}
  	int count = 0; /*Count les lignes dans pdb*/
 
  	char line[82];

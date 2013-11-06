@@ -267,7 +267,7 @@ void print_matrix(gsl_matrix *mat) {
  
  
  
-void center_strc(int all,struct pdb_atom *strc) {
+void center_strc(int all,struct pdb_atom *strc,gsl_vector *trans) {
 	float x =0.0;
 	float y= 0.0;
 	float z= 0.0;
@@ -290,5 +290,8 @@ void center_strc(int all,struct pdb_atom *strc) {
 		strc[i].z_cord -= z;
 	}
 	
+	gsl_vector_set(trans,0,x);
+	gsl_vector_set(trans,1,y);
+	gsl_vector_set(trans,2,z);
 	
 }

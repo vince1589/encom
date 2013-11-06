@@ -113,6 +113,7 @@ void write_eigen_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1
 void write_grid_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1);
 double dot_p(double a[3], double b[3]);
 float write_strc(char filename[100], struct pdb_atom *newstrc,int nb_atom,float factor);
+
 void write_strc_b(char filename[100], struct pdb_atom *old,int nb_atom,gsl_matrix *m, int node);
 void assignArray(gsl_matrix *m,double **a,int count,int count_1);
 void correlate_sp(gsl_matrix *m,struct pdb_atom *strc, int atom);
@@ -138,7 +139,7 @@ void rotate_phi(gsl_matrix *rota,struct pdb_atom *all_init,int all,int node);
 void rotate_psy(gsl_matrix *rota,struct pdb_atom *all_init,int all,int node);
 void print_matrix(gsl_matrix *mat);
 void rotate_bb(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,int *align);
-void center_strc(int all,struct pdb_atom *all_init);
+void center_strc(int all,struct pdb_atom *all_init,gsl_vector *trans);
 
 // STeM_lib_STRC.c
 //	STeM STRC

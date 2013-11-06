@@ -103,6 +103,8 @@ int main(int argc, char *argv[])
 	gsl_matrix *evec= gsl_matrix_alloc (3*atom,3*atom);
 	
 	load_eigen(eval,evec,eigen_name,3*atom);
+	
+	
 	if (verbose == 1) {printf("Gen Gauss with beta = %f\n",beta);}
 	if (nm < 4) {nm = atom*3 - 6;}
 	gen_gauss(strc_node,evec,eval,atom,beta,nm);

@@ -1519,8 +1519,12 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			}
 			//printf("\n");
 		}
-		
-		//gsl_matrix_swap_columns (GJ, 2, 5);
+		/*int swap[2];
+		swap[0] = 2;
+		swap[1] = 5;
+		gsl_matrix_swap_columns (GJ, swap[0], swap[1]);
+		float temp_swap = gsl_vector_get(eval,swap[0]+6);
+		gsl_vector_set(eval,*/
 		
 		// printf("GJ is set\n");
 		
@@ -2387,6 +2391,7 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
  		// On ne veut que les Anisou
  		
  		if (strncmp("ANISOU",line,6) != 0) {continue;}
+ 		//printf("%s",line);
  		// Il arrive parfois qu'il existe d'autre conformation d'acides aminées... On ne tient compte que des conformations A
  		
  		if ((line[16] == ' ') || (line[16] == 'A')) { } else {continue;}
@@ -2561,16 +2566,19 @@ void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int at
 			if (max < cor[0]/sqrt(cor[1])/sqrt(cor[2])) {
 				max = cor[0]/sqrt(cor[1])/sqrt(cor[2]);
 				mind = it;
-			//	printf("IT:%d Eval Cor:%f  ",it,cor[0]/sqrt(cor[1])/sqrt(cor[2]));
+			/*	printf("IT:%d Eval Cor:%f  ",it,cor[0]/sqrt(cor[1])/sqrt(cor[2]));
 		
-			//	float slope = (besl[1] - avg[1]*atom*3 * avg[0]) / (besl[0] - avg[1]*atom*3 * avg[1]);
-			//	float inter = avg[0] - slope * avg[1];
-			//	printf("A = %f B = %f Xm = %f Ym = %f\n",slope,inter	,avg[1],avg[0]);
+				float slope = (besl[1] - avg[1]*atom*3 * avg[0]) / (besl[0] - avg[1]*atom*3 * avg[1]);
+				float inter = avg[0] - slope * avg[1];
+				printf("A = %f B = %f Xm = %f Ym = %f\n",slope,inter	,avg[1],avg[0]);*/
 			}
 		}
 		if (mind != -1) {printf("Remove:%d Max:%f Mind:%d %s%d%s %s%d%s\n",l+1,max,mind,init[mind].res_type,init[mind].res_number,init[mind].chain,targ[align[mind]].res_type,targ[align[mind]].res_number,targ[align[mind]].chain);
 		remove[l] = mind;
+		} else {
+			break;
 		}
+		if (max == 1.00) {break;}
 	}
 }
 
