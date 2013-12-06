@@ -16,20 +16,20 @@ int main(int argc, char *argv[]) {
  	char inputname[500] ="none";
  	int verbose = 0;
 	int nconn;
-	float vinit = 4.85489969815978; // Valeur de base
-	float epsilon = 0.36;					// Epsilon			
-	float bond_factor = 100*epsilon*459.32638757416;		// Facteur pour poid des bond strechcing
-	float angle_factor = 20*epsilon*89.0845206090432;		// Facteur pour poid des angles
-	double K_phi1 = epsilon;				// Facteurs pour angles dièdres
-	double K_phi3 = 0.5*epsilon;
-	float init_templaate = 11.1469110430119;
-	float kp_factor = 41644.7785340819;					// Facteur pour poid des angles dièdres
+	float vinit = 1; // Valeur de base
+	float bond_factor = 1;		// Facteur pour poid des bond strechcing
+	float angle_factor = 1;		// Facteur pour poid des angles
+	double K_phi1 = 1;				// Facteurs pour angles dièdres
+	double K_phi3 = 0.5;
+	float init_templaate = 1;
+	float kp_factor = 1;					// Facteur pour poid des angles dièdres
 	int weight_factor = 0;
 	char eigen_name[500] = "eigen.dat";
 	char hessian_name[500] = "hessian.dat";
 	int hessian_flag = 0;
 	float temperature = 310;
 	int print_template = 0;
+	int no_write = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-inp",argv[i]) == 0) {strcpy(inputname,argv[i+1]);--help_flag;}
@@ -40,17 +40,20 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-param",argv[i]) == 0) {strcpy(param_name,argv[i+1]);}
  		if (strcmp("-init",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);vinit = temp;}
  		if (strcmp("-t",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);init_templaate = temp;} 
- 		if (strcmp("-kr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);bond_factor = 100*epsilon * bond_factor;}
- 		if (strcmp("-kt",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);angle_factor = 20*epsilon * angle_factor;}
+ 		if (strcmp("-kr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);bond_factor = temp;}
+ 		if (strcmp("-kt",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);angle_factor = temp;}
  		if (strcmp("-kpf",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); kp_factor = temp;}
  		if (strcmp("-temp",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); temperature = temp;}
  		if (strcmp("-w",argv[i]) == 0) {weight_factor = 1;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
  		if (strcmp("-hes",argv[i]) == 0) {strcpy(hessian_name,argv[i+1]);++hessian_flag;}
  		if (strcmp("-pt",argv[i]) == 0) {print_template = 1;}
+ 		if (strcmp("-no",argv[i]) == 0) {no_write = 1;}
+ 		
  	}
  	
- 	printf("\n********************\nFile:%s\nEpsilon:%f\nKr:\t%f\nKt:\t%f\nK phi1:\t%f\nK phi3:\t%f\n********************\n",file_name,epsilon,bond_factor,angle_factor,K_phi1,K_phi3);
+ 	printf("\n********************\nFile:%s\nAlpha1:%f\nAlpha2:%f\nAlpha3:%f\nAlpha4:%f\nAlpha5:%f\n********************\n",
+ 	file_name,bond_factor,angle_factor,kp_factor,init_templaate,vinit);
  	
  	//***************************************************
  	//*													*
@@ -152,7 +155,7 @@ int main(int argc, char *argv[]) {
 	build_3_matrix(strc_node, hessian,atom,K_phi1/2+K_phi3*9/2,kp_factor);
 	
 	if (verbose == 1) {printf("\tNon Local Interaction Potential\n");}	
-	build_4h_matrix(strc_node,hessian,atom,epsilon,templaate);
+	build_4h_matrix(strc_node,hessian,atom,1.0,templaate);
 	
  	if (verbose == 1) {printf("\tAssigning Array\n");}	
 	assignArray(h_matrix,hessian,3*atom,3*atom);
@@ -178,13 +181,18 @@ int main(int argc, char *argv[]) {
 		printf("First eigenvalues\n");
 		for (i=0;i<10;++i) {printf("I:%d %.10f\n",i,gsl_vector_get(eval,i));}
 	}
- 	write_eigen(eigen_name,evec,eval,3*atom);
+ 	if (no_write == 0) {write_eigen(eigen_name,evec,eval,3*atom);}
 
 
 		 	
  	float ener = calc_energy(atom,eval,temperature);
  	printf("Energy:%10.8f\n",ener);
  	printf("Energy/node:%10.8f\n",ener/(float)(atom*3));
+
+    gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom); /*Déclare et crée une matrice qui va être le pseudo inverse*/
+    k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3-6);
+    printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
+
 
  	gsl_matrix_free(templaate);
 	gsl_matrix_free(inter_m);
