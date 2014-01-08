@@ -16,7 +16,6 @@ int main(int argc, char *argv[])
 	char out_name[500] = "out.pdb";
 	int nm = -1;
 	int verbose = 0;
-
 	
 	int i;
 	
@@ -101,6 +100,8 @@ int main(int argc, char *argv[])
 	gsl_vector *eval = gsl_vector_alloc(3*atom);
 	
 	gsl_matrix *evec= gsl_matrix_alloc (3*atom,3*atom);
+	
+	
 	
 	load_eigen(eval,evec,eigen_name,3*atom);
 	

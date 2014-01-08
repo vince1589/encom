@@ -28,7 +28,6 @@ struct pdb_atom
 		//Eigenrepresentation of the covariance matrix. Do not use as is in a probability density function, for its inverse must first be calculated by inverting its variances and recomposing the matrix
 		double main_vars[3]; //Global variances associated with each global eigenvector. Magnitude of movement along the eigenvector i is equal to sqrt(main_vars[i])
 		double global_evecs[3][3]; // Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors) The module of each eigenvector is equal 1
-
 };
 
 

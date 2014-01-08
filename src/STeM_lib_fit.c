@@ -1491,7 +1491,6 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 	
 	int i, j, node;
 	
-	
 	for (node = 0;node<atom;++node)
 	{
 		//printf("Node %3i\n", node);
@@ -1519,6 +1518,9 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			}
 			//printf("\n");
 		}
+		
+		
+		
 		/*int swap[2];
 		swap[0] = 2;
 		swap[1] = 5;
@@ -1573,7 +1575,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			 {
 			 	printf("%6.3f ",gsl_matrix_get(GJ,j,i));
 			 }
-		
+			
 			 printf("\n");
 		 }*/
 		
@@ -1776,9 +1778,11 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		if (det123 < 0) { det123 *= -1; }
 		
+		/*
+		
 		// Initialize Dens_Fac (d in the equation)
 		
-		long double Dens_Fac = sqrt( pow(beta/PI,3) ) / det123;
+		double Dens_Fac = sqrt( pow(beta/PI,3) ) / det123;
 		
 		// multiply Dens_Fac with (product of eigenvalues)/sqrt(detA)
 		
@@ -1789,23 +1793,14 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		
 		Dens_Fac *= sqrt(gsl_vector_get(eval,6)*gsl_vector_get(eval,7)*gsl_vector_get(eval,8));
 		
+		*/
+		
 		gsl_vector_free(predet);
 		
-
+// 		printf("\nConstants : \n\nKXX = %6.10f\nKYY = %6.10f\nKZZ = %6.10f\nKXY = %6.10f\nKXZ = %6.10f\nKYZ = %6.10f\n", 2*KXX, 2*KYY, 2*KZZ, KXY, KXZ, KYZ);
 		
-		
-		//printf("\nConstants : \n\ndet123 = %6.10f\ndetA = %6.10f\nDamping factor = %6.50Lf\nKXX = %6.10f\nKYY = %6.10f\nKZZ = %6.10f\nKXY = %6.10f\nKXZ = %6.10f\nKYZ = %6.10f\n\nDifferential entropy = %20.20Lf\n\n", det123, detA, Damping_Factor, KXX, KYY, KZZ, KXY, KXZ, KYZ, ConfEnt);
-
 		
 	//	printf("Node:%d Differential entropy = %6.10f\n",node,1.5 - log(Dens_Fac);
-		
-
-		
-		// Assign density factor and entropy
-		
-		init[node].entro = 1.5 - log(Dens_Fac);
-		
-		init[node].dens = Dens_Fac;
 		
 		// Initialize inverse covariance matrix
 		
@@ -1842,7 +1837,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		gsl_linalg_cholesky_invert(incov1);
 		
 		
-/*		printf("Covariance matrix :\n");
+		printf("Covariance matrix - 1 :\n");
 		
 		for(i = 0; i < 3; i++)
 		{
@@ -1854,7 +1849,7 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			printf("\n");
 		}
 		
-		printf("\n");*/
+		printf("\n");
 		
 		
 		// Set workspace to get eigenvectors and eigenvalues
@@ -1865,11 +1860,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		gsl_vector *mainvars = gsl_vector_alloc(3);
 		gsl_vector_set_all(mainvars,0);
 		
-
 		diagonalyse_matrix (incov1,3, mainvars,glevecs);
 		gsl_matrix_free(incov1);
-
-		
 		
 	/*	printf("Eigenvector matrix :\n");
 		
@@ -1909,6 +1901,33 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 			init[node].main_vars[j] = gsl_vector_get(mainvars, j);
 		}
 		
+		double Dens_Fac2 = 1.0;
+		
+		Dens_Fac2 *= 1.0 / (2.0 * 1.41421356237);
+		
+// 		printf("Dens_Fac2 - 1 : %6.10f\n", Dens_Fac2);
+		
+		Dens_Fac2 /= sqrt(PI*PI*PI);
+		
+// 		printf("Dens_Fac2 - 2 : %6.10f\n", Dens_Fac2);
+		
+		Dens_Fac2 /= sqrt(init[node].main_vars[0]);
+		
+// 		printf("Dens_Fac2 - 3 : %6.10f\n", Dens_Fac2);
+		
+		Dens_Fac2 /= sqrt(init[node].main_vars[1]);
+		
+// 		printf("Dens_Fac2 - 4 : %6.10f\n", Dens_Fac2);
+		
+		Dens_Fac2 /= sqrt(init[node].main_vars[2]);
+		
+		printf("Scale factor : %6.10f\n\n", Dens_Fac2);
+		
+		// Assign density factor and entropy
+		
+		init[node].entro = 1.5 - log(Dens_Fac2);
+		
+		init[node].dens = Dens_Fac2;
 		
 		/*printf("Weighted eigenvector matrix :\n");
 		
@@ -1926,6 +1945,8 @@ void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int at
 		*/
 		
 		// printf("Done\n");
+		
+		
 	}
 	// printf("EXIT\n");
 }
@@ -2488,21 +2509,29 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
 }
 
 
-void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int atom2,int *align,int next) {
+void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int atom2,int *align,int next)
+{
 	int it;
 	int it_max = atom;
 	int k;
 	int i;
 	int remove[next];
-	for (i = 0;i<next;++i) {
+	for (i = 0;i<next;++i)
+	{
 		remove[i] = -1;
 	}
 	int l = 0;
-	for (l=0;l<next;++l) {
+	for (l=0;l<next;++l)
+	{
 		int mind = -1;
 		float max = -2.0;
-		for (it=-1;it<it_max;++it) {
+		for (it=-1;it<it_max;++it)
+		{
 			if (it == 1 && l !=0) {continue;}
+			
+			
+			
+			/*
 			
 			float avg[2];
 	
@@ -2513,7 +2542,11 @@ void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int at
 			besl[0] = 0.0;
 			besl[1] = 0.0;
 			float total = 0.0;
-			for(i = 0;i<atom;++i) {
+			
+			//Calcul de la moyenne
+			
+			for(i = 0;i<atom;++i)
+			{
 				if (align[i] == -1) {continue;}
 				int mat = align[i];
 				if (i == it) {continue;}
@@ -2524,8 +2557,11 @@ void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int at
 				if (nf != 0) {continue;}
 				if (init[i].main_vars[0] < 0) {continue;}
 				if (targ[mat].main_vars[0] < 0) {continue;}
-				for (k = 0 ;k<3;++k) {
 				
+				
+				
+				for (k = 0 ;k<3;++k)
+				{
 					avg[0] += init[i].main_vars[k];
 					avg[1] += targ[mat].main_vars[k];
 					total += 1.0;
@@ -2535,12 +2571,18 @@ void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int at
 			}
 			avg[0] /= total;
 			avg[1] /= total;
+			
+			//Fin du calcul de la moyenne
+			
+			//Correlation
+			
 			float cor[3];
 			cor[0] = 0;
 			cor[1] = 0;
 			cor[2] = 0;
-		
-			for(i = 0;i<atom;++i) {
+			
+			for(i = 0;i<atom;++i)
+			{
 				if (align[i] == -1) {continue;}
 				int mat = align[i];
 				int k;
@@ -2550,7 +2592,8 @@ void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int at
 					if (i == remove[k]) {++nf;}
 				}
 				if (nf != 0) {continue;}
-				for (k = 0 ;k<3;++k) {
+				for (k = 0 ;k<3;++k)
+				{
 					cor[0] += (init[i].main_vars[k]-avg[0])*(targ[mat].main_vars[k]-avg[1]);
 					cor[1] += (init[i].main_vars[k]-avg[0])*(init[i].main_vars[k]-avg[0]);
 					cor[2] += (targ[mat].main_vars[k]-avg[1])*(targ[mat].main_vars[k]-avg[1]);
@@ -2566,12 +2609,14 @@ void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int at
 			if (max < cor[0]/sqrt(cor[1])/sqrt(cor[2])) {
 				max = cor[0]/sqrt(cor[1])/sqrt(cor[2]);
 				mind = it;
-			/*	printf("IT:%d Eval Cor:%f  ",it,cor[0]/sqrt(cor[1])/sqrt(cor[2]));
+				printf("IT:%d Eval Cor:%f  ",it,cor[0]/sqrt(cor[1])/sqrt(cor[2]));
 		
 				float slope = (besl[1] - avg[1]*atom*3 * avg[0]) / (besl[0] - avg[1]*atom*3 * avg[1]);
 				float inter = avg[0] - slope * avg[1];
-				printf("A = %f B = %f Xm = %f Ym = %f\n",slope,inter	,avg[1],avg[0]);*/
+				printf("A = %f B = %f Xm = %f Ym = %f\n",slope,inter	,avg[1],avg[0]);
 			}
+			
+			*/
 		}
 		if (mind != -1) {printf("Remove:%d Max:%f Mind:%d %s%d%s %s%d%s\n",l+1,max,mind,init[mind].res_type,init[mind].res_number,init[mind].chain,targ[align[mind]].res_type,targ[align[mind]].res_number,targ[align[mind]].chain);
 		remove[l] = mind;

@@ -116,13 +116,15 @@ int main(int argc, char *argv[]) {
  	int align[atom];
  	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
  	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
- 	if ((float)score/(float)atom < 0.8) {
+ 	if ((float)score/(float)atom < 0.8)
+	{
  		printf("Low Score... Will try an homemade alignement !!!\n");
  		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
  		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
  	}
  	
- 	if (ligalign > 0) {
+ 	if (ligalign > 0)
+	{
  		
 		score = node_align_lig(strc_node,atom,strc_node_t,atom_t,align,strc_all,all,strc_all_t,all_t,ligalign);
 		
