@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 	
 // 	gsl_matrix *angles = gsl_matrix_alloc(atom, 3); // cos(theta), cos(phi), cos(psi)
 	
-	double start = -3.0;
+	double start = -4.0;
 	
 	double increment = -0.1;
 	
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
 	
 	gsl_matrix *min_aniso = gsl_matrix_alloc(atom, 4);
 	
-	for(rep = 0; rep < 71; rep++)
+	for(rep = 0; rep < 81; rep++)
 	{
 		increment += 0.1;
 		
