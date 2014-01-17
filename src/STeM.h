@@ -5,6 +5,8 @@
 #include <gsl/gsl_eigen.h>
 #include <time.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_sort.h>
+#include <gsl/gsl_sort_vector.h>
 
 struct pdb_atom 
 {
@@ -25,9 +27,23 @@ struct pdb_atom
 		double entro; // Statistical entropy of the node
 		double dens; // Density factor of the node's probability density function
 		
-		//Eigenrepresentation of the covariance matrix. Do not use as is in a probability density function, for its inverse must first be calculated by inverting its variances and recomposing the matrix
+		// Eigenrepresentation of the covariance matrix. Do not use as is in a probability density function, for its inverse must first be calculated by inverting its variances and recomposing the matrix
 		double main_vars[3]; //Global variances associated with each global eigenvector. Magnitude of movement along the eigenvector i is equal to sqrt(main_vars[i])
-		double global_evecs[3][3]; // Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors) The module of each eigenvector is equal 1
+		double global_evecs[3][3]; // Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors) The module of each eigenvector is equal to 1
+		// Actual covariance matrix.
+		double covar[3][3];
+		
+		// Eigenrepresentation of the corresponding superelement of the hessian matrix, may or may not correspond to the covariance matrix.
+		double super_ihvars[3];
+		double super_ihevecs[3][3];
+		// Actual superelement.
+		double super_ih[3][3];
+		
+		// Eigenrepresentation of the ANISOU covariance matrix, experimental result.
+		double anisou_vars[3];
+		double anisou_evecs[3][3];
+		// Actual ANISOU covariance matrix.
+		double anisou[3][3];
 };
 
 
@@ -69,6 +85,8 @@ void fit_vince(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,stru
 void nrg_rmsd(struct pdb_atom *init,int atom,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void fit_mc_torsion(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int atom_t,int all_t,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta,int nm);
+void double_gauss(struct pdb_atom *init, gsl_matrix *ihessian, int atom, double beta);
+double cmp_gauss(gsl_matrix *cov1, gsl_vector *vars1, gsl_matrix *cov2, gsl_vector *vars2);
 int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12);
 double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps);
 int load_anisou(struct pdb_atom *strc,char filename[100],int atom);
@@ -112,6 +130,7 @@ void write_eigen_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1
 void write_grid_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1);
 double dot_p(double a[3], double b[3]);
 float write_strc(char filename[100], struct pdb_atom *newstrc,int nb_atom,float factor);
+void write_anisou_file(char filename[100], struct pdb_atom *newstrc,int nb_atom, int ihess);
 
 void write_strc_b(char filename[100], struct pdb_atom *old,int nb_atom,gsl_matrix *m, int node);
 void assignArray(gsl_matrix *m,double **a,int count,int count_1);
@@ -119,10 +138,11 @@ void correlate_sp(gsl_matrix *m,struct pdb_atom *strc, int atom);
 int count_atom_CA_n(struct pdb_atom *all,int atom, int node, int ligand);
 float correlate(gsl_matrix *m,struct pdb_atom *strc, int atom);
 void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm);
+void k_cov_inv_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm);
 void buid_pre(gsl_matrix *m,gsl_matrix *evc,int nb_atom);
 void k_inverse_matrix_stem_temp(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc);
 float calc_energy(int atom,gsl_vector *eval,float t);
-void assign_anisou_all(struct pdb_atom *init,int atom,struct pdb_atom *strc,int all);
+void assign_anisou_all(struct pdb_atom *init,int atom,struct pdb_atom *strc,int all, int ihess);
 
 // STeM_lib_rot.c
 //	STeM rot

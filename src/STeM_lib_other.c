@@ -19,28 +19,41 @@
 #define EPS 1.2e-7 
 #define RNMX (1.0-EPS) 
 
-void load_eigen(gsl_vector *v,gsl_matrix *m,char filename[100],int atom) {
+void load_eigen(gsl_vector *v,gsl_matrix *m,char filename[100],int atom)
+{
 	FILE *file;
  	file = fopen(filename,"r");
  	char line[10000];
  	float temp;
  	int i,j;
- 	while(fgets(line,10000,file)) {
- 		if (3 == sscanf(line,"%d\t%d\t%f",&i,&j,&temp)) {
- 			if (i>atom || j>atom) {
+ 	while(fgets(line,10000,file))
+	{
+ 		if (3 == sscanf(line,"%d\t%d\t%f",&i,&j,&temp))
+		{
+ 			if (i>atom || j>atom)
+			{
  				//printf("Index to big: (%d,%d) %d\n",i,j,atom); 
  			
- 			} else {
- 				gsl_matrix_set(m,i-1,j-1,temp);}
- 			}
- 		if (2 == sscanf(line,"%dth Eigenvalue:%f",&i,&temp)) {
- 			if (i>atom) {
+ 			} 
+ 			else
+			{
+ 				gsl_matrix_set(m,i-1,j-1,temp);
+			}
+		}
+		
+ 		if (2 == sscanf(line,"%dth Eigenvalue:%f",&i,&temp))
+		{
+ 			if (i>atom) 
+			{
  				printf("Index to big: (%d) %d\n",i,atom); 
- 			} else {
+ 			}
+ 			else
+			{
  				gsl_vector_set(v,i-1,temp);
  			}
  		}
  	}
+ 	
  	fclose(file);
 }
   void write_eigen(char filename[100], gsl_matrix *m,gsl_vector *v,int nb_atom) {
@@ -195,18 +208,25 @@ for(i=0; i < nb_atom_1; ++i) {
  }
  
 
- float write_strc(char filename[100], struct pdb_atom *newstrc,int nb_atom,float factor){
+ float write_strc(char filename[100], struct pdb_atom *newstrc,int nb_atom,float factor)
+ {
  	FILE *out_file;
- 	int k;
- 	out_file = fopen(filename,"w");
- 	float avg = 0;
- 	float tot = 1;
- 	for (k = 0; k<nb_atom;k++) {
- 		if (newstrc[k].atom_type == 1) {fprintf(out_file,"ATOM  ");}
+	
+	int k;
+	
+	out_file = fopen(filename,"w");
+	
+	float avg = 0;
+	
+	float tot = 1;
+	
+	for (k = 0; k<nb_atom;k++)
+	{
+		if (newstrc[k].atom_type == 1) {fprintf(out_file,"ATOM  ");}
 	 	if (newstrc[k].atom_type == 2) {fprintf(out_file,"HETATM");}
 	 	if (newstrc[k].atom_type == 3) {fprintf(out_file,"HETATM");}
- 		fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
- 			newstrc[k].atom_number,
+		fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
+			newstrc[k].atom_number,
  			newstrc[k].atom_prot_type,
  			newstrc[k].res_type,
  			newstrc[k].chain,
@@ -215,66 +235,132 @@ for(i=0; i < nb_atom_1; ++i) {
  			newstrc[k].y_cord,
  			newstrc[k].z_cord,
  			newstrc[k].b_factor
- 			
  			);
-	 		if (newstrc[k].main_vars[0] > 0) {
-	 			// Rebuild matrix
-	 			
-	 			gsl_matrix *temp = gsl_matrix_alloc(3,3);
-	 			gsl_matrix *temp2 = gsl_matrix_alloc(3,3);
-	 			gsl_matrix *evec = gsl_matrix_alloc(3,3);
-	 			gsl_matrix *tevec = gsl_matrix_alloc(3,3);
-	 			gsl_matrix *eval = gsl_matrix_alloc(3,3);
-	 			gsl_matrix_set_all(temp,0);
-	 			gsl_matrix_set_all(temp2,0);
-	 			gsl_matrix_set_all(eval,0);
-	 			
-	 			
-	 			int i,j;
-
-				for(i=0;i<3;++i) {
-	 				for(j=0;j<3;++j) {
-	 					gsl_matrix_set(evec,i,j,newstrc[k].global_evecs[i][j]);
-	 					gsl_matrix_set(tevec,i,j,newstrc[k].global_evecs[j][i]);	
-		 				}
-		 				gsl_matrix_set(eval,i,i,newstrc[k].main_vars[i]);
-		 		}
-				multiplie_matrix(evec,3,3,eval,3,3,temp2);
-				multiplie_matrix(temp2,3,3,tevec,3,3,temp);
+		
+		if (newstrc[k].main_vars[0] > 0)
+		{
+			// Rebuild matrix
+			
+			gsl_matrix *temp = gsl_matrix_alloc(3,3);
+			gsl_matrix *temp2 = gsl_matrix_alloc(3,3);
+			gsl_matrix *evec = gsl_matrix_alloc(3,3);
+			gsl_matrix *tevec = gsl_matrix_alloc(3,3);
+			gsl_matrix *eval = gsl_matrix_alloc(3,3);
+			gsl_matrix_set_all(temp,0);
+			gsl_matrix_set_all(temp2,0);
+			gsl_matrix_set_all(eval,0);
+			
+			
+			int i,j;
+			
+			for(i=0;i<3;++i)
+			{
+				for(j=0;j<3;++j)
+				{
+					gsl_matrix_set(evec,i,j,newstrc[k].global_evecs[i][j]);
+					gsl_matrix_set(tevec,i,j,newstrc[k].global_evecs[j][i]);	
+				}
 				
-
-	 			fprintf(out_file,"ANISOU");
-	 			fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
-		 			newstrc[k].atom_number,
-		 			newstrc[k].atom_prot_type,
-		 			newstrc[k].res_type,
-		 			newstrc[k].chain,
-		 			newstrc[k].res_number,
-		 			(int) (gsl_matrix_get(temp,0,0)*factor),
-		 			(int) (gsl_matrix_get(temp,1,1)*factor),
-		 			(int) (gsl_matrix_get(temp,2,2)*factor),
-		 			(int) (gsl_matrix_get(temp,0,1)*factor),
-		 			(int) (gsl_matrix_get(temp,0,2)*factor),
-		 			(int) (gsl_matrix_get(temp,1,2)*factor)
-	 				
-	 			);
-	 			tot += 6.0;
-	 			avg += gsl_matrix_get(temp,0,0)*factor;
-	 			avg += gsl_matrix_get(temp,1,1)*factor;
-	 			avg += gsl_matrix_get(temp,2,2)*factor;
-	 			avg += gsl_matrix_get(temp,0,1)*factor;
-	 			avg += gsl_matrix_get(temp,0,2)*factor;
-	 			avg += gsl_matrix_get(temp,1,2)*factor;
-	 			
-	 			gsl_matrix_free(temp);
-	 			gsl_matrix_free(temp2);
-	 			gsl_matrix_free(eval);
-	 			gsl_matrix_free(evec);
-	 			gsl_matrix_free(tevec);
-	 		}
+				gsl_matrix_set(eval,i,i,newstrc[k].main_vars[i]);
+			}
+			
+			multiplie_matrix(evec,3,3,eval,3,3,temp2);
+			multiplie_matrix(temp2,3,3,tevec,3,3,temp);
+			
+			fprintf(out_file,"ANISOU");
+			fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
+				newstrc[k].atom_number,
+				newstrc[k].atom_prot_type,
+				newstrc[k].res_type,
+				newstrc[k].chain,
+				newstrc[k].res_number,
+				(int) (gsl_matrix_get(temp,0,0)*factor),
+				(int) (gsl_matrix_get(temp,1,1)*factor),
+				(int) (gsl_matrix_get(temp,2,2)*factor),
+				(int) (gsl_matrix_get(temp,0,1)*factor),
+				(int) (gsl_matrix_get(temp,0,2)*factor),
+				(int) (gsl_matrix_get(temp,1,2)*factor)
+				);
+			
+			tot += 6.0;
+			avg += gsl_matrix_get(temp,0,0)*factor;
+			avg += gsl_matrix_get(temp,1,1)*factor;
+			avg += gsl_matrix_get(temp,2,2)*factor;
+			avg += gsl_matrix_get(temp,0,1)*factor;
+			avg += gsl_matrix_get(temp,0,2)*factor;
+			avg += gsl_matrix_get(temp,1,2)*factor;
+			
+			gsl_matrix_free(temp);
+			gsl_matrix_free(temp2);
+			gsl_matrix_free(eval);
+			gsl_matrix_free(evec);
+			gsl_matrix_free(tevec);
+		}
  	}
  	 fclose(out_file);
  	 return(avg/tot);
+ }
+ 
+ void write_anisou_file(char filename[100], struct pdb_atom *newstrc,int nb_atom, int ihess)
+ {
+	 FILE *out_file;
+	 
+	 int k;
+	 
+	 out_file = fopen(filename,"w");
+	 
+	 for (k = 0; k<nb_atom;k++)
+	 {
+		 if (newstrc[k].atom_type == 1) {fprintf(out_file,"ATOM  ");}
+		 if (newstrc[k].atom_type == 2) {fprintf(out_file,"HETATM");}
+		 if (newstrc[k].atom_type == 3) {fprintf(out_file,"HETATM");}
+		 fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
+			 newstrc[k].atom_number,
+			 newstrc[k].atom_prot_type,
+			 newstrc[k].res_type,
+			 newstrc[k].chain,
+			 newstrc[k].res_number,
+			 newstrc[k].x_cord,
+			 newstrc[k].y_cord,
+			 newstrc[k].z_cord,
+			 newstrc[k].b_factor
+			 );
+		if(ihess == 1)
+		{
+			fprintf(out_file,"ANISOU");
+			fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
+				newstrc[k].atom_number,
+				newstrc[k].atom_prot_type,
+				newstrc[k].res_type,
+				newstrc[k].chain,
+				newstrc[k].res_number,
+				(int) (newstrc[k].super_ih[0][0]),
+				(int) (newstrc[k].super_ih[1][1]),
+				(int) (newstrc[k].super_ih[2][2]),
+				(int) (newstrc[k].super_ih[0][1]),
+				(int) (newstrc[k].super_ih[0][2]),
+				(int) (newstrc[k].super_ih[1][2])
+				);
+		}
+		else
+		{
+			fprintf(out_file,"ANISOU");
+			fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
+				newstrc[k].atom_number,
+				newstrc[k].atom_prot_type,
+				newstrc[k].res_type,
+				newstrc[k].chain,
+				newstrc[k].res_number,
+				(int) (newstrc[k].covar[0][0]),
+				(int) (newstrc[k].covar[1][1]),
+				(int) (newstrc[k].covar[2][2]),
+				(int) (newstrc[k].covar[0][1]),
+				(int) (newstrc[k].covar[0][2]),
+				(int) (newstrc[k].covar[1][2])
+				);
+		}
+	 }
+	 fclose(out_file);
  }
  
  
@@ -396,32 +482,68 @@ for(i=0; i < nb_atom_1; ++i) {
  	return(prod_tot/sqrt(std_y*std_x));
  	
  }
- void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm) {
+ 
+ void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm) 
+ {
  	//gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
  	gsl_matrix_set_all (m, 0);
  	int i,j,k,l;
  	
- 	for (k=mode;k<mode+nm;++k) {
+ 	for (k=mode;k<mode+nm;++k) 
+	{
  		if (k > int (evl->size-1)) {break;}
- 		if  (gsl_vector_get (evl, k) < 0.000001) {
+ 		
+ 		if  (gsl_vector_get (evl, k) < 0.000001) 
+		{
  			printf("K = %d -> Eval to small I next:%f\n",k,gsl_vector_get (evl, k));
  			continue;
  		}
  		
- 		for (i=0;i<nb_atom;++i) {
- 			for (j=0;j<nb_atom;++j) {
-		 		for (l=0;l<3;++l) {	
+ 		for (i=0;i<nb_atom;++i) 
+		{
+ 			for (j=0;j<nb_atom;++j) 
+			{
+		 		for (l=0;l<3;++l) 
+				{	
 			 			gsl_matrix_set(m,i,j,
-			 				gsl_matrix_get(evc,i*3+l,k)*gsl_matrix_get(evc,j*3+l,k)/gsl_vector_get (evl, k)+gsl_matrix_get(m,i,j)
+			 				gsl_matrix_get(evc,i*3+l,k)*gsl_matrix_get(evc,j*3+l,k)/gsl_vector_get(evl, k) + gsl_matrix_get(m,i,j)
 			 			);
-			 		}
+				}
 		 	}
 	 	}
 	 	//break;
  	}
- 		
-
  }
+ 
+ void k_cov_inv_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm) 
+ {
+	 //gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
+	 gsl_matrix_set_all (m, 0);
+	 int i,j,k,l;
+	 
+	 for (k=mode;k<mode+nm;++k)
+	 {
+		 if (k > int (evl->size-1)) {break;}
+		 if  (gsl_vector_get (evl, k) < 0.000001) 
+		 {
+			 printf("K = %d -> Eval to small I next:%f\n",k,gsl_vector_get (evl, k));
+			 continue;
+		 }
+		 
+		 for (i=0;i<nb_atom;++i)
+		 {
+			 for (j=0;j < 3;++j)
+			 {
+				 for(l = 0; l < 3; ++l)
+				 {
+					gsl_matrix_set(m, 3*i + j, 3*i + l, gsl_matrix_get(evc,3*i + j,k)*gsl_matrix_get(evc, 3*i + l, k)/gsl_vector_get(evl, k) + gsl_matrix_get(m, 3*i + j, 3*i + l));
+				 }
+			 }
+		 }
+		 //break;
+	 }
+ }
+ 
  void buid_pre(gsl_matrix *m,gsl_matrix *evc,int nb_atom) {
  	gsl_matrix_set_all (m, 0);
  	int i,k,l;
@@ -500,7 +622,7 @@ float calc_energy(int atom,gsl_vector *eval,float t) {
 	int i;
 	double ental=0.00000;
 	double entro=0.00000;
-	double Na = 6.022*pow(10,23);
+	double Na = 6.022 * pow(10,23);
 	double h = 6.626068 * pow(10,-34);
 	double v;
 	double e =2.7182;
@@ -525,19 +647,31 @@ float calc_energy(int atom,gsl_vector *eval,float t) {
 	return((ental-t*entro)/1000);
 }
 
-void assign_anisou_all(struct pdb_atom *init,int atom,struct pdb_atom *strc,int all) {
+void assign_anisou_all(struct pdb_atom *init,int atom,struct pdb_atom *strc,int all, int ihess)
+{
 	int i,j,k,l;
 	
-	for(i = 0;i<atom;++i) {
-		for(j=0;j<all;++j) {
-			if (init[i].node == strc[j].node) {
-				for(k=0;k<3;++k) {
-					strc[j].main_vars[k] = init[i].main_vars[k];
-					for(l=0;l<3;++l) {
-						 strc[j].global_evecs[k][l] = init[i].global_evecs[k][l];
+	for(i = 0;i<atom;++i) 
+	{
+		for(j=0;j<all;++j) 
+		{
+			if (init[i].node == strc[j].node) 
+			{
+				for(k=0;k<3;++k) 
+				{
+					for(l=0;l<3;++l)
+					{
+						 if(ihess == 1)
+						 {
+							 strc[j].super_ih[k][l] = init[i].super_ih[k][l];
+						 }
+						 else
+						 {
+							 strc[j].covar[k][l] = init[i].covar[k][l];
+						 }
 					}
 				}
 			}
-		}	
+		}
 	}
 }
