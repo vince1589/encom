@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	
 	int nconn;
 	int lig = 0;
-	double beta = 0.0000001;
+	double beta = 0.0000005;
 	float factor = 1.0;
 	for (i = 1;i < argc;i++)
 	{
@@ -105,6 +105,8 @@ int main(int argc, char *argv[])
 	load_eigen(eval,evec,eigen_name,3*atom);
 	
 	gsl_matrix *k_totinv = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
+	
+	gsl_matrix_set_all(k_totinv, 0);
 	
 	k_cov_inv_matrix_stem(k_totinv,atom,eval,evec,6,atom*3-6); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
 	

@@ -231,8 +231,8 @@ int main(int argc, char *argv[])
 			
 			for(j = 0; j < 3; j++)
 			{
-				if (strc_node[i].anisou_vars[0] <= 0) {continue;}
-				if (strc_node_t[mat].anisou_vars[0] <= 0) {continue;}
+				if (strc_node[i].main_vars[0] <= 0) {continue;}
+				if (strc_node_t[mat].main_vars[0] <= 0) {continue;}
 			}
 			
 			gsl_matrix *anisou1 = gsl_matrix_alloc(3,3);
@@ -248,21 +248,21 @@ int main(int argc, char *argv[])
 				for(k = 0; k < 3; k++)
 				{
 	// 				printf("%6.10f\t", strc_node[i].anisou[j][k]);
-					gsl_matrix_set(anisou1, j, k, strc_node[i].anisou[j][k]);
-					gsl_matrix_set(anisou2, j, k, strc_node_t[mat].anisou[j][k] * scaler);
+					gsl_matrix_set(anisou1, j, k, strc_node[i].covar[j][k]);
+					gsl_matrix_set(anisou2, j, k, strc_node_t[mat].covar[j][k] * scaler);
 				}
 				
 	// 			printf("%6.10f\n", strc_node[i].anisou_vars[j]);
-				gsl_vector_set(vars1, j, strc_node[i].anisou_vars[j]);
-				gsl_vector_set(vars2, j, strc_node_t[mat].anisou_vars[j] * scaler);
+				gsl_vector_set(vars1, j, strc_node[i].main_vars[j]);
+				gsl_vector_set(vars2, j, strc_node_t[mat].main_vars[j] * scaler);
 			}
 			
 			gsl_vector_set(distances, i, cmp_gauss(anisou1, vars1, anisou2, vars2));
 			
-			gsl_matrix_set(aniso, i, 0, strc_node[i].anisou_vars[2] / strc_node[i].anisou_vars[0]);
-			gsl_matrix_set(aniso, i, 2, strc_node[i].anisou_vars[2] / strc_node[i].anisou_vars[1]);
-			gsl_matrix_set(aniso, i, 1, strc_node_t[mat].anisou_vars[2] / strc_node_t[mat].anisou_vars[0]);
-			gsl_matrix_set(aniso, i, 3, strc_node_t[mat].anisou_vars[2] / strc_node_t[mat].anisou_vars[1]);
+			gsl_matrix_set(aniso, i, 0, strc_node[i].main_vars[2] / strc_node[i].main_vars[0]);
+			gsl_matrix_set(aniso, i, 2, strc_node[i].main_vars[2] / strc_node[i].main_vars[1]);
+			gsl_matrix_set(aniso, i, 1, strc_node_t[mat].main_vars[2] / strc_node_t[mat].main_vars[0]);
+			gsl_matrix_set(aniso, i, 3, strc_node_t[mat].main_vars[2] / strc_node_t[mat].main_vars[1]);
 			
 	// 		printf("%1i\t%6.10f\n", i, gsl_vector_get(distances, i));
 		}

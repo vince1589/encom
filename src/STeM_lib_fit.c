@@ -2039,13 +2039,19 @@ void double_gauss(struct pdb_atom *init, gsl_matrix *ihessian, int atom, double 
 		{
 			for(j = 0; j < 3; j++)
 			{
-				init[node].super_ih[i][j] =  gsl_matrix_get(ihessian, 3*node + i, 3*node + j) / beta;
+				printf("%1.5f\t", gsl_matrix_get(ihessian, 3*node + i, 3*node + j) / beta);
 				
-				gsl_matrix_set(ihcov, i, j, init[node].super_ih[i][j]);
+				init[node].covar[i][j] =  gsl_matrix_get(ihessian, 3*node + i, 3*node + j) / beta;
 				
-				//printf("Super_ihvar %5i,%5i of node %5i : %6.10f\n", i, j, node, init[node].super_ih[i][j]);
+				gsl_matrix_set(ihcov, i, j, init[node].covar[i][j]);
+				
+				printf("%1.5f\t", init[node].covar[i][j]);
 			}
+			
+			printf("\n");
 		}
+		
+		printf("\n");
 		
 		gsl_matrix *glevecs = gsl_matrix_alloc(3,3);
 		gsl_matrix_set_all(glevecs,0);
@@ -2061,12 +2067,12 @@ void double_gauss(struct pdb_atom *init, gsl_matrix *ihessian, int atom, double 
 		
 		for(i = 0; i < 3; i++)
 		{
-			init[node].super_ihvars[i] = gsl_vector_get(mainvars, i);
+			init[node].main_vars[i] = gsl_vector_get(mainvars, i);
 // 			printf("%6.5f\t", gsl_vector_get(mainvars, i));
 			
 			for(j = 0; j < 3; j++)
 			{
-				init[node].super_ihevecs[i][j] = gsl_matrix_get(glevecs, i, j);
+				init[node].global_evecs[i][j] = gsl_matrix_get(glevecs, i, j);
 			}
 		}
 		
@@ -2749,20 +2755,20 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
 				if (6 == sscanf((line_ptr+29),"%d %d %d %d %d %d",&a11,&a22,&a33,&a12,&a13,&a23))
 				{
 					// Diago
-					gsl_matrix_set(todiag,0,0,a11); strc[i].anisou[0][0] = a11;
-					gsl_matrix_set(todiag,1,1,a22); strc[i].anisou[1][1] = a22;
-					gsl_matrix_set(todiag,2,2,a33); strc[i].anisou[2][2] = a33;
+					gsl_matrix_set(todiag,0,0,a11); strc[i].covar[0][0] = a11;
+					gsl_matrix_set(todiag,1,1,a22); strc[i].covar[1][1] = a22;
+					gsl_matrix_set(todiag,2,2,a33); strc[i].covar[2][2] = a33;
 					
 					// Off diago
 					
-					gsl_matrix_set(todiag,0,1,a12); strc[i].anisou[0][1] = a12;
-					gsl_matrix_set(todiag,1,0,a12); strc[i].anisou[1][0] = a12;
+					gsl_matrix_set(todiag,0,1,a12); strc[i].covar[0][1] = a12;
+					gsl_matrix_set(todiag,1,0,a12); strc[i].covar[1][0] = a12;
 					
-					gsl_matrix_set(todiag,0,2,a13); strc[i].anisou[0][2] = a13;
-					gsl_matrix_set(todiag,2,0,a13); strc[i].anisou[2][0] = a13;
+					gsl_matrix_set(todiag,0,2,a13); strc[i].covar[0][2] = a13;
+					gsl_matrix_set(todiag,2,0,a13); strc[i].covar[2][0] = a13;
 					
-					gsl_matrix_set(todiag,1,2,a23); strc[i].anisou[1][2] = a23;
-					gsl_matrix_set(todiag,2,1,a23); strc[i].anisou[2][1] = a23;
+					gsl_matrix_set(todiag,1,2,a23); strc[i].covar[1][2] = a23;
+					gsl_matrix_set(todiag,2,1,a23); strc[i].covar[2][1] = a23;
 					
 					//printf("%f %f %f %f %f %f\n",a11,a22,a33,a12,a13,a23);
 					gsl_vector *eval = gsl_vector_alloc(3);
@@ -2775,9 +2781,9 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
 						for (l=0;l<3;++l)
 						{
 							//printf("(%d,%d) = %f\n",k,l,gsl_matrix_get(evec,k,l));
-							strc[i].anisou_evecs[k][l] = gsl_matrix_get(evec,k,l);
+							strc[i].global_evecs[k][l] = gsl_matrix_get(evec,k,l);
 						}
-						strc[i].anisou_vars[k] = gsl_vector_get(eval,k);
+						strc[i].main_vars[k] = gsl_vector_get(eval,k);
 					}
 					++found;
 				}

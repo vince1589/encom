@@ -325,40 +325,21 @@ for(i=0; i < nb_atom_1; ++i) {
 			 newstrc[k].z_cord,
 			 newstrc[k].b_factor
 			 );
-		if(ihess == 1)
-		{
-			fprintf(out_file,"ANISOU");
-			fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
-				newstrc[k].atom_number,
-				newstrc[k].atom_prot_type,
-				newstrc[k].res_type,
-				newstrc[k].chain,
-				newstrc[k].res_number,
-				(int) (newstrc[k].super_ih[0][0]),
-				(int) (newstrc[k].super_ih[1][1]),
-				(int) (newstrc[k].super_ih[2][2]),
-				(int) (newstrc[k].super_ih[0][1]),
-				(int) (newstrc[k].super_ih[0][2]),
-				(int) (newstrc[k].super_ih[1][2])
-				);
-		}
-		else
-		{
-			fprintf(out_file,"ANISOU");
-			fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
-				newstrc[k].atom_number,
-				newstrc[k].atom_prot_type,
-				newstrc[k].res_type,
-				newstrc[k].chain,
-				newstrc[k].res_number,
-				(int) (newstrc[k].covar[0][0]),
-				(int) (newstrc[k].covar[1][1]),
-				(int) (newstrc[k].covar[2][2]),
-				(int) (newstrc[k].covar[0][1]),
-				(int) (newstrc[k].covar[0][2]),
-				(int) (newstrc[k].covar[1][2])
-				);
-		}
+			 
+		fprintf(out_file,"ANISOU");
+		fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
+			newstrc[k].atom_number,
+			newstrc[k].atom_prot_type,
+			newstrc[k].res_type,
+			newstrc[k].chain,
+			newstrc[k].res_number,
+			(int) (newstrc[k].covar[0][0]),
+			(int) (newstrc[k].covar[1][1]),
+			(int) (newstrc[k].covar[2][2]),
+			(int) (newstrc[k].covar[0][1]),
+			(int) (newstrc[k].covar[0][2]),
+			(int) (newstrc[k].covar[1][2])
+			);
 	 }
 	 fclose(out_file);
  }
@@ -530,6 +511,8 @@ for(i=0; i < nb_atom_1; ++i) {
 			 continue;
 		 }
 		 
+// 		 printf("%6.10f\n", gsl_vector_get (evl, k));
+		 
 		 for (i=0;i<nb_atom;++i)
 		 {
 			 for (j=0;j < 3;++j)
@@ -661,14 +644,7 @@ void assign_anisou_all(struct pdb_atom *init,int atom,struct pdb_atom *strc,int 
 				{
 					for(l=0;l<3;++l)
 					{
-						 if(ihess == 1)
-						 {
-							 strc[j].super_ih[k][l] = init[i].super_ih[k][l];
-						 }
-						 else
-						 {
-							 strc[j].covar[k][l] = init[i].covar[k][l];
-						 }
+						strc[j].covar[k][l] = init[i].covar[k][l];
 					}
 				}
 			}

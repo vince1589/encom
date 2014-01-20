@@ -32,18 +32,6 @@ struct pdb_atom
 		double global_evecs[3][3]; // Global eigenvectors (principal axes) in X, Y and Z for this atom : (evec_1  evec_2  evec_3) (column vectors) The module of each eigenvector is equal to 1
 		// Actual covariance matrix.
 		double covar[3][3];
-		
-		// Eigenrepresentation of the corresponding superelement of the hessian matrix, may or may not correspond to the covariance matrix.
-		double super_ihvars[3];
-		double super_ihevecs[3][3];
-		// Actual superelement.
-		double super_ih[3][3];
-		
-		// Eigenrepresentation of the ANISOU covariance matrix, experimental result.
-		double anisou_vars[3];
-		double anisou_evecs[3][3];
-		// Actual ANISOU covariance matrix.
-		double anisou[3][3];
 };
 
 
