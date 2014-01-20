@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
  	all = count_atom(file_name);
  	nconn = count_connect(file_name);
  	
+ 	if (verbose == 1) {printf("File I:%s\n",file_name);}
+ 	
  	if (verbose == 1) {printf("Connect:%d\n",nconn);}
  	
 	if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
@@ -78,6 +80,8 @@ int main(int argc, char *argv[]) {
  	nconn = 0;
  	all_t = count_atom(check_name);
  	nconn = count_connect(check_name);
+ 	
+ 	if (verbose == 1) {printf("File T:%s\n",check_name);}
  	
  	if (verbose == 1) {printf("Connect:%d\n",nconn);}
  	
@@ -112,10 +116,10 @@ int main(int argc, char *argv[]) {
  	printf("Ligand atom:%d et %d\n",liginit_atom,ligtarg_atom);
  	assign_atom_type(strc_all,all);
  	assign_atom_type(strc_all_t,all_t);
- 	
- 	printf("I found %d Anisou with %d atom !\n",load_anisou(strc_all,file_name,all),all);
+
   printf("I found %d Anisou with %d atom !\n",load_anisou(strc_all_t,check_name,all_t),all_t);
 	
+
 
 	gsl_matrix *rota = gsl_matrix_alloc(3,3);
 	gsl_vector *trans = gsl_vector_alloc(3);
@@ -163,6 +167,34 @@ int main(int argc, char *argv[]) {
 			two[strc_all[i].type-1][twom[strc_all[i].type-1]] = i;
 			++twom[strc_all[i].type-1];
 	}
+
+
+  // Output sur le nombre d'atome et leur type
+  
+	if (verbose == 1) {
+		printf("Strc_one = (");
+	 	for(i=0;i<8;++i){
+		   printf("%d ",twom[i]);
+	 	}
+		printf(")\n");
+
+
+
+		int atom_count[8];
+		for(i=0;i<8;++i){atom_count[i] = 0;}
+		for(i=0;i<all_t;++i) {
+		
+		    if (strc_all_t[i].type > 8) {printf("Cannot assign type\n");continue;}
+		    ++atom_count[strc_all_t[i].type-1];
+		}
+		printf("Strc_two = (");
+		for(i=0;i<8;++i){
+		    printf("%d ",atom_count[i]);
+		}
+		printf(")\n");
+
+	}
+    
 
 	
 	// Optimize the best super
@@ -243,13 +275,12 @@ int main(int argc, char *argv[]) {
 				float dist = pow(tstrc[j].x_cord-strc_all[two[type][k]].x_cord,2)+pow(tstrc[j].y_cord-strc_all[two[type][k]].y_cord,2)+pow(tstrc[j].z_cord-strc_all[two[type][k]].z_cord,2);
 			
 				if (dist < max) {max = dist;}
-
+				//printf("I:%d J:%d Dist:%f\n",i,j,dist);
 				if (dist < 10*10) {
-					
+			
 					if (conj_prob_init(&tstrc[j], &strc_all[two[type][k]], incov12,delr,&conj_dens12) != -1 && dens_flag == 1) {
 						float dens = density_prob(incov12, delr, conj_dens12,pos);
-					//	float prob =proxim_prob(incov12, delr, conj_dens12, 0.00, 4, 50);
-						//if (i == 0) {printf("ID:%d %d %f %.12f \n",j,two[type][k],sqrt(dist),dens);}
+
 						dens_sum += dens;
 						if (dens > max_dens) {max_dens = dens;}
 					}
@@ -278,7 +309,7 @@ int main(int argc, char *argv[]) {
 		if (dens_flag == 1) {
 			float prob = pow(2.71,-(old-dens_sum)/temperature);
 			if (dens_sum > old || prob > ran2(&seed)) {
-				printf("IT:%d Old:%g New:%g Prob:%.4f Ligrmsd:%.2f Gene:%.2f %.2f %.2f %.2f %.2f %.2f\n",i,old,dens_sum,prob,ligrmsd,gene[0],gene[1],gene[2],gene[3],gene[4],gene[5]);
+			//	printf("IT:%d Old:%g New:%g Prob:%.4f Ligrmsd:%.2f Gene:%.2f %.2f %.2f %.2f %.2f %.2f\n",i,old,dens_sum,prob,ligrmsd,gene[0],gene[1],gene[2],gene[3],gene[4],gene[5]);
 				for(j=0;j<6;++j) {qgen[j] = gene[j];}
 				old = dens_sum;		
 			} 
