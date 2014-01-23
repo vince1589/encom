@@ -29,7 +29,7 @@ OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_template.o            \
         STeM_lib_vcon.o
 
-all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter
 	\mv build_encom $W/build_encom
 	\mv b_factor $W/b_factor
 	\mv bfactor_diff $W/bfactor_diff
@@ -45,6 +45,7 @@ all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_p
 	\mv cmp_anisou $W/cmp_anisou
 	\mv AniCleft $W/AniCleft
 	\mv build_gauss $W/build_gauss
+	\mv find_inter $W/find_inter
 
 clean:
 	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
@@ -83,7 +84,8 @@ AniCleft: $(OBJ) AniCleft.o
 	$(CXX) $(OBJ) AniCleft.o $(LIBS) -o AniCleft
 build_gauss: $(OBJ) build_gauss.o
 	$(CXX) $(OBJ) build_gauss.o $(LIBS) -o build_gauss
-
+find_inter: $(OBJ) find_inter.o
+	$(CXX) $(OBJ) find_inter.o $(LIBS) -o find_inter
 
 # Build main()
 cmp_eigen.o: $I/cmp_eigen.c
@@ -118,6 +120,8 @@ AniCleft.o: $I/AniCleft.c
 	$(CXX) $(CXXFLAGS) -c $I/AniCleft.c $(INCLUDES)
 build_gauss.o: $I/build_gauss.c
 	$(CXX) $(CXXFLAGS) -c $I/build_gauss.c $(INCLUDES)
+find_inter.o: $I/find_inter.c
+	$(CXX) $(CXXFLAGS) -c $I/find_inter.c $(INCLUDES)
 
 # Build Source STeM_lib
 

@@ -179,6 +179,7 @@ int main(int argc, char *argv[])
 // 	gsl_vector *iso_distances = gsl_vector_alloc(atom);
 	
 	gsl_vector *distances = gsl_vector_alloc(atom);
+	gsl_vector_set_all(distances, -1);
 	
 	gsl_matrix *aniso = gsl_matrix_alloc(atom, 4); // First anisotropy of initial, First anisotropy of target, Second anisotropy of initial, Second anisotropy of target
 	
@@ -227,13 +228,14 @@ int main(int argc, char *argv[])
 		for(i = 0; i < atom; ++i)
 		{
 			int mat = align[i];
-			if (mat == -1) {continue;}
 			
 			for(j = 0; j < 3; j++)
 			{
-				if (strc_node[i].main_vars[0] <= 0) {continue;}
-				if (strc_node_t[mat].main_vars[0] <= 0) {continue;}
+				if (strc_node[i].main_vars[0] <= 0) {mat = -1; continue;}
+				if (strc_node_t[mat].main_vars[0] <= 0) {mat = -1; continue;}
 			}
+			
+			if (mat == -1) {continue;}
 			
 			gsl_matrix *anisou1 = gsl_matrix_alloc(3,3);
 			gsl_vector *vars1 = gsl_vector_alloc(3);
@@ -257,7 +259,11 @@ int main(int argc, char *argv[])
 				gsl_vector_set(vars2, j, strc_node_t[mat].main_vars[j] * scaler);
 			}
 			
+			
+			
 			gsl_vector_set(distances, i, cmp_gauss(anisou1, vars1, anisou2, vars2));
+			
+// 			printf("%1.10f\n", cmp_gauss(anisou1, vars1, anisou2, vars2));
 			
 			gsl_matrix_set(aniso, i, 0, strc_node[i].main_vars[2] / strc_node[i].main_vars[0]);
 			gsl_matrix_set(aniso, i, 2, strc_node[i].main_vars[2] / strc_node[i].main_vars[1]);
@@ -271,6 +277,20 @@ int main(int argc, char *argv[])
 		
 		gsl_sort_vector_index(perms, distances);
 		
+		int non_fails = atom;
+		
+		int fails = 0;
+		
+		for(i = 0; i < atom; i++)
+		{
+			if(gsl_vector_get(distances, gsl_permutation_get(perms, i)) < 0)
+			{
+				non_fails --;
+				
+				fails++;
+			}
+		}
+		
 		double mean_all;
 		
 		double sd_all;
@@ -283,44 +303,42 @@ int main(int argc, char *argv[])
 		
 		double med_90;
 		
-		int dum_atom = atom;
-		
 		for(i = 0; i < 2; i++)
 		{
 			if(i == 1)
 			{
-				dum_atom = 9 * dum_atom / 10;
+				non_fails = 9 * non_fails / 10;
 			}
 			
 			double mean = 0.0;
 			
-			for(j = 0; j < dum_atom; j++)
+			for(j = fails; j < fails + non_fails; j++)
 			{
-				mean += gsl_vector_get(distances,j);
+				mean += gsl_vector_get(distances, gsl_permutation_get(perms, j));
 			}
 			
-			mean /= dum_atom;
+			mean /= non_fails;
 			
 			double sd = 0.0;
 			
-			for(j = 0; j < dum_atom; j++)
+			for(j = fails; j < fails + non_fails; j++)
 			{
 				sd += (gsl_vector_get(distances, j) - mean) * (gsl_vector_get(distances, j) - mean);
 			}
 			
-			sd /= dum_atom;
+			sd /= non_fails;
 			
 			if(i == 0)
 			{
 				mean_all = mean; sd_all = sd;
 				
-				med_all = gsl_vector_get(distances, gsl_permutation_get(perms, dum_atom / 2));
+				med_all = gsl_vector_get(distances, gsl_permutation_get(perms, fails + non_fails/2));
 			}
 			else
 			{
 				avg90 = mean; sd90 = sd;
 				
-				med_90 = gsl_vector_get(distances, gsl_permutation_get(perms, dum_atom / 2));
+				med_90 = gsl_vector_get(distances, gsl_permutation_get(perms, fails + non_fails/2));
 			}
 			
 			/*
@@ -335,12 +353,12 @@ int main(int argc, char *argv[])
 			
 			for(i = 0; i < atom; i++)
 			{
-				gsl_vector_set(min_dist, i, gsl_vector_get(distances, gsl_permutation_get(perms, i)));
+				gsl_vector_set(min_dist, i, gsl_vector_get(distances, i));
 				
-				gsl_matrix_set(min_aniso, i, 0, gsl_matrix_get(aniso, gsl_permutation_get(perms, i), 0));
-				gsl_matrix_set(min_aniso, i, 1, gsl_matrix_get(aniso, gsl_permutation_get(perms, i), 1));
-				gsl_matrix_set(min_aniso, i, 2, gsl_matrix_get(aniso, gsl_permutation_get(perms, i), 2));
-				gsl_matrix_set(min_aniso, i, 3, gsl_matrix_get(aniso, gsl_permutation_get(perms, i), 3));
+				gsl_matrix_set(min_aniso, i, 0, gsl_matrix_get(aniso, i, 0));
+				gsl_matrix_set(min_aniso, i, 1, gsl_matrix_get(aniso, i, 1));
+				gsl_matrix_set(min_aniso, i, 2, gsl_matrix_get(aniso, i, 2));
+				gsl_matrix_set(min_aniso, i, 3, gsl_matrix_get(aniso, i, 3));
 			}
 			
 			min_avg90 = avg90;
