@@ -632,7 +632,7 @@ int count_atom(char filename[100]) {
 		z=-1;
 		at_nb = -1;
 		res = -1;
-		b_factor = -1;
+		b_factor = 0;
 			
 	 	sscanf((line_ptr+30),"%f %f %f",&x,&y,&z);
 	 	sscanf((line_ptr+6),"%d",&at_nb);

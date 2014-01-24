@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 	char out_name[500] = "out.pdb";
 	int nm = -1;
 	int verbose = 0;
-	
+	int mode = 6;
 	
 	int i;
 	
@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
 		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
 		if (strcmp("-b",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);beta = temp;}
 		if (strcmp("-nm",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp);nm = temp;}
+		if (strcmp("-m",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp);mode = temp;}
 		
 		
 	}
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
 	
 	gsl_matrix_set_all(k_totinv, 0);
 	
-	k_cov_inv_matrix_stem(k_totinv,atom,eval,evec,6,atom*3-6); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
+	k_cov_inv_matrix_stem(k_totinv,atom,eval,evec,mode,atom*3-mode); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
 	
 	printf("Generating gaussians\n");
 	

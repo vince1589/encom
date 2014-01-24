@@ -1,7 +1,32 @@
 #include "STeM.h"
 
+void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,float scale,float *ret,int print_flag);
 
+void assign_bfactor(struct pdb_atom *strc, int atom,struct pdb_atom *strc_all,int all) {
+	int i;
+	float max = 0;
+	float min = 100000;
+	float sum = 0;
+	float count = 0;
+	for(i=0;i< atom ;++i) {
+		double val = strc[i].b_factor;
+		
+		sum += val;
+		count += 1.0;
+		if (val < min) {min = val;}
+		if (val > max) {max =val;}
+	}
+	sum /= count;
+	float ratio = (max-min)/90.0;
+	
+	printf("Average:%.10f Min:%.4f Max:%.4f\n",sum,min,max);
+	for(i=0;i<all;++i) {
+		
+		strc_all[i].b_factor = (strc[strc_all[i].node].b_factor-min)/ratio+5.0;
+	
+	}
 
+}
 
 int main(int argc, char *argv[])
 {
@@ -13,10 +38,10 @@ int main(int argc, char *argv[])
  	int help_flag = 1;
  	char file_name[500];
  	char check_name[500];
- 	char out_name[500];
+ 	char out_name[500] = "UNDEF";
  	int verbose = 0;
 	
-	int i,j,k;
+	int i;
 	
 	int lig = 0;
 	int nconn;
@@ -158,7 +183,7 @@ int main(int argc, char *argv[])
 	
  	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
 	
- 	if ((float)score/(float)atom < 0.8)
+ 	if ((float)score/(float)atom > 0.0)
 	{
  		printf("Low Score... Will try an homemade alignement !!!\n");
 		
@@ -175,271 +200,102 @@ int main(int argc, char *argv[])
 	}
 	
 	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_yes(strc_node,strc_node_t,atom, align,strc_all,all)),score,atom);
+	float retu[4];
 	
-// 	gsl_vector *iso_distances = gsl_vector_alloc(atom);
+	avg_dist(strc_node,atom,strc_node_t,align,1.00,retu,1);
 	
-	gsl_vector *distances = gsl_vector_alloc(atom);
-	gsl_vector_set_all(distances, -1);
-	
-	gsl_matrix *aniso = gsl_matrix_alloc(atom, 4); // First anisotropy of initial, First anisotropy of target, Second anisotropy of initial, Second anisotropy of target
-	
-// 	gsl_matrix *angles = gsl_matrix_alloc(atom, 3); // cos(theta), cos(phi), cos(psi)
-	
-	double start = -4.0;
-	
-	double increment = -0.1;
-	
-	double scaler;
-	
-	double min_avg90 = 10000.0;
-	
-	double min_sd90;
-	
-	double min_med90 = 10000.0;
-	
-	double min_avgall = 10000.0;
-	
-	double min_sdall;
-	
-	double min_medall = 10000.0;
-	
-	double min_scaler;
-	
-	double min_scaler_med;
-	
-	double min_scaler90;
-	
-	double min_scaler90_med;
-	
-	int rep;
-	
-	gsl_vector *min_dist = gsl_vector_alloc(atom);
-	
-	gsl_matrix *min_aniso = gsl_matrix_alloc(atom, 4);
-	
-	for(rep = 0; rep < 81; rep++)
-	{
-		increment += 0.1;
-		
-		scaler = pow(10.0, start + increment);
-		
-// 		printf("%1.10f\n", scaler);
-		
-		for(i = 0; i < atom; ++i)
-		{
-			int mat = align[i];
-			
-			for(j = 0; j < 3; j++)
-			{
-				if (strc_node[i].main_vars[0] <= 0) {mat = -1; continue;}
-				if (strc_node_t[mat].main_vars[0] <= 0) {mat = -1; continue;}
-			}
-			
-			if (mat == -1) {continue;}
-			
-			gsl_matrix *anisou1 = gsl_matrix_alloc(3,3);
-			gsl_vector *vars1 = gsl_vector_alloc(3);
-			
-			gsl_matrix *anisou2 = gsl_matrix_alloc(3,3);
-			gsl_vector *vars2 = gsl_vector_alloc(3);
-			
-	// 		printf("Cov1 :\n");
-			
-			for(j = 0; j < 3; j++)
-			{
-				for(k = 0; k < 3; k++)
-				{
-	// 				printf("%6.10f\t", strc_node[i].anisou[j][k]);
-					gsl_matrix_set(anisou1, j, k, strc_node[i].covar[j][k]);
-					gsl_matrix_set(anisou2, j, k, strc_node_t[mat].covar[j][k] * scaler);
-				}
-				
-	// 			printf("%6.10f\n", strc_node[i].anisou_vars[j]);
-				gsl_vector_set(vars1, j, strc_node[i].main_vars[j]);
-				gsl_vector_set(vars2, j, strc_node_t[mat].main_vars[j] * scaler);
-			}
-			
-			
-			
-			gsl_vector_set(distances, i, cmp_gauss(anisou1, vars1, anisou2, vars2));
-			
-// 			printf("%1.10f\n", cmp_gauss(anisou1, vars1, anisou2, vars2));
-			
-			gsl_matrix_set(aniso, i, 0, strc_node[i].main_vars[2] / strc_node[i].main_vars[0]);
-			gsl_matrix_set(aniso, i, 2, strc_node[i].main_vars[2] / strc_node[i].main_vars[1]);
-			gsl_matrix_set(aniso, i, 1, strc_node_t[mat].main_vars[2] / strc_node_t[mat].main_vars[0]);
-			gsl_matrix_set(aniso, i, 3, strc_node_t[mat].main_vars[2] / strc_node_t[mat].main_vars[1]);
-			
-	// 		printf("%1i\t%6.10f\n", i, gsl_vector_get(distances, i));
-		}
-		
-		gsl_permutation *perms = gsl_permutation_alloc(atom);
-		
-		gsl_sort_vector_index(perms, distances);
-		
-		int non_fails = atom;
-		
-		int fails = 0;
-		
-		for(i = 0; i < atom; i++)
-		{
-			if(gsl_vector_get(distances, gsl_permutation_get(perms, i)) < 0)
-			{
-				non_fails --;
-				
-				fails++;
-			}
-		}
-		
-		double mean_all;
-		
-		double sd_all;
-		
-		double sd90;
-		
-		double avg90;
-		
-		double med_all;
-		
-		double med_90;
-		
-		for(i = 0; i < 2; i++)
-		{
-			if(i == 1)
-			{
-				non_fails = 9 * non_fails / 10;
-			}
-			
-			double mean = 0.0;
-			
-			for(j = fails; j < fails + non_fails; j++)
-			{
-				mean += gsl_vector_get(distances, gsl_permutation_get(perms, j));
-			}
-			
-			mean /= non_fails;
-			
-			double sd = 0.0;
-			
-			for(j = fails; j < fails + non_fails; j++)
-			{
-				sd += (gsl_vector_get(distances, j) - mean) * (gsl_vector_get(distances, j) - mean);
-			}
-			
-			sd /= non_fails;
-			
-			if(i == 0)
-			{
-				mean_all = mean; sd_all = sd;
-				
-				med_all = gsl_vector_get(distances, gsl_permutation_get(perms, fails + non_fails/2));
-			}
-			else
-			{
-				avg90 = mean; sd90 = sd;
-				
-				med_90 = gsl_vector_get(distances, gsl_permutation_get(perms, fails + non_fails/2));
-			}
-			
-			/*
-			if(i == 0) {printf("Mean value, total : %1.10f\nS.D. total : %1.10f\n", mean, sd);}
-			else {printf("Mean value, 90pc : %1.10f\nS.D. 90pc : %1.10f\n", mean, sd);}
-			*/
-		}
-		
-		if(avg90 < min_avg90)
-		{
-// 			printf("%1.10f\t%1.10f\n", avg90, min_avg90);
-			
-			for(i = 0; i < atom; i++)
-			{
-				gsl_vector_set(min_dist, i, gsl_vector_get(distances, i));
-				
-				gsl_matrix_set(min_aniso, i, 0, gsl_matrix_get(aniso, i, 0));
-				gsl_matrix_set(min_aniso, i, 1, gsl_matrix_get(aniso, i, 1));
-				gsl_matrix_set(min_aniso, i, 2, gsl_matrix_get(aniso, i, 2));
-				gsl_matrix_set(min_aniso, i, 3, gsl_matrix_get(aniso, i, 3));
-			}
-			
-			min_avg90 = avg90;
-			
-			min_sd90 = sd90;
-			
-			min_scaler90 = scaler;
-		}
-		
-		if(mean_all < min_avgall)
-		{
-			min_avgall = mean_all;
-			
-			min_sdall = sd_all;
-			
-			min_scaler = scaler;
-		}
-		
-		if(med_all < min_medall)
-		{
-			min_medall = med_all;
-			
-			min_scaler_med = scaler;
-		}
-		
-		if(med_90 < min_med90)
-		{
-			min_med90 = med_90;
-			
-			min_scaler90_med = scaler;
-		}
-		
-		gsl_permutation_free(perms);
+	if (strcmp(out_name,"UNDEF") != 0) {
+		avg_dist(strc_node,atom,strc_node_t,align,1.00,retu,0);
+		assign_bfactor(strc_node,atom,strc_all,all);
+		write_strc(out_name,strc_all,all,1.0);
 	}
-	
-	if(min_avg90 == 10000.0)
-	{
-		min_avg90 = 0.0;
-		min_sd90 = 0.0;
-		min_scaler90 = 0.0;
-	}
-	
-	if(min_med90 == 10000.0)
-	{
-		min_med90 = 0.0;
-		min_scaler90_med = 0.0;
-	}
-	
-	if(min_avgall == 10000.0)
-	{
-		min_avgall = 0.0;
-		min_sdall = 0.0;
-		min_scaler = 0.0;
-	}
-	
-	if(min_medall == 10000.0)
-	{
-		min_medall = 0.0;
-		min_scaler_med = 0.0;
-	}
-	
-	printf("Min avg value, total : %1.10f\nS.D. total : %1.10f\nMedian, total : %1.10f\n", min_avgall, min_sdall, min_medall);
-	printf("Min scaler, all : %1.10f\n", min_scaler);
-	printf("Min scaler, median, all : %1.10f\n", min_scaler_med);
-	printf("Min avg value, 90pc : %1.10f\nS.D. 90pc : %1.10f\nMedian, 90pc : %1.10f\n", min_avg90, min_sd90, min_med90);
-	printf("Min scaler, 90pc : %1.10f\n", min_scaler90);
-	printf("Min scaler, median, 90pc : %1.10f\n", min_scaler90_med);
-	
-		
-	printf("Data :\nNode\tDist\tAniso_1I\tAniso_1T\tAniso_2I\tAniso_2T\n");
-	
-	for(i = 0; i < atom; i++)
-	{
-		printf("%1i\t%1.5f\t%3.4f\t%3.4f\t%3.4f\t%3.4f\n", i,
-			gsl_vector_get(min_dist, i),
-			gsl_matrix_get(min_aniso, i, 0),
-			gsl_matrix_get(min_aniso, i, 1),
-			gsl_matrix_get(min_aniso, i, 2),
-			gsl_matrix_get(min_aniso, i, 3)
-			);
-	}
+
 }
 
+void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,float scaler,float *ret,int print_flag) {
+	
+	ret[0] = 0;
+	ret[1] = -1;
+	ret[2] = 0;
+	ret[3] = -1;
+	
+	gsl_vector *distances = gsl_vector_alloc(node);
+	gsl_vector_set_all(distances, -1);
+	
+	gsl_matrix *aniso = gsl_matrix_alloc(node, 4);
+	
+	int i,j,k;	
+			
+	for(i = 0; i < node; ++i)	{
+		int mat = align[i];
+		init[i].b_factor = 0;
+		for(j = 0; j < 3; j++) {
+			if (init[i].main_vars[0] <= 0) {mat = -1; continue;}
+			if (targ[mat].main_vars[0] <= 0) {mat = -1; continue;}
+		}
+
+		if (mat == -1) {continue;}
+
+		gsl_matrix *anisou1 = gsl_matrix_alloc(3,3);
+		gsl_vector *vars1 = gsl_vector_alloc(3);
+
+		gsl_matrix *anisou2 = gsl_matrix_alloc(3,3);
+		gsl_vector *vars2 = gsl_vector_alloc(3);
+
+		// 		printf("Cov1 :\n");
+
+		for(j = 0; j < 3; j++)	{
+			for(k = 0; k < 3; k++) {
+
+				gsl_matrix_set(anisou1, j, k, init[i].covar[j][k]);
+				gsl_matrix_set(anisou2, j, k, targ[mat].covar[j][k] * scaler);
+			}
+	
+
+			gsl_vector_set(vars1, j, init[i].main_vars[j]);
+			gsl_vector_set(vars2, j, targ[mat].main_vars[j] * scaler);
+		}
+
+
+
+		gsl_vector_set(distances, i, cmp_gauss(anisou1, vars1, anisou2, vars2));
+
+
+
+		gsl_matrix_set(aniso, i, 0, init[i].main_vars[2] / init[i].main_vars[0]);
+		gsl_matrix_set(aniso, i, 2, init[i].main_vars[2] / init[i].main_vars[1]);
+		gsl_matrix_set(aniso, i, 1, targ[mat].main_vars[2] / targ[mat].main_vars[0]);
+		gsl_matrix_set(aniso, i, 3, targ[mat].main_vars[2] / targ[mat].main_vars[1]);
+		init[i].b_factor = gsl_vector_get(distances,i);
+		if (print_flag != 0) {
+			printf("I:%4d %4.10f %s %d %s %s %d %s\n",i,gsl_vector_get(distances,i),init[i].res_type,init[i].res_number,init[i].chain,targ[mat].res_type,targ[mat].res_number,targ[mat].chain);
+		}
+	}
+	gsl_sort_vector(distances);
+
+	int count[2];
+	count[0] = 0;
+	count[1] = 0;
+	for(i = 0; i < node; ++i)	{
+		double val = gsl_vector_get(distances,i);
+		if ( val < -0.000001) {continue;}
+		count[0] += 1;
+		if ((ret[1] < -0.00001) && ((float) i / (float) node > 0.5)) {
+			ret[1] = val;
+		}
+		ret[0] += val;
+		if ((float) i / (float) node < 0.9) {
+			count[1] += 1;
+			ret[2] += val;
+			if ((ret[3] < -0.00001) && ((float) i / (float) node > 0.45)) {
+				ret[3] = val;
+			}
+		}
+	}
+
+	ret[0] /= (float) count[0];
+	ret[2] /= (float) count[1];
+	printf("AVG_all:%.10f Median_all:%.10f AVG_90:%.10f Median_90:%.10f\n",ret[0],ret[1],ret[2],ret[3]);
+
+}
 
