@@ -289,6 +289,11 @@ int main(int argc, char *argv[])
 				
 				fails++;
 			}
+			
+			if(gsl_vector_get(distances, gsl_permutation_get(perms, i)) > 100)
+			{
+				non_fails --;
+			}
 		}
 		
 		double mean_all;
@@ -432,7 +437,7 @@ int main(int argc, char *argv[])
 	
 	for(i = 0; i < atom; i++)
 	{
-		printf("%1i\t%1.5f\t%3.4f\t%3.4f\t%3.4f\t%3.4f\n", i,
+		printf("%1i\t%1.10f\t%3.4f\t%3.4f\t%3.4f\t%3.4f\n", i,
 			gsl_vector_get(min_dist, i),
 			gsl_matrix_get(min_aniso, i, 0),
 			gsl_matrix_get(min_aniso, i, 1),
