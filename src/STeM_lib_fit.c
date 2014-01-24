@@ -2039,19 +2039,19 @@ void double_gauss(struct pdb_atom *init, gsl_matrix *ihessian, int atom, double 
 		{
 			for(j = 0; j < 3; j++)
 			{
-				printf("%1.5f\t", gsl_matrix_get(ihessian, 3*node + i, 3*node + j) / beta);
+// 				printf("%1.5f\t", gsl_matrix_get(ihessian, 3*node + i, 3*node + j) / beta);
 				
 				init[node].covar[i][j] =  gsl_matrix_get(ihessian, 3*node + i, 3*node + j) / beta;
 				
 				gsl_matrix_set(ihcov, i, j, init[node].covar[i][j]);
 				
-				printf("%1.5f\t", init[node].covar[i][j]);
+// 				printf("%1.5f\t", init[node].covar[i][j]);
 			}
 			
-			printf("\n");
+// 			printf("\n");
 		}
 		
-		printf("\n");
+// 		printf("\n");
 		
 		gsl_matrix *glevecs = gsl_matrix_alloc(3,3);
 		gsl_matrix_set_all(glevecs,0);
