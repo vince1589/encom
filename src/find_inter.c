@@ -12,9 +12,8 @@ int main(int argc, char *argv[])
 	
  	int help_flag = 1;
  	char file_name[500];
-	char file_eigen[500];
+	char matrix_name[500];
  	char check_name[500];
-	char check_eigen[500];
 	int print_inter = 0;
 	int print_inter_t = 0;
  	char out_name[500];
@@ -22,6 +21,14 @@ int main(int argc, char *argv[])
 	char out_movie[500];
 	int print_movie = 0;
  	int verbose = 0;
+	float vinit = 1; // Valeur de base
+	float bond_factor = 1;		// Facteur pour poid des bond strechcing
+	float angle_factor = 1;		// Facteur pour poid des angles
+	double K_phi1 = 1;				// Facteurs pour angles dièdres
+	double K_phi3 = 0.5;
+	float init_templaate = 1;
+	float kp_factor = 1;					// Facteur pour poid des angles dièdres
+	char inputname[500] ="none";
 	
 	int i,j,k,l;
 	
@@ -31,14 +38,18 @@ int main(int argc, char *argv[])
 	float ligalign = 0; // Flag/valeur pour aligner seulement les résidus dans un cutoff du ligand, 0, one le fait pas... > 0... le cutoff
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
- 		if (strcmp("-ieig",argv[i]) == 0) {strcpy(file_eigen,argv[i+1]);}
  		
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
  		if (strcmp("-lig",argv[i]) == 0) {lig= 1;} 
+ 		if (strcmp("-init",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);vinit = temp;}
+ 		if (strcmp("-kr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);bond_factor = temp;}
+ 		if (strcmp("-kt",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);angle_factor = temp;}
+ 		if (strcmp("-kpf",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); kp_factor = temp;}
  		
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
- 		if (strcmp("-teig",argv[i]) == 0) {strcpy(check_eigen,argv[i+1]);}
+ 		
+ 		if (strcmp("-m",argv[i]) == 0) {strcpy(matrix_name,argv[i+1]);help_flag = 0;}
  		
  		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]); print_inter = 1;}
  		if (strcmp("-ot",argv[i]) == 0) {strcpy(out_name_t,argv[i+1]); print_inter_t = 1;}
@@ -182,56 +193,98 @@ int main(int argc, char *argv[])
 	
 	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_yes(strc_node,strc_node_t,atom, align,strc_all,all)),score,atom);
 	
-	// Load eigenvalues and eigenvectors of each structure
+	// Build hessians
 	
-	gsl_vector *eval = gsl_vector_alloc(3*atom);
-	gsl_vector *eval_t = gsl_vector_alloc(3*atom_t);
-	
-	gsl_matrix *evec = gsl_matrix_alloc (3*atom,3*atom);
-	gsl_matrix *evec_t = gsl_matrix_alloc (3*atom_t,3*atom_t);
-	
-	load_eigen(eval,evec,file_eigen,3*atom);
-	load_eigen(eval_t,evec_t,check_eigen,3*atom_t);
-	
-	printf("Check 0\n");
-	
-	// Rebuild hessians
+	double **hessian=(double **)malloc(3*atom*sizeof(double *)); // Matrix of the Hessian 1 2 3 (bond, angle, dihedral)
+	for(i=0;i<3*atom;i++) { hessian[i]=(double *)malloc(3*atom*sizeof(double));}
+	for(i=0;i<3*atom;i++)for(j=0;j<(3*atom);j++){hessian[i][j]=0;}
 	
 	gsl_matrix *hess = gsl_matrix_alloc(3*atom,3*atom);
 	gsl_matrix_set_all(hess, 0);
 	gsl_matrix *hess_t = gsl_matrix_alloc(3*atom_t,3*atom_t);
 	gsl_matrix_set_all(hess_t, 0);
 	
-	for(i = 0; i < 3*atom; i++)
-	{
-		if(gsl_vector_get(eval, i) < 0.00001) {printf("Skip node %1i of init : %1.5f\n", i, gsl_vector_get(eval, i)); continue;}
-		
-		for(j = 0; j < 3*atom; j++)
-		{
-			for(k = 0; k < 3*atom; k++)
-			{
-				gsl_matrix_set(hess, j, k, gsl_matrix_get(hess, j, k) + gsl_matrix_get(evec, j, i)*gsl_matrix_get(evec, k, i)*gsl_vector_get(eval, i));
-			}
-		}
-	}
+	assign_atom_type(strc_all, all);
+	if (strcmp(inputname,"none") == 0) {} else {assign_lig_type(strc_all, all, inputname);}
+	gsl_matrix *vcon = gsl_matrix_alloc(all,all);
+	gsl_matrix *inter_m = gsl_matrix_alloc(8,8);
+	gsl_matrix *templaate = gsl_matrix_alloc(atom*3, atom*3);
+	gsl_matrix_set_all(templaate,vinit);
+	gsl_matrix_set_all(vcon,0);
 	
-	for(i = 0; i < 3*atom_t; i++)
-	{
-		if(gsl_vector_get(eval_t, i) < 0.00001) {printf("Skip node %1i of target : %1.5f\n", i, gsl_vector_get(eval_t, i)); continue;}
-		
-		for(j = 0; j < 3*atom_t; j++)
-		{
-			for(k = 0; k < 3*atom_t; k++)
-			{
-				gsl_matrix_set(hess_t, j, k, gsl_matrix_get(hess_t, j, k) + gsl_matrix_get(evec_t, j, i)*gsl_matrix_get(evec_t, k, i)*gsl_vector_get(eval_t, i));
-			}
-		}
-	}
+	if (verbose == 1) {printf("Do Vcon !!!\n");}
 	
-	gsl_vector_free(eval);
-	gsl_matrix_free(evec);
-	gsl_vector_free(eval_t);
-	gsl_matrix_free(evec_t);
+	vcon_file_dom(strc_all,vcon,all);
+	
+	if (verbose == 1) {printf("Reading Interaction Matrix %s\n",matrix_name);}
+	load_matrix(inter_m,matrix_name);
+	//write_matrix("vcon_vince.dat", vcon,all,all);
+	if (verbose == 1) {printf("Building templaate\n");}
+	all_interaction(strc_all,all, atom, templaate,lig,vcon,inter_m,strc_node);
+	gsl_matrix_scale (templaate, init_templaate);
+	
+	if (verbose == 1) {printf("Building Hessian\n");}
+	
+	if (verbose == 1) {printf("\tCovalent Bond Potential\n");}		
+	build_1st_matrix(strc_node,hessian,atom,bond_factor);
+	
+	if (verbose == 1) {printf("\tAngle Potential\n");}	
+	build_2_matrix(strc_node,hessian,atom,angle_factor);
+	
+	if (verbose == 1) {printf("\tDihedral Potential\n");}	
+	build_3_matrix(strc_node, hessian,atom,K_phi1/2+K_phi3*9/2,kp_factor);
+	
+	if (verbose == 1) {printf("\tNon Local Interaction Potential\n");}	
+	build_4h_matrix(strc_node,hessian,atom,1.0,templaate);
+	
+	if (verbose == 1) {printf("\tAssigning Array\n");}	
+	assignArray(hess,hessian,3*atom,3*atom);
+	
+	gsl_matrix_free(vcon);
+	gsl_matrix_free(templaate);
+	
+	double **hessian_t=(double **)malloc(3*atom_t*sizeof(double *)); // Matrix of the Hessian 1 2 3 (bond, angle, dihedral)
+	for(i=0;i<3*atom_t;i++) { hessian_t[i]=(double *)malloc(3*atom_t*sizeof(double));}
+	for(i=0;i<3*atom_t;i++)for(j=0;j<(3*atom_t);j++){hessian_t[i][j]=0;}
+	
+	assign_atom_type(strc_all_t, all_t);
+	
+	if (strcmp(inputname,"none") == 0) {} else {assign_lig_type(strc_all_t, all_t, inputname);}
+	
+	gsl_matrix *vcon_t = gsl_matrix_alloc(all_t,all_t);
+	gsl_matrix *templaate_t = gsl_matrix_alloc(atom_t*3, atom_t*3);
+	gsl_matrix_set_all(templaate_t,vinit);
+	gsl_matrix_set_all(vcon_t,0);
+	
+	if (verbose == 1) {printf("Do Vcon !!!\n");}
+	
+	vcon_file_dom(strc_all_t,vcon_t,all_t);
+	
+	//write_matrix("vcon_vince.dat", vcon,all,all);
+	if (verbose == 1) {printf("Building templaate\n");}
+	all_interaction(strc_all_t,all_t, atom_t, templaate_t,lig,vcon_t,inter_m,strc_node_t);
+	
+	gsl_matrix_scale (templaate_t, init_templaate);
+	
+	if (verbose == 1) {printf("Building Hessian\n");}
+	
+	if (verbose == 1) {printf("\tCovalent Bond Potential\n");}
+	build_1st_matrix(strc_node_t,hessian_t,atom_t,bond_factor);
+	
+	if (verbose == 1) {printf("\tAngle Potential\n");}
+	build_2_matrix(strc_node_t,hessian_t,atom_t,angle_factor);
+	
+	if (verbose == 1) {printf("\tDihedral Potential\n");}	
+	build_3_matrix(strc_node_t, hessian_t,atom_t,K_phi1/2+K_phi3*9/2,kp_factor);
+	
+	if (verbose == 1) {printf("\tNon Local Interaction Potential\n");}	
+	build_4h_matrix(strc_node_t,hessian_t,atom_t,1.0,templaate_t);
+	
+	if (verbose == 1) {printf("\tAssigning Array\n");}
+	assignArray(hess_t,hessian_t,3*atom_t,3*atom_t);
+	
+	gsl_matrix_free(vcon_t);
+	gsl_matrix_free(templaate_t);
 	
 	printf("Check 1\n");
 	
