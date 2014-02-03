@@ -29,6 +29,11 @@ int main(int argc, char *argv[])
 	float init_templaate = 1;
 	float kp_factor = 1;					// Facteur pour poid des angles dièdres
 	char inputname[500] ="none";
+	double beta = 0.000005;
+	int morph = 0;
+	char morph_name[500];
+	
+	int change_density = 0;
 	
 	int i,j,k,l;
 	
@@ -41,11 +46,14 @@ int main(int argc, char *argv[])
  		
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
- 		if (strcmp("-lig",argv[i]) == 0) {lig= 1;} 
+ 		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
+ 		
  		if (strcmp("-init",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);vinit = temp;}
  		if (strcmp("-kr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);bond_factor = temp;}
  		if (strcmp("-kt",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);angle_factor = temp;}
  		if (strcmp("-kpf",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); kp_factor = temp;}
+ 		
+ 		if (strcmp("-b",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);beta = temp;}
  		
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
  		
@@ -56,6 +64,10 @@ int main(int argc, char *argv[])
  		if (strcmp("-om",argv[i]) == 0) {strcpy(out_movie,argv[i+1]); print_movie = 1;}
  		
  		if (strcmp("-ligc",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);ligalign = temp;}
+ 		
+ 		if (strcmp("-conf",argv[i]) == 0) {change_density = 1;}
+ 		
+ 		if (strcmp("-morph",argv[i]) == 0) {strcpy(morph_name,argv[i+1]); morph = 1;}
  	}
 	
  	if (help_flag == 1)
@@ -328,6 +340,9 @@ int main(int argc, char *argv[])
 		
 		sup_line++;
 	}
+	
+	gsl_matrix_free(hess);
+	gsl_matrix_free(hess_t);
 	
 	printf("Check 2\n");
 	
@@ -627,6 +642,86 @@ int main(int argc, char *argv[])
 	
 	printf("Check 8\n");
 	
+	// Translate all the nodes (and all its atoms) of init structure back to its original conformation if print_movie == 1
+	
+	if(print_movie == 1)
+	{
+		for(i = 0; i < score; i++)
+		{
+			for(j = 0; j < all; j++)
+			{
+				if(strc_all[j].node == sup_to_node[i])
+				{
+					strc_all[j].x_cord -= gsl_vector_get(del_conf, 3*i);
+					strc_all[j].y_cord -= gsl_vector_get(del_conf, 3*i + 1);
+					strc_all[j].z_cord -= gsl_vector_get(del_conf, 3*i + 2);
+				}
+			}
+		}
+	}
+	
+	printf("Check 8.1\n");
+	
+	// Print transition from init to target by morphing
+	
+	if(morph == 1)
+	{
+		FILE *out_file_morph;
+		
+		out_file_morph = fopen(morph_name, "w");
+		
+		printf("Check 8.2\n");
+		
+		for(j = 0; j < 60; j++)
+		{
+			fprintf(out_file_morph, "Model %1i\n", j + 1);
+			
+			for (i = 0; i < all; i++)
+			{
+				if(align[strc_all[i].node] != -1)
+				{
+					if (strc_all[i].atom_type == 1) {fprintf(out_file_morph,"ATOM  ");}
+					if (strc_all[i].atom_type == 2) {fprintf(out_file_morph,"HETATM");}
+					if (strc_all[i].atom_type == 3) {fprintf(out_file_morph,"HETATM");}
+					fprintf(out_file_morph,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
+						strc_all[i].atom_number,
+						strc_all[i].atom_prot_type,
+						strc_all[i].res_type,
+						strc_all[i].chain,
+						strc_all[i].res_number,
+						strc_all[i].x_cord,
+						strc_all[i].y_cord,
+						strc_all[i].z_cord,
+						strc_all[i].b_factor
+						);
+				}
+			}
+			
+			fprintf(out_file_morph, "TER\nENDMDL\n\n");
+			
+			printf("Check 8.3\n");
+			
+			for(i = 0; i < score; i++)
+			{
+				for(k = 0; k < all; k++)
+				{
+					if(strc_all[k].node == sup_to_node[i])
+					{
+						strc_all[k].x_cord += gsl_vector_get(copy_conf, 3*i)/60.0;
+						strc_all[k].y_cord += gsl_vector_get(copy_conf, 3*i + 1)/60.0;
+						strc_all[k].z_cord += gsl_vector_get(copy_conf, 3*i + 2)/60.0;
+					}
+				}
+			}
+			
+			printf("Check 8.4\n");
+		}
+		
+		fclose(out_file_morph);
+	}
+	
+	printf("Check 9\n");
+	
 	// Evaluate theoretical delta-G
 	
 	gsl_vector *dummy_conf = gsl_vector_alloc(3*score);
@@ -654,12 +749,136 @@ int main(int argc, char *argv[])
 		energy_tc += gsl_vector_get(dummy_conf_t, i)*(gsl_vector_get(del_conf, i) - gsl_vector_get(copy_conf, i));
 	}
 	
+	gsl_vector_free(dummy_conf_t);
 	gsl_vector_free(del_conf);
+	
+	printf("Check 10\n");
+	
+	if(change_density == 1)
+	{
+		gsl_vector_set_all(dummy_conf, 0);
+		
+		gsl_vector *eval = gsl_vector_alloc(3*score);
+		gsl_vector_set_all(eval, 0);
+		gsl_vector *eval_t = gsl_vector_alloc(3*score);
+		gsl_vector_set_all(eval_t, 0);
+		
+		gsl_matrix *evec = gsl_matrix_alloc (3*score,3*score);
+		gsl_matrix_set_all(evec, 0);
+		gsl_matrix *evec_t = gsl_matrix_alloc (3*score,3*score);
+		gsl_matrix_set_all(evec_t, 0);
+		
+		diagonalyse_matrix(mini_hess_i, 3*score, eval, evec);
+		diagonalyse_matrix(mini_hess_t, 3*score, eval_t, evec_t);
+		
+		gsl_matrix_free(mini_hess_i);
+		gsl_matrix_free(mini_hess_t);
+		
+		gsl_matrix *comb_hess = gsl_matrix_alloc(3*score, 3*score);
+		gsl_matrix_set_all(comb_hess, 0);
+		
+		double entro = 0.0;
+		
+		double entro_t = 0.0;
+		
+		for(i = 0; i < 3*score; i++)
+		{
+			if(gsl_vector_get(eval, i) > 0.00001)
+			{
+				for(j = 0; j < 3*score; j++)
+				{
+					for(k = 0; k < 3*score; k++)
+					{
+						gsl_matrix_set(comb_hess, j, k, gsl_matrix_get(comb_hess, j, k) + gsl_matrix_get(evec, j, i)*gsl_matrix_get(evec, k, i)/gsl_vector_get(eval, i));
+					}
+				}
+				
+				entro += log(3.141592653589793238462643383279) - log(beta * gsl_vector_get(eval, i));
+			}
+			
+			if(gsl_vector_get(eval_t, i) > 0.00001)
+			{
+				for(j = 0; j < 3*score; j++)
+				{
+					for(k = 0; k < 3*score; k++)
+					{
+						gsl_matrix_set(comb_hess, j, k, gsl_matrix_get(comb_hess, j, k) + gsl_matrix_get(evec_t, j, i)*gsl_matrix_get(evec_t, k, i)/gsl_vector_get(eval_t, i));
+					}
+				}
+				
+				entro_t += log(3.141592653589793238462643383279) - log(beta * gsl_vector_get(eval_t, i));
+			}
+		}
+		
+		gsl_vector_free(eval_t);
+		gsl_matrix_free(evec_t);
+		
+		gsl_vector_set_all(eval, 0);
+		gsl_matrix_set_all(evec, 0);
+		
+		diagonalyse_matrix(comb_hess, 3*score, eval, evec);
+		gsl_matrix_set_all(comb_hess, 0);
+		
+// 		double comb_det = 1.0;
+		
+		for(i = 0; i < 3*score; i++)
+		{
+			if(gsl_vector_get(eval, i) > 0.00001)
+			{
+				for(j = 0; j < 3*score; j++)
+				{
+					for(k = 0; k < 3*score; k++)
+					{
+						gsl_matrix_set(comb_hess, j, k, gsl_matrix_get(comb_hess, j, k) + gsl_matrix_get(evec, j, i)*gsl_matrix_get(evec, k, i)/gsl_vector_get(eval, i));
+					}
+				}
+				
+// 				comb_det *= beta / (3.141592653589793238462643383279 * gsl_vector_get(eval, i));
+			}
+		}
+		
+		for(i = 0; i < 3*score; i++)
+		{
+			for(j = 0; j < 3*score; j++)
+			{
+				gsl_vector_set(dummy_conf, i, gsl_vector_get(dummy_conf, i) + gsl_vector_get(copy_conf, j)*gsl_matrix_get(comb_hess, j, i));
+			}
+		}
+		
+		double energy_conf = 0.0;
+		
+		for(i = 0; i < 3*score; i++)
+		{
+			energy_conf += gsl_vector_get(dummy_conf, i)*gsl_vector_get(copy_conf, i);
+		}
+		
+		double dummy_energy = 0.0;
+		
+		double prob_conf = 0.0;
+		
+		dummy_energy = -1.0 * beta * energy_conf;
+		
+		prob_conf = exp(dummy_energy);
+		
+		printf("Weighted probability density of exact conformational change at beta = %1.10f : %1.100f\n", beta, prob_conf);
+		
+		printf("Delta-S (target - init) : %1.10f\n", entro_t - entro);
+		
+		printf("Delta-H (target - init) : %1.10f\n", energy_ic - energy_tc);
+		
+		dummy_energy = -310.25 * (entro_t - entro) + energy_ic - energy_tc;
+		
+		printf("Delta-G (target - init) : %1.10f\n", dummy_energy);
+		
+		double K_eq = exp(-1.0 * dummy_energy / (310.25 * 8.3145));
+		
+		printf("Equilibrium constant (target / init) : %1.10f\n", K_eq);
+	}
+	else
+	{
+		printf("Energy from init to inter : %1.10f\nEnergy from target to inter : %1.10f\nDelta-H (target - init) : %1.10f\n", energy_ic, energy_tc, energy_ic - energy_tc);
+	}
+	
 	gsl_vector_free(copy_conf);
 	gsl_vector_free(dummy_conf);
-	gsl_vector_free(dummy_conf_t);
-	gsl_matrix_free(mini_hess_i);
-	gsl_matrix_free(mini_hess_t);
-	
-	printf("Energy from init to inter : %1.10f\nEnergy from target to inter : %1.10f\nDelta-E (init - target) : %1.10f\n", energy_ic, energy_tc, energy_ic - energy_tc);
 }

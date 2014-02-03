@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
  	char out_name[500] = "UNDEF";
  	int verbose = 0;
 	
+	int scale = 0;
+	
 	int i;
 	
 	int lig = 0;
@@ -51,7 +53,7 @@ int main(int argc, char *argv[])
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
-
+ 		if (strcmp("-scl",argv[i]) == 0) {scale = 1;} 
  		if (strcmp("-lig",argv[i]) == 0) {lig= 1;} 
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]);++print_flag;}
@@ -202,7 +204,40 @@ int main(int argc, char *argv[])
 	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_yes(strc_node,strc_node_t,atom, align,strc_all,all)),score,atom);
 	float retu[4];
 	
-	avg_dist(strc_node,atom,strc_node_t,align,1.00,retu,1);
+	if(scale == 1)
+	{
+		float ret_opt[4];
+		
+		float opt_scaler = 0.0;
+		
+		ret_opt[0] = -1.0;
+		ret_opt[1] = -1.0;
+		ret_opt[2] = -1.0;
+		ret_opt[3] = -1.0;
+		
+		for(float scaler = -4.0; scaler <= 4.0; scaler += 0.1)
+		{
+			avg_dist(strc_node,atom,strc_node_t,align,pow(10.0, scaler),retu,0);
+			
+			if(retu[2] < ret_opt[2] || ret_opt[2] < 0)
+			{
+				ret_opt[0] = retu[0];
+				ret_opt[1] = retu[1];
+				ret_opt[2] = retu[2];
+				ret_opt[3] = retu[3];
+				
+				opt_scaler = pow(10.0, scaler);
+			}
+		}
+		
+		printf("AVG_all:%.10f\tMedian_all:%1.10f\tAVG_90:%1.10f\tMedian_90:%1.10f\tScaler:%1.10f\n",ret_opt[0], ret_opt[1], ret_opt[2], ret_opt[3], opt_scaler);
+	}
+	else
+	{
+		avg_dist(strc_node,atom,strc_node_t,align,1.0,retu,0);
+		
+		printf("AVG_all:%.10f\tMedian_all:%1.10f\tAVG_90:%1.10f\tMedian_90:%1.10f\n",retu[0], retu[1], retu[2], retu[3]);
+	}
 	
 	if (strcmp(out_name,"UNDEF") != 0) {
 		avg_dist(strc_node,atom,strc_node_t,align,1.00,retu,0);
@@ -220,7 +255,10 @@ void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,fl
 	ret[3] = -1;
 	
 	gsl_vector *distances = gsl_vector_alloc(node);
+	gsl_vector *delta_s = gsl_vector_alloc(node);
 	gsl_vector_set_all(distances, -1);
+	gsl_vector_set_all(delta_s, 0);
+	
 	
 	gsl_matrix *aniso = gsl_matrix_alloc(node, 4);
 	
@@ -259,8 +297,7 @@ void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,fl
 
 
 		gsl_vector_set(distances, i, cmp_gauss(anisou1, vars1, anisou2, vars2));
-
-
+		gsl_vector_set(delta_s, i, delta_entro(vars1, vars2, 3));
 
 		gsl_matrix_set(aniso, i, 0, init[i].main_vars[2] / init[i].main_vars[0]);
 		gsl_matrix_set(aniso, i, 2, init[i].main_vars[2] / init[i].main_vars[1]);
@@ -268,7 +305,7 @@ void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,fl
 		gsl_matrix_set(aniso, i, 3, targ[mat].main_vars[2] / targ[mat].main_vars[1]);
 		init[i].b_factor = gsl_vector_get(distances,i);
 		if (print_flag != 0) {
-			printf("I:%4d %4.10f %s %d %s %s %d %s\n",i,gsl_vector_get(distances,i),init[i].res_type,init[i].res_number,init[i].chain,targ[mat].res_type,targ[mat].res_number,targ[mat].chain);
+			printf("I:%4d %4.10f %4.10f %s %d %s %s %d %s\n",i,gsl_vector_get(distances,i), gsl_vector_get(delta_s,i),init[i].res_type,init[i].res_number,init[i].chain,targ[mat].res_type,targ[mat].res_number,targ[mat].chain);
 		}
 	}
 	gsl_sort_vector(distances);
@@ -292,10 +329,10 @@ void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,fl
 			}
 		}
 	}
-
+	
 	ret[0] /= (float) count[0];
 	ret[2] /= (float) count[1];
-	printf("AVG_all:%.10f Median_all:%.10f AVG_90:%.10f Median_90:%.10f\n",ret[0],ret[1],ret[2],ret[3]);
+// 	printf("AVG_all:%.10f Median_all:%.10f AVG_90:%.10f Median_90:%.10f\n",ret[0],ret[1],ret[2],ret[3]);
 
 }
 

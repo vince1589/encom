@@ -286,9 +286,10 @@ int main(int argc, char *argv[]) {
 		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
 	}
 	
-	rmsd_hack(strc_node,strc_node_t,atom, align,strc_all,all);
+	rmsd_yes(strc_node,strc_node_t,atom, align,strc_all,all);
 	//rmsd_hack(strc_node_t,strc_node_t,atom, align,strc_all,all);
-	if (print_flag != 0) {
+	if (print_flag != 0)
+	{
 		write_strc(out_name,strc_all,all,1.0);
 	}
 	

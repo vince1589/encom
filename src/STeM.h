@@ -75,11 +75,13 @@ void fit_mc_torsion(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all
 void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta,int nm);
 void double_gauss(struct pdb_atom *init, gsl_matrix *ihessian, int atom, double beta);
 double cmp_gauss(gsl_matrix *cov1, gsl_vector *vars1, gsl_matrix *cov2, gsl_vector *vars2);
+double delta_entro(gsl_vector *vars1, gsl_vector *vars2, int N);
 int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12);
 double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps);
 int load_anisou(struct pdb_atom *strc,char filename[100],int atom);
 double density_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,gsl_vector *pos);
 void outlier_bfact(struct pdb_atom *init, int atom,struct pdb_atom *targ, int atom2,int *align,int next);
+
 // STeM_lib_grid_motion.c
 //	STeM grid_motion
 void write_matrix_pdb(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1);

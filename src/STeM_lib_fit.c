@@ -2231,6 +2231,23 @@ double cmp_gauss(gsl_matrix *cov1, gsl_vector *vars1, gsl_matrix *cov2, gsl_vect
 	return distance;
 }
 
+double delta_entro(gsl_vector *vars1, gsl_vector *vars2, int N)
+{
+	int i;
+	
+	double delta_s = 0.0;
+	
+	for(i = 0; i < N; i++)
+	{
+		if(gsl_vector_get(vars1, i) > 0 && gsl_vector_get(vars2, i) > 0)
+		{
+			delta_s += log(gsl_vector_get(vars2, i)) - log(gsl_vector_get(vars1, i));
+		}
+	}
+	
+	return delta_s;
+}
+
 int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12) // Builds inverse conjugate covariance matrix, conjugate density factor and delta-r for use with over_prob and proxim_prob; 
 {
 	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
