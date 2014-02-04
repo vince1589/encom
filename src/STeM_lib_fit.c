@@ -2749,7 +2749,7 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
 		char *line_ptr;
 		line_ptr = line;
 		int res;
-		sscanf((line_ptr+23),"%d",&res);
+		sscanf((line_ptr+22),"%d",&res);
 		
 		// On veut retrouver l'atome correspondant dans la strc
 
