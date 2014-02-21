@@ -26,17 +26,22 @@ int node_align(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t
 	for(i=0;i<atom;++i) {
 		for(j=0;j<atom_t;++j) {
 			
-			if (
-				(strcmp(strc[i].res_type,strc_t[j].res_type) == 0) && 
+			if((strcmp(strc[i].res_type,strc_t[j].res_type) == 0) && 
 				(strc[i].res_number == strc_t[j].res_number) && 
-				(strcmp(strc[i].chain,strc_t[j].chain) == 0)) {
-				
-				
-
-				if (align[i] == -1) {++score;align[i] = j;}
-				
-				
+				(strcmp(strc[i].chain,strc_t[j].chain) == 0))
+			{
+				if (align[i] == -1) {++score; align[i] = j;}
 			}
+			/*
+			else
+			{
+				if(strcmp(strc[i].res_type,strc_t[j].res_type) != 0 && (strc[i].res_number == strc_t[j].res_number) && (strcmp(strc[i].chain,strc_t[j].chain) == 0))
+				{printf("%s\t%s\n", strc[i].res_type, strc_t[j].res_type);}
+				
+				if(strcmp(strc[i].res_type,strc_t[j].res_type) == 0 && (strc[i].res_number == strc_t[j].res_number) && (strcmp(strc[i].chain,strc_t[j].chain) != 0))
+				{printf("%s\t%s\n", strc[i].chain, strc_t[j].chain);}
+			}
+			*/
 		}
 	}
 	
@@ -63,6 +68,65 @@ int node_align(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t
 	return(score);
 	
 
+}
+
+int node_align_onechain(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align)
+{
+	int i,j;
+	int score;
+	
+	for(i=0;i<atom;++i)
+	{
+		align[i] = -1;
+	}
+	
+	//Retourne un score
+	score = 0;
+	
+	for(i=0;i<atom;++i)
+	{
+		for(j=0;j<atom_t;++j)
+		{
+			
+			if((strcmp(strc[i].res_type,strc_t[j].res_type) == 0) && 
+				(strc[i].res_number == strc_t[j].res_number))
+			{
+				if (align[i] == -1) {++score;  align[i] = j;}
+			}
+			/*
+			else
+			{
+				if(strcmp(strc[i].res_type,strc_t[j].res_type) != 0 && (strc[i].res_number == strc_t[j].res_number) && (strcmp(strc[i].chain,strc_t[j].chain) == 0))
+				{printf("%s\t%s\n", strc[i].res_type, strc_t[j].res_type);}
+				
+				if(strcmp(strc[i].res_type,strc_t[j].res_type) == 0 && (strc[i].res_number == strc_t[j].res_number) && (strcmp(strc[i].chain,strc_t[j].chain) != 0))
+				{printf("%s\t%s\n", strc[i].chain, strc_t[j].chain);}
+			}
+			*/
+		}
+	}
+	
+	// Look if node match two times
+	score = 0;
+	for(i=0;i<atom;++i) {
+		for(j=0;j<atom;++j) {
+			if (i == j) {continue;}
+			if (align[i] == align[j]) {align[j] = -1;}
+		}
+		if (align[i] != -1) {++score;}
+		
+	}
+	for(i=0;i<atom;++i) {
+		if (align[i]==-1) {
+			//printf("%3d :: %3d   %s::%s  %3d::%3d\n",i,align[i],strc[i].res_type,"xxx",strc[i].res_number,0);
+			continue;
+		}
+		//printf("%3d :: %3d   %s::%s  %3d::%3d\n",i,align[i],strc[i].res_type,strc_t[align[i]].res_type,strc[i].res_number,strc_t[align[i]].res_number);
+		j = align[i];
+		//printf("-%s- -%d- %s :: -%s- -%d- %s\n",strc[i].res_type,strc[i].res_number,strc[i].chain,strc_t[j].res_type,strc_t[j].res_number,strc_t[j].chain);
+	}
+	
+	return(score);
 }
 
 int node_align_lig(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align,struct pdb_atom *strc_all,int all,struct pdb_atom *strc_all_t,int all_t,float cutoff) {
@@ -2741,7 +2805,7 @@ int load_anisou(struct pdb_atom *strc,char filename[100],int atom) {
 	 	
 	 	//Copy le nom de l'atom
 	 	char aname[6];
- 		for (temp_count = 12; temp_count < 17;++temp_count)
+ 		for (temp_count = 12; temp_count < 16;++temp_count)
 		{
  			aname[temp_count-12] = line[temp_count];
  			aname[temp_count-11] = '\0';

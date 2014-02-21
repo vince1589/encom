@@ -55,6 +55,7 @@ void boinc_all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix 
 //	STeM fit
 void translate_strc(struct pdb_atom *init,int all,gsl_vector *trans);
 int node_align(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align);
+int node_align_onechain(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align);
 int node_align_low(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align);
 int node_align_lig(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align,struct pdb_atom *strc_all,int all,struct pdb_atom *strc_all_t,int atom_all,float cutoff);
 void rotate_all(gsl_matrix *rota,struct pdb_atom *all_init,int all);
@@ -128,6 +129,7 @@ void correlate_sp(gsl_matrix *m,struct pdb_atom *strc, int atom);
 int count_atom_CA_n(struct pdb_atom *all,int atom, int node, int ligand);
 float correlate(gsl_matrix *m,struct pdb_atom *strc, int atom);
 void k_inverse_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm);
+void k_tot_inv_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm);
 void k_cov_inv_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm);
 void buid_pre(gsl_matrix *m,gsl_matrix *evc,int nb_atom);
 void k_inverse_matrix_stem_temp(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc);

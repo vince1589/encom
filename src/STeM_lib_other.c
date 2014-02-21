@@ -75,7 +75,7 @@ void load_eigen(gsl_vector *v,gsl_matrix *m,char filename[100],int atom)
 	int i,j;
 	 for(i=0; i < nb_atom; ++i) {
 	 	for(j=0; j < nb_atom_2; ++j) {
-	 		fprintf (out_file,"%12.6g",gsl_matrix_get (m, i, j));
+	 		fprintf (out_file,"%12.6g ",gsl_matrix_get (m, i, j));
 	 	}
 	 fprintf (out_file,"\n");
 	 }
@@ -494,6 +494,34 @@ for(i=0; i < nb_atom_1; ++i) {
 	 	}
 	 	//break;
  	}
+ }
+ 
+ void k_tot_inv_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm) 
+ {
+	 //gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
+	 gsl_matrix_set_all (m, 0);
+	 int i,j,k;
+	 
+	 for (k=mode;k<mode+nm;++k)
+	 {
+		 if (k > int (evl->size-1)) {break;}
+		 if  (gsl_vector_get (evl, k) < 0.000001) 
+		 {
+			 printf("K = %d -> Eval to small I next:%f\n",k,gsl_vector_get (evl, k));
+			 continue;
+		 }
+		 
+		 // 		 printf("%6.10f\n", gsl_vector_get (evl, k));
+		 
+		 for (i=0;i<3*nb_atom;++i)
+		 {
+			 for (j=0;j<3*nb_atom;++j)
+			 {
+					 gsl_matrix_set(m, i, j, gsl_matrix_get(evc, i, k)*gsl_matrix_get(evc, j, k)/gsl_vector_get(evl, k) + gsl_matrix_get(m, i, j));
+			 }
+		 }
+		 //break;
+	 }
  }
  
  void k_cov_inv_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm) 

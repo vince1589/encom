@@ -166,6 +166,7 @@ int main(int argc, char *argv[]) {
 	int all_t; /*Nombre d'atomes dans pdb*/
 	int atom_t; /*Nombre de carbone CA*/
  	int help_flag = 1;
+	int aln_flag = 0;
  	char file_name[500];
  	char check_name[500];
  	char out_name[500];
@@ -184,6 +185,8 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]);++print_flag;}
  		if (strcmp("-ligc",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);ligalign = temp;}
+ 		
+ 		if (strcmp("-a",argv[i]) == 0) {aln_flag = 1;}
  	}
 	 	
  	if (help_flag == 1) {
@@ -273,11 +276,19 @@ int main(int argc, char *argv[]) {
  	int align[atom];
  	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
  	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
- 	if ((float)score/(float)atom < 0.8) {
+ 	if ((float)score/(float)atom < 0.8)
+	{
  		printf("Low Score... Will try an homemade alignement !!!\n");
- 		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
+ 		score = node_align_onechain(strc_node,atom,strc_node_t,atom_t,align);
  		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
  	}
+ 	
+ 	if ((float)score/(float)atom < 0.8)
+	{
+		printf("Low Score... Will try an homemade alignement !!!\n");
+		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
+		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
+	}
  	
  	if (ligalign > 0) {
  		
@@ -291,6 +302,17 @@ int main(int argc, char *argv[]) {
 	if (print_flag != 0)
 	{
 		write_strc(out_name,strc_all,all,1.0);
+	}
+	
+	if(aln_flag == 1)
+	{
+		for(i = 0; i < atom; i++)
+		{
+			if(align[i] != -1)
+			{
+				printf("%1i_%s %1i_%s\n", strc_node[i].res_number, strc_node[i].chain, strc_node_t[align[i]].res_number, strc_node_t[align[i]].chain);
+			}
+		}
 	}
 	
 	return(1);

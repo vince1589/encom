@@ -2,13 +2,15 @@
 
 void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,float scale,float *ret,int print_flag);
 
-void assign_bfactor(struct pdb_atom *strc, int atom,struct pdb_atom *strc_all,int all) {
+void assign_bfactor(struct pdb_atom *strc, int atom,struct pdb_atom *strc_all,int all)
+{
 	int i;
 	float max = 0;
 	float min = 100000;
 	float sum = 0;
 	float count = 0;
-	for(i=0;i< atom ;++i) {
+	for(i=0;i< atom ;++i)
+	{
 		double val = strc[i].b_factor;
 		
 		sum += val;
@@ -17,13 +19,12 @@ void assign_bfactor(struct pdb_atom *strc, int atom,struct pdb_atom *strc_all,in
 		if (val > max) {max =val;}
 	}
 	sum /= count;
-	float ratio = (max-min)/90.0;
+	float ratio = (max-min)/9000.0;
 	
 	printf("Average:%.10f Min:%.4f Max:%.4f\n",sum,min,max);
-	for(i=0;i<all;++i) {
-		
+	for(i=0;i<all;++i)
+	{
 		strc_all[i].b_factor = (strc[strc_all[i].node].b_factor-min)/ratio+5.0;
-	
 	}
 
 }
@@ -46,6 +47,7 @@ int main(int argc, char *argv[])
 	int i;
 	
 	int lig = 0;
+	int lig_t = 0;
 	int nconn;
 	int print_flag = 0;
 	float ligalign = 0; // Flag/valeur pour aligner seulement les résidus dans un cutoff du ligand, 0, one le fait pas... > 0... le cutoff
@@ -54,8 +56,10 @@ int main(int argc, char *argv[])
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
  		if (strcmp("-scl",argv[i]) == 0) {scale = 1;} 
- 		if (strcmp("-lig",argv[i]) == 0) {lig= 1;} 
+ 		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
+ 		if (strcmp("-ligt",argv[i]) == 0) {lig_t= 1;}
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
+ 		if (strcmp("-p",argv[i]) == 0) {++print_flag;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]);++print_flag;}
  		if (strcmp("-ligc",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);ligalign = temp;}
  	}
@@ -165,7 +169,7 @@ int main(int argc, char *argv[])
 	
 	struct pdb_atom strc_node_t[atom_t];
 
-	atom_t = build_cord_CA(strc_all_t, strc_node_t,all_t,lig,connect_t,nconn);
+	atom_t = build_cord_CA(strc_all_t, strc_node_t,all_t,lig_t,connect_t,nconn);
 	
 	if (verbose == 1) {printf("	Assign Node:%d\n",atom_t);}
 	
@@ -181,18 +185,27 @@ int main(int argc, char *argv[])
 	
  	int align[atom];
 	
- 	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
+	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
 	
  	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
 	
- 	if ((float)score/(float)atom > 0.0)
+ 	if ((float)score/(float)atom < 0.6)
 	{
  		printf("Low Score... Will try an homemade alignement !!!\n");
 		
- 		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
+ 		score = node_align_onechain(strc_node,atom,strc_node_t,atom_t,align);
 		
  		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
  	}
+ 	
+ 	if ((float)score/(float)atom < 0.6)
+	{
+		printf("Low Score... Will try an homemade alignement !!!\n");
+		
+		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
+		
+		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
+	}
  	
  	if (ligalign > 0)
 	{
@@ -234,17 +247,17 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		avg_dist(strc_node,atom,strc_node_t,align,1.0,retu,0);
+		avg_dist(strc_node,atom,strc_node_t,align,1.0,retu,print_flag);
 		
 		printf("AVG_all:%.10f\tMedian_all:%1.10f\tAVG_90:%1.10f\tMedian_90:%1.10f\n",retu[0], retu[1], retu[2], retu[3]);
 	}
 	
-	if (strcmp(out_name,"UNDEF") != 0) {
+	if (strcmp(out_name,"UNDEF") != 0)
+	{
 		avg_dist(strc_node,atom,strc_node_t,align,1.00,retu,0);
 		assign_bfactor(strc_node,atom,strc_all,all);
 		write_strc(out_name,strc_all,all,1.0);
 	}
-
 }
 
 void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,float scaler,float *ret,int print_flag) {
@@ -264,38 +277,38 @@ void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,fl
 	
 	int i,j,k;	
 			
-	for(i = 0; i < node; ++i)	{
+	for(i = 0; i < node; ++i)
+	{
 		int mat = align[i];
 		init[i].b_factor = 0;
-		for(j = 0; j < 3; j++) {
-			if (init[i].main_vars[0] <= 0) {mat = -1; continue;}
-			if (targ[mat].main_vars[0] <= 0) {mat = -1; continue;}
+		for(j = 0; j < 3; j++)
+		{
+			if (init[i].main_vars[0] <= 0) {printf("Fail\n"); mat = -1; continue;}
+			if (targ[mat].main_vars[0] <= 0) {printf("Fail\n"); mat = -1; continue;}
 		}
-
+		
 		if (mat == -1) {continue;}
-
+		
 		gsl_matrix *anisou1 = gsl_matrix_alloc(3,3);
 		gsl_vector *vars1 = gsl_vector_alloc(3);
-
+		
 		gsl_matrix *anisou2 = gsl_matrix_alloc(3,3);
 		gsl_vector *vars2 = gsl_vector_alloc(3);
-
+		
 		// 		printf("Cov1 :\n");
-
-		for(j = 0; j < 3; j++)	{
-			for(k = 0; k < 3; k++) {
-
+		
+		for(j = 0; j < 3; j++)
+		{
+			for(k = 0; k < 3; k++)
+			{
 				gsl_matrix_set(anisou1, j, k, init[i].covar[j][k]);
 				gsl_matrix_set(anisou2, j, k, targ[mat].covar[j][k] * scaler);
 			}
-	
-
+			
 			gsl_vector_set(vars1, j, init[i].main_vars[j]);
 			gsl_vector_set(vars2, j, targ[mat].main_vars[j] * scaler);
 		}
-
-
-
+		
 		gsl_vector_set(distances, i, cmp_gauss(anisou1, vars1, anisou2, vars2));
 		gsl_vector_set(delta_s, i, delta_entro(vars1, vars2, 3));
 
@@ -303,8 +316,11 @@ void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,fl
 		gsl_matrix_set(aniso, i, 2, init[i].main_vars[2] / init[i].main_vars[1]);
 		gsl_matrix_set(aniso, i, 1, targ[mat].main_vars[2] / targ[mat].main_vars[0]);
 		gsl_matrix_set(aniso, i, 3, targ[mat].main_vars[2] / targ[mat].main_vars[1]);
+		
 		init[i].b_factor = gsl_vector_get(distances,i);
-		if (print_flag != 0) {
+		
+		if (print_flag != 0)
+		{
 			printf("I:%4d %4.10f %4.10f %s %d %s %s %d %s\n",i,gsl_vector_get(distances,i), gsl_vector_get(delta_s,i),init[i].res_type,init[i].res_number,init[i].chain,targ[mat].res_type,targ[mat].res_number,targ[mat].chain);
 		}
 	}
