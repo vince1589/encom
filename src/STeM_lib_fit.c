@@ -278,14 +278,36 @@ int node_align_low(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int at
 
 }
  
+void rotate_eigen(gsl_matrix *rota,gsl_matrix *evec,int all) {
+	int i,j,k,l;
+	
+	double temp_x, temp_y, temp_z;
+	// Pour chaque mode
+	for(j = 0;j<all*3;++j) {
+		// Pour chaque node
+		for(i=0;i<all;++i) {
+			temp_x = gsl_matrix_get(evec,i*3+0,j);
+			temp_y = gsl_matrix_get(evec,i*3+1,j);
+			temp_z = gsl_matrix_get(evec,i*3+2,j);
+		
+			gsl_matrix_set(evec,i*3+0,j, gsl_matrix_get(rota,0,0) * temp_x + gsl_matrix_get(rota,1,0) * temp_y + gsl_matrix_get(rota,2,0) * temp_z);
+			gsl_matrix_set(evec,i*3+1,j, gsl_matrix_get(rota,0,1) * temp_x + gsl_matrix_get(rota,1,1) * temp_y + gsl_matrix_get(rota,2,1) * temp_z);
+			gsl_matrix_set(evec,i*3+2,j, gsl_matrix_get(rota,0,2) * temp_x + gsl_matrix_get(rota,1,2) * temp_y + gsl_matrix_get(rota,2,2) * temp_z);
+	
+	
+		}
+	}
+
+}
+ 
+ 
 void rotate_all(gsl_matrix *rota,struct pdb_atom *all_init,int all)
 {
 	int i,j,k,l;
 	
 	double temp_x, temp_y, temp_z;
 	
-	for(i=0;i<all;++i)
-	{
+	for(i=0;i<all;++i)	{
 		temp_x = all_init[i].x_cord;
 		temp_y = all_init[i].y_cord;
 		temp_z = all_init[i].z_cord;
@@ -522,7 +544,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	return(rmsd/t_atom);
  }
  
- float rmsd_yes(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all) {
+ float rmsd_yes_eigen(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all,gsl_matrix *evec) {
  	// Fonction qui suimperpose deux structures en utilisant single value decomposition
  	// Centre les deux structures autour des atomes dans align et rotate init et init all pour fitter !
  	
@@ -654,6 +676,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	rotate_all(rota,t_init,t_atom);
  	rotate_all(rota,all_init,all);
  	
+ 	rotate_eigen(rota,evec,atom);
  	
  	rmsd = 0;
  	float max_displacement = 0;
@@ -703,7 +726,188 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	
  	return(rmsd/t_atom);
  }
+  float rmsd_yes(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all) {
+ 	// Fonction qui suimperpose deux structures en utilisant single value decomposition
+ 	// Centre les deux structures autour des atomes dans align et rotate init et init all pour fitter !
+ 	
+ 	int i,k; // Dummy
+ 	int t_atom;	
+ 	double cen_init[3],cen_targ[3];
+ 	double rmsd;
+	int d;
+
+	
+ 	gsl_matrix *init_v = gsl_matrix_alloc(atom,3);
+ 	gsl_matrix *targ_v = gsl_matrix_alloc(3,atom);
+ 	gsl_matrix *corr   = gsl_matrix_alloc(3,3);
+ 	gsl_vector *vec_s  = gsl_vector_alloc(3);
+ 	gsl_vector *vec_w  = gsl_vector_alloc(3);
+ 	gsl_matrix *mat_v  = gsl_matrix_alloc(3,3);
+ 	gsl_matrix *rota   = gsl_matrix_alloc(3,3);
+	
+	// Construit structure qui comprend seulement les atomes aligné
+	
+	struct pdb_atom t_init[atom];
+	struct pdb_atom t_targ[atom];
+	k=-1;
+	for(i=0;i<atom;++i) {
+ 		d = align[i];
+ 		//printf("D:%d	%d\n",d,align[i]);
+ 		if(d == -1) {continue;}
+
+ 		//printf("D:%d	%d\n",i,align[i]);
+ 		//printf("(%8.5f,%8.5f,%8.5f) (%8.5f,%8.5f,%8.5f)\n",init[i].x_cord,init[i].y_cord,init[i].z_cord,targ[d].x_cord,targ[d].y_cord,targ[d].z_cord);
+ 		++k;
+ 		t_init[k].x_cord = init[i].x_cord;
+ 		t_init[k].y_cord = init[i].y_cord;
+ 		t_init[k].z_cord = init[i].z_cord;
+ 		
+ 		t_targ[k].x_cord = targ[d].x_cord;
+ 		t_targ[k].y_cord = targ[d].y_cord;
+ 		t_targ[k].z_cord = targ[d].z_cord;
+ 	}
+ 	t_atom =k+1;
+ 	// Centre les deux structures
+ 	if (k == -1) {return(-1);}
+ 	for(i=0;i<3;++i) {
+ 		cen_init[i] = 0;
+ 		cen_targ[i] = 0;
+ 	}
+ 	rmsd = 0;
+ 	// Trouve le centre de masse pour chaque structure
+ 	for(i=0;i<t_atom;++i) {
+ 		
+ 		cen_init[0] += t_init[i].x_cord;
+ 		cen_init[1] += t_init[i].y_cord;
+ 		cen_init[2] += t_init[i].z_cord;
+ 		
+ 		cen_targ[0] += t_targ[i].x_cord;
+ 		cen_targ[1] += t_targ[i].y_cord;
+ 		cen_targ[2] += t_targ[i].z_cord;
+ 		rmsd += ((t_init[i].x_cord-t_targ[i].x_cord)*(t_init[i].x_cord-t_targ[i].x_cord)+
+ 				 (t_init[i].y_cord-t_targ[i].y_cord)*(t_init[i].y_cord-t_targ[i].y_cord)+
+ 				 (t_init[i].z_cord-t_targ[i].z_cord)*(t_init[i].z_cord-t_targ[i].z_cord));
+ 	}
+ 	
+ 	
+ 	for(i=0;i<3;++i) {
+ 		cen_init[i] /= t_atom;
+ 		cen_targ[i] /= t_atom;
+ 	}
+
+	// Translationne et crée des matrice à multiplier (on retournera au centre tantot)
+		
+ 	rmsd = 0;
+ 	for(i=0;i<t_atom;++i) {
+ 	 		
+
+ 		
+ 		t_init[i].x_cord -= cen_init[0];
+ 		t_init[i].y_cord -= cen_init[1];
+ 		t_init[i].z_cord -= cen_init[2];
+ 		
+ 		
+ 		t_targ[i].x_cord -= cen_targ[0];
+ 		t_targ[i].y_cord -= cen_targ[1];
+ 		t_targ[i].z_cord -= cen_targ[2];
+
+ 		gsl_matrix_set(init_v,i,0,t_init[i].x_cord);
+ 		gsl_matrix_set(init_v,i,1,t_init[i].y_cord);
+ 		gsl_matrix_set(init_v,i,2,t_init[i].z_cord);
+
+ 		gsl_matrix_set(targ_v,0,i,t_targ[i].x_cord);
+ 		gsl_matrix_set(targ_v,1,i,t_targ[i].y_cord);
+ 		gsl_matrix_set(targ_v,2,i,t_targ[i].z_cord);
  
+ 		rmsd += ((t_init[i].x_cord-t_targ[i].x_cord)*(t_init[i].x_cord-t_targ[i].x_cord)+
+ 				 (t_init[i].y_cord-t_targ[i].y_cord)*(t_init[i].y_cord-t_targ[i].y_cord)+
+ 				 (t_init[i].z_cord-t_targ[i].z_cord)*(t_init[i].z_cord-t_targ[i].z_cord));
+ 	}
+ 	//printf("	Trans RMSD:%f\n",rmsd/t_atom);
+ 	
+ 	// Multiply les deux vecteurs qui comprennent les valeurs
+ 	 	
+ 	multiplie_matrix(targ_v,3,t_atom,init_v,t_atom,3,corr);
+
+
+ 	gsl_linalg_SV_decomp (corr, mat_v,vec_s,vec_w);
+	//gsl_linalg_SV_decomp_jacobi (corr, mat_v, vec_s);
+ 	
+ 	// Multiplie les matrix
+ 	
+	gsl_matrix_transpose (corr);
+	
+	multiplie_matrix(mat_v,3,3,corr,3,3,rota);
+	//print_matrix(rota);
+	
+	// Centre avant de rotationer, les pdb qui n'ont pas été copier dans t_init
+	
+	for(i=0;i<atom;++i) {
+		init[i].x_cord -= cen_init[0];
+ 		init[i].y_cord -= cen_init[1];
+ 		init[i].z_cord -= cen_init[2];
+	}
+	
+	for(i=0;i<all;++i) {
+		all_init[i].x_cord -= cen_init[0];
+ 		all_init[i].y_cord -= cen_init[1];
+ 		all_init[i].z_cord -= cen_init[2];
+	}
+	
+ 	rotate_all(rota,init,atom);
+ 	rotate_all(rota,t_init,t_atom);
+ 	rotate_all(rota,all_init,all);
+ 	
+ 
+ 	
+ 	rmsd = 0;
+ 	float max_displacement = 0;
+ 	for(i=0;i<t_atom;++i) {
+ 		/*printf("I:%d %8.4f\n",i,((t_init[i].x_cord-t_targ[i].x_cord)*(t_init[i].x_cord-t_targ[i].x_cord)+
+ 				 (t_init[i].y_cord-t_targ[i].y_cord)*(t_init[i].y_cord-t_targ[i].y_cord)+
+ 				 (t_init[i].z_cord-t_targ[i].z_cord)*(t_init[i].z_cord-t_targ[i].z_cord)));*/
+ 				float	dist = ((t_init[i].x_cord-t_targ[i].x_cord)*(t_init[i].x_cord-t_targ[i].x_cord)+
+ 				 (t_init[i].y_cord-t_targ[i].y_cord)*(t_init[i].y_cord-t_targ[i].y_cord)+
+ 				 (t_init[i].z_cord-t_targ[i].z_cord)*(t_init[i].z_cord-t_targ[i].z_cord));
+ 					rmsd += dist;
+ 				 if (dist > max_displacement) {max_displacement = dist;}
+ 	}
+// 	printf("Max_displacement:%.4f\n",sqrt(max_displacement));
+ 	//printf("	Rota RMSD:%f\n",rmsd/t_atom);
+ 	
+ 	
+ 	for(i=0;i<all;++i) {
+ 		/*all_init[i].x_cord -= cen_init[0];
+ 		all_init[i].y_cord -= cen_init[1];
+ 		all_init[i].z_cord -= cen_init[2];*/
+ 		
+ 		all_init[i].x_cord += cen_targ[0];
+ 		all_init[i].y_cord += cen_targ[1];
+ 		all_init[i].z_cord += cen_targ[2];
+ 	}
+ 	
+	for(i=0;i<atom;++i) {
+		/*init[i].x_cord -= cen_init[0];
+ 		init[i].y_cord -= cen_init[1];
+ 		init[i].z_cord -= cen_init[2];*/
+	
+ 		init[i].x_cord += cen_targ[0];
+ 		init[i].y_cord += cen_targ[1];
+ 		init[i].z_cord += cen_targ[2];
+ 	}
+ 	
+ 	
+ 	gsl_matrix_free(corr);
+ 	gsl_matrix_free(init_v);
+ 	gsl_matrix_free(targ_v);
+ 	gsl_matrix_free(mat_v);
+    gsl_vector_free(vec_s);
+  	gsl_vector_free(vec_w);
+ 	gsl_matrix_free(rota);
+
+ 	
+ 	return(rmsd/t_atom);
+ }
  void apply_eigen(struct pdb_atom *strc,int atom,gsl_matrix *m,int mode,float amplitude) {
  	int k;
  //	amplitude = 0;
@@ -2248,6 +2452,70 @@ double delta_entro(gsl_vector *vars1, gsl_vector *vars2, int N)
 	return delta_s;
 }
 
+int conj_prob_init_n(gsl_matrix *incov12 , double *conj_dens12,gsl_matrix *cov12cp,int atom) {
+
+	// Builds inverse conjugate covariance matrix, conjugate density factor and delta-r for use with over_prob and proxim_prob -> mais en N dimensions; 
+
+	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
+	
+	int i,j,k;
+	
+	// Make a copy of cov12
+	gsl_matrix *cov12 = gsl_matrix_alloc(atom,atom);
+	gsl_matrix_memcpy (cov12,cov12cp);
+
+	
+	
+	
+	
+	
+	
+	
+		int signum;
+
+	gsl_permutation * p = gsl_permutation_alloc (atom);
+	printf("LU_Decomp = %d\n",gsl_linalg_LU_decomp (cov12, p,&signum));
+	gsl_linalg_LU_invert (cov12, p, incov12);
+	 *conj_dens12 = gsl_linalg_LU_det (cov12, signum);
+	gsl_matrix_free(cov12);
+	// Store delta_x, delta_y and delta_z in delr
+
+	
+	return(1);
+	
+}
+
+double density_prob_n(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,gsl_vector *pos,int atom) {
+	// Retourne la densite de probabilite a cette position la
+
+	// D(a,b,c) = conj_dens12*e^(-1/2 * ((a,b,c) - pos)T * incov * ((a,b,c) - pos)
+	double e = 2.71828182845904523536028747135266249775724709369995;
+	gsl_matrix *at = gsl_matrix_alloc(1,atom); 
+	gsl_matrix *a = gsl_matrix_alloc(atom,1); 
+	gsl_matrix *temp = gsl_matrix_alloc(1,atom);
+	gsl_matrix *one = gsl_matrix_alloc(1,1);
+	
+	int i;
+	for (i = 0;i<atom;++i) {
+		gsl_matrix_set(at,0,i,gsl_vector_get(pos,i)-gsl_vector_get(delr,i));
+		gsl_matrix_set(a,i,0,gsl_vector_get(pos,i)-gsl_vector_get(delr,i));
+	}
+ // print_matrix(incov12);
+
+	multiplie_matrix(at,1,atom,incov12,atom,atom,temp);
+	// print_matrix(temp);
+	multiplie_matrix(temp,1,atom,a,atom,1,one);
+	
+	float ans = gsl_matrix_get(one,0,0);
+	gsl_matrix_free(at);
+	gsl_matrix_free(a);
+	gsl_matrix_free(temp);
+	gsl_matrix_free(one);
+	printf("Dens = pow(e,%g*-1/2+%g) = %g\n",ans,conj_dens12,pow(e,ans*-1/2+conj_dens12));
+	return(pow(e,ans*-1/2+conj_dens12));
+}
+
+
 int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12) // Builds inverse conjugate covariance matrix, conjugate density factor and delta-r for use with over_prob and proxim_prob; 
 {
 	const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
@@ -2306,6 +2574,8 @@ int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *inc
 	return(1);
 	
 }
+
+
 
 
 double density_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,gsl_vector *pos) {

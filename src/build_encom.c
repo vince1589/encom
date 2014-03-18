@@ -163,6 +163,7 @@ int main(int argc, char *argv[]) {
 	if (hessian_flag != 0) {
 		printf("Writing Hessian\n");
 		write_matrix(hessian_name,h_matrix,3*atom,3*atom);
+		write_matrix("template.dat",templaate,atom,atom);
 	}
 
 	//***************************************************
