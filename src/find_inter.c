@@ -1,8 +1,5 @@
 #include "STeM.h"
 
-
-
-
 int main(int argc, char *argv[])
 {
 	int all; /*Number of atoms in the initial PDB*/
@@ -38,6 +35,7 @@ int main(int argc, char *argv[])
 	int i,j,k,l;
 	
 	int lig = 0;
+	int ligt = 0;
 	int nconn;
 	int print_flag = 0;
 	float ligalign = 0; // Flag/valeur pour aligner seulement les résidus dans un cutoff du ligand, 0, one le fait pas... > 0... le cutoff
@@ -47,6 +45,7 @@ int main(int argc, char *argv[])
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
  		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
+ 		if (strcmp("-ligt",argv[i]) == 0) {ligt= 1;}
  		
  		if (strcmp("-init",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);vinit = temp;}
  		if (strcmp("-kr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);bond_factor = temp;}
@@ -171,7 +170,7 @@ int main(int argc, char *argv[])
 	
 	struct pdb_atom strc_node_t[atom_t];
 
-	atom_t = build_cord_CA(strc_all_t, strc_node_t,all_t,lig,connect_t,nconn);
+	atom_t = build_cord_CA(strc_all_t, strc_node_t,all_t,ligt,connect_t,nconn);
 	
 	if (verbose == 1) {printf("	Assign Node:%d\n",atom_t);}
 	
@@ -186,6 +185,15 @@ int main(int argc, char *argv[])
  	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
 	
  	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
+	
+	if ((float)score/(float)atom < 0.8)
+	{
+		printf("Low Score... Will try an homemade alignement !!!\n");
+		
+		score = node_align_onechain(strc_node,atom,strc_node_t,atom_t,align);
+		
+		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
+	}
 	
  	if ((float)score/(float)atom < 0.8)
 	{

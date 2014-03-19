@@ -29,6 +29,8 @@ int main(int argc, char *argv[]) {
 	int hessian_flag = 0;
 	float temperature = 310;
 	int print_template = 0;
+	int invert_hessian = 0;
+	char ihess_name[500];
 	int no_write = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
@@ -47,6 +49,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-w",argv[i]) == 0) {weight_factor = 1;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
  		if (strcmp("-hes",argv[i]) == 0) {strcpy(hessian_name,argv[i+1]);++hessian_flag;}
+ 		if (strcmp("-ihes",argv[i]) == 0) {strcpy(ihess_name,argv[i+1]);++invert_hessian;}
  		if (strcmp("-pt",argv[i]) == 0) {print_template = 1;}
  		if (strcmp("-no",argv[i]) == 0) {no_write = 1;}
  		
@@ -195,9 +198,23 @@ int main(int argc, char *argv[]) {
 	printf("Energy:%10.8f\n",ener);
 	printf("Energy/node:%10.8f\n",ener/(float)(atom*3));
 	
-	gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom); /*Déclare et crée une matrice qui va être le pseudo inverse*/
-	k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3-6);
-	printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
+	if(invert_hessian == 1)
+	{
+		gsl_matrix *k_totinv = gsl_matrix_alloc(3*atom, 3*atom);
+		
+		k_tot_inv_matrix_stem(k_totinv,atom,eval,evec,6,atom*3-6);
+		
+		printf("Writing matrix...\n");
+		
+		write_matrix(ihess_name,k_totinv,3*(atom-lig),3*(atom-lig));
+	}
+	else
+	{
+		gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom); /*Déclare et crée une matrice qui va être le pseudo inverse*/
+		k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3-6);
+		printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
+		gsl_matrix_free(k_inverse);
+	}
 	
 	gsl_matrix_free(templaate);
 	gsl_matrix_free(inter_m);
