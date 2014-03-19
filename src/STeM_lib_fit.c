@@ -2252,36 +2252,144 @@ void double_gauss(struct pdb_atom *init, gsl_matrix *ihessian, int atom, double 
 	*/
 }
 
-double cmp_gauss(gsl_matrix *cov1, gsl_vector *vars1, gsl_matrix *cov2, gsl_vector *vars2)
+double cmp_gauss(gsl_matrix *cov1, gsl_vector *vars1, gsl_matrix *cov2, gsl_vector *vars2, int dim)
 {
 	// Compares two three-dimensional gaussian distributions in terms of shape, using the Bhattacharyya distance.
 	
 	int i, j;
 	
-	gsl_matrix *comb_vars = gsl_matrix_alloc(3,3);
+	gsl_matrix *comb_vars = gsl_matrix_alloc(dim,dim);
 	
-	for(i = 0; i < 3; i++)
+	for(i = 0; i < dim; i++)
 	{
-		for(j = 0; j < 3; j++)
+		for(j = 0; j < dim; j++)
 		{
 			gsl_matrix_set(comb_vars, i, j, (gsl_matrix_get(cov1, i, j) + gsl_matrix_get(cov2, i, j)) / 2);
 		}
 	}
 	
-	double det1 = gsl_vector_get(vars1, 0) * gsl_vector_get(vars1, 1) * gsl_vector_get(vars1, 2);
-	double det2 = gsl_vector_get(vars2, 0) * gsl_vector_get(vars2, 1) * gsl_vector_get(vars2, 2);
+	int n_null_1 = 0;
+	int n_null_2 = 0;
+	int n_null_comb = 0;
+	
+	double det1 = 0.0;
+	double det2 = 0.0;
+	
+	if(dim > 6)
+	{
+		for(i = 0; i < dim; i++)
+		{
+			if(i < 6)
+			{
+				printf("Var 1.%1i = %1.10f\n", i, gsl_vector_get(vars1, i));
+				printf("ln(Var 1.%1i) = %1.10f\n", i, log(gsl_vector_get(vars1, i)));
+				
+				printf("Var 2.%1i = %1.10f\n", i, gsl_vector_get(vars2, i));
+				printf("ln(Var 2.%1i) = %1.10f\n", i, log(gsl_vector_get(vars2, i)));
+			}
+		
+			if(gsl_vector_get(vars1, i) >= 0.0000001)
+			{
+				det1 += 0.5 * log(gsl_vector_get(vars1, i));
+			}
+			else
+			{
+				n_null_1++;
+			}
+			
+			if(gsl_vector_get(vars2, i) >= 0.0000001)
+			{
+				det2 += 0.5 * log(gsl_vector_get(vars2, i));
+			}
+			else
+			{
+				n_null_2++;
+			}
+		}
+	}
+	else
+	{
+		for(i = 0; i < dim; i++)
+		{
+			if(gsl_vector_get(vars1, i) >= 0.000000001)
+			{
+				det1 += 0.5 * log(gsl_vector_get(vars1, i));
+			}
+			else
+			{
+				n_null_1++;
+				
+				printf("Var 1.%1i = %1.10f\n", i, gsl_vector_get(vars1, i));
+				printf("ln(Var 1.%1i) = %1.10f\n", i, log(gsl_vector_get(vars1, i)));
+			}
+			
+			if(gsl_vector_get(vars2, i) >= 0.000000001)
+			{
+				det2 += 0.5 * log(gsl_vector_get(vars2, i));
+			}
+			else
+			{
+				n_null_2++;
+				
+				printf("Var 2.%1i = %1.10f\n", i, gsl_vector_get(vars1, i));
+				printf("ln(Var 2.%1i) = %1.10f\n", i, log(gsl_vector_get(vars1, i)));
+			}
+		}
+	}
 	
 // 	printf("Decompose combined matrix\n");
 	
-	gsl_vector *eval = gsl_vector_alloc(3);
-	gsl_matrix *evec = gsl_matrix_alloc(3,3);
-	diagonalyse_matrix (comb_vars,3, eval,evec);
+	gsl_vector *eval = gsl_vector_alloc(dim);
+	gsl_matrix *evec = gsl_matrix_alloc(dim,dim);
+	diagonalyse_matrix(comb_vars,dim, eval,evec);
 	
 // 	printf("%6.10f\t%6.10f\t%6.10f\n", gsl_vector_get(eval, 0), gsl_vector_get(eval, 1), gsl_vector_get(eval, 2));
 	
-	double combdet = gsl_vector_get(eval, 0) * gsl_vector_get(eval, 1) * gsl_vector_get(eval, 2);
+	double combdet = 0.0;
 	
-	double distance = 0.5 * log(combdet / sqrt(det1 * det2));
+	if(dim > 6)
+	{
+		for(i = 0; i < dim; i++)
+		{
+			if(i < 6)
+			{
+				printf("Var S.%1i = %1.10f\n", i, gsl_vector_get(eval, i));
+				printf("ln(Var S.%1i) = %1.10f\n", i, log(gsl_vector_get(eval, i)));
+			}
+			
+			if(gsl_vector_get(eval, i) >= 0.0000001)
+			{
+				combdet += log(gsl_vector_get(eval, i));
+			}
+			else
+			{
+				n_null_comb++;
+			}
+		}
+	}
+	else
+	{
+		for(i = 0; i < dim; i++)
+		{
+			if(gsl_vector_get(eval, i) >= 0.000000001)
+			{
+				combdet += log(gsl_vector_get(eval, i));
+			}
+			else
+			{
+				n_null_comb++;
+				
+				printf("Var S.%1i = %1.10f\n", i, gsl_vector_get(eval, i));
+				printf("ln(Var S.%1i) = %1.10f\n", i, log(gsl_vector_get(eval, i)));
+			}
+		}
+	}
+	
+	double distance = 0.5 * (combdet - det1 - det2);
+	
+	printf("Number of null variances in matrix 1 : %1i\nNumber of null variances in matrix 2 : %1i\nNumber of null variances in matrix sum : %1i\n", n_null_1, n_null_2, n_null_comb);
+	
+	printf("det 1 : %1.10f\ndet 2 : %1.10f\ncomb_det : %1.10f\n", det1, det2, combdet);
 	
 	/*
 	
@@ -2340,6 +2448,7 @@ int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *inc
 	
 	// Make a Cholesky decomposition of the matrix and uses the decomposition to divide conj_dens12 by sqrt(det(cov12))
 	if (gsl_matrix_get(cov12,0,0)<0.000001) {return(-1);}
+	
 	gsl_linalg_cholesky_decomp(cov12);
 	
 	*conj_dens12 = 1/sqrt(pow(2*PI,3));

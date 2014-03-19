@@ -75,7 +75,7 @@ void nrg_rmsd(struct pdb_atom *init,int atom,gsl_matrix *evec, int *align, int n
 void fit_mc_torsion(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,int atom_t,int all_t,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);
 void gen_gauss(struct pdb_atom *init, gsl_matrix *evec, gsl_vector *eval, int atom, double beta,int nm);
 void double_gauss(struct pdb_atom *init, gsl_matrix *ihessian, int atom, double beta);
-double cmp_gauss(gsl_matrix *cov1, gsl_vector *vars1, gsl_matrix *cov2, gsl_vector *vars2);
+double cmp_gauss(gsl_matrix *cov1, gsl_vector *vars1, gsl_matrix *cov2, gsl_vector *vars2, int dim);
 double delta_entro(gsl_vector *vars1, gsl_vector *vars2, int N);
 int conj_prob_init(struct pdb_atom *atm1, struct pdb_atom *atm2, gsl_matrix *incov12, gsl_vector *delr, double *conj_dens12);
 double proxim_prob(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12, double minrad, double maxrad, int nsteps);

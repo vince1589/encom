@@ -311,11 +311,11 @@ int main(int argc, char *argv[])
 	// Build mini-hessians (calculated mini_hess object is equal to mini_hess + mini_hess_t
 	
 	gsl_matrix *mini_hess = gsl_matrix_alloc(3*score, 3*score);
-	gsl_matrix_set_all(mini_hess, 10);
+	gsl_matrix_set_all(mini_hess, 0);
 	gsl_matrix *mini_hess_i = gsl_matrix_alloc(3*score, 3*score);
-	gsl_matrix_set_all(mini_hess_i, 10);
+	gsl_matrix_set_all(mini_hess_i, 0);
 	gsl_matrix *mini_hess_t = gsl_matrix_alloc(3*score, 3*score);
-	gsl_matrix_set_all(mini_hess_t, 10);
+	gsl_matrix_set_all(mini_hess_t, 0);
 	
 	int sup_line = 0;
 	

@@ -11,12 +11,13 @@ int main(int argc, char *argv[])
 	int help_flag = 1;
 	char file_name[500];
 	char eigen_name[500] = "eigen.dat";
+	char correl_name[500] = "correl.dat";
 	char out_name[500];
-	char out_diags[500];
+	char out_correl[500];
 	int verbose = 0;
 	double beta = 0.000005;
 	int n_tresh = 4;
-	float s_tresh = 3.0;
+	float s_tresh = 1.645;
 	float h_tresh = 0.33;
 	float anti = 1.0;
 	
@@ -25,22 +26,27 @@ int main(int argc, char *argv[])
 	int lig = 0;
 	int nconn;
 	int print_flag = 0;
-	int print_diags = 0;
-	int hard_tresh = 1;
-	for (i = 1;i < argc;i++) {
+	int print_correl = 0;
+	int hard_tresh = 0;
+	int mat_flag = 0;
+	int eig_flag = 0;
+	
+	for (i = 1;i < argc;i++)
+	{
 		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
 		
 		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
 		if (strcmp("-a",argv[i]) == 0) {anti = -1.0;}
 		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
 		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
-		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
+		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]); eig_flag = 1;}
+		if (strcmp("-imat",argv[i]) == 0) {strcpy(correl_name,argv[i+1]); mat_flag = 1;}
 		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]); print_flag = 1;}
-		if (strcmp("-od",argv[i]) == 0) {strcpy(out_diags,argv[i+1]); print_diags = 1;}
+		if (strcmp("-om",argv[i]) == 0) {strcpy(out_correl,argv[i+1]); print_correl = 1;}
 		
 		if (strcmp("-tr",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%i",&temp); n_tresh = temp;}
-		if (strcmp("-str",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); s_tresh = temp; hard_tresh--;}
-		if (strcmp("-htr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); h_tresh = temp;}
+		if (strcmp("-str",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); s_tresh = temp;}
+		if (strcmp("-htr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); h_tresh = temp; hard_tresh++;}
 		
 		if (strcmp("-b",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);beta = temp;}
 	}
@@ -49,7 +55,7 @@ int main(int argc, char *argv[])
 	{
 		printf("****************************\nHelp Section\n-i\tFile Input (PDB)\n-v\tVerbose\n-w\tWeight Vector\n-t\tInitial Value of template (negative value for random)\n\tIf Load Template, multiply the template\n-lt\tLoad input template\n-sp\tSuper Node Mode (CA, N, C)\n-kt\tPoid de l'angle entre les nodes (1)\n-kr\tPoid de la distance entre les nodes (1)\n-f\tFile to fit\n****************************\n");
 		return(0);
-	} 
+	}
 	
 	//***************************************************
 	//*													*
@@ -104,48 +110,61 @@ int main(int argc, char *argv[])
 	
 	printf("Check 1\n");
 	
-	// Load hessian
-	
-	gsl_vector *eval = gsl_vector_alloc(3*atom);
-	
-	gsl_matrix *evec= gsl_matrix_alloc (3*atom,3*atom);
-	
-	load_eigen(eval,evec,eigen_name,3*atom);
-	
-	printf("Check 2\n");
-	
-	// Invert hessian(s)
-	
 	gsl_matrix *hess = gsl_matrix_alloc(3*atom,3*atom);
 	
 	gsl_matrix_set_all(hess, 0);
 	
-	for(i = 0; i < 3*atom; i++)
+	if(eig_flag == 1)
 	{
-		if(gsl_vector_get(eval, i) > 0.00001)
+		// Load hessian
+	
+		gsl_vector *eval = gsl_vector_alloc(3*atom);
+	
+		gsl_matrix *evec= gsl_matrix_alloc (3*atom,3*atom);
+	
+		load_eigen(eval,evec,eigen_name,3*atom);
+	
+		printf("Check 2\n");
+	
+		// Invert hessian(s)
+	
+		for(i = 0; i < 3*atom; i++)
 		{
-			for(j = 0; j < 3*atom; j++)
+			if(gsl_vector_get(eval, i) > 0.00001)
 			{
-				for(k = 0; k < 3*atom; k++)
+				for(j = 0; j < 3*atom; j++)
 				{
-					gsl_matrix_set(hess, j, k, gsl_matrix_get(hess, j, k) + gsl_matrix_get(evec, j, i)*gsl_matrix_get(evec, k, i)/gsl_vector_get(eval, i));
+					for(k = 0; k < 3*atom; k++)
+					{
+						gsl_matrix_set(hess, j, k, gsl_matrix_get(hess, j, k) + gsl_matrix_get(evec, j, i)*gsl_matrix_get(evec, k, i)/gsl_vector_get(eval, i));
+					}
 				}
 			}
 		}
+		
+		gsl_matrix_free(evec);
+		gsl_vector_free(eval);
 	}
-	
-	gsl_matrix_free(evec);
-	gsl_vector_free(eval);
 	
 	printf("Check 3\n");
 	
 	gsl_matrix *correl = gsl_matrix_alloc(3*atom, 3*atom);
 	
-	for(i = 0; i < 3*atom; i++)
+	if(mat_flag == 1)
 	{
-		for(j = 0; j < 3*atom; j++)
+		printf("Dimension : %1i\n", 3*atom);
+		
+		printf("Dimension : %1i\n", load_matrix(correl, correl_name));
+	}
+	
+	if(eig_flag == 1)
+	{
+		for(i = 0; i < 3*atom; i++)
 		{
-			gsl_matrix_set(correl, i, j, gsl_matrix_get(hess,i,j) / sqrt(gsl_matrix_get(hess,i,i) * gsl_matrix_get(hess,j,j)));
+			for(j = 0; j < 3*atom; j++)
+			{
+				gsl_matrix_set(correl, i, j, gsl_matrix_get(hess,i,j) / sqrt(gsl_matrix_get(hess,i,i) * gsl_matrix_get(hess,j,j)));
+			}
 		}
 	}
 	
@@ -162,100 +181,55 @@ int main(int argc, char *argv[])
 	
 	// Calculate average and sd
 	
-	float average = 0;
+	float average = 0.0;
 	
-	for(i = 0; i < 3*atom; i++)
+	for(i = 1; i < 3*atom; i++)
 	{
-		for(j = 0; j < 3*atom; j++)
+		for(j = 0; j < i; j++)
 		{
-			if(i != j)
-			{
 				average += gsl_matrix_get(correl, i, j);
-			}
 		}
 	}
 	
-	average /= 3.0 * (float)atom * (3.0 * (float)atom - 1.0);
+	average /= (3.0 * (float)atom - 1.0) * (3.0 * (float)atom - 2.0) / 2.0;
 	
-	float sd = 0;
+	float sd = 0.0;
 	
-	for(i = 0; i < 3*atom; i++)
+	for(i = 1; i < 3*atom; i++)
 	{
-		for(j = 0; j < 3*atom; j++)
+		for(j = 0; j < i; j++)
 		{
-			if(i != j)
-			{
 				sd += (gsl_matrix_get(correl, i, j) - average) * (gsl_matrix_get(correl, i, j) - average);
-			}
 		}
 	}
 	
-	sd /= 3.0 * (float)atom * (3.0 * (float)atom - 1.0);
+	sd /= (3.0 * (float)atom - 1.0) * (3.0 * (float)atom - 2.0) / 2.0 - 1.0;
+	
+	float flevel = 1.0 / sd;
+	
 	sd = sqrt(sd);
 	
-	printf("Avg : %1.5f\tSd : %1.5f\n", average, sd);
+	printf("Avg : %1.5f\nSd : %1.5f\nFreedom level : %1.5f\nEstimated molar entropy : %1.5f J/(mol.K)\n", average, sd, flevel, 8.314 * log(flevel));
 	
 	printf("Check 5\n");
 	
-	if(print_diags == 1)
+	if(print_correl == 1)
 	{
 		FILE *out_file;
 		
-		out_file = fopen(out_diags, "w");
+		out_file = fopen(out_correl, "w");
 		
-		gsl_matrix *covij = gsl_matrix_alloc(3,3);
-		
-		for(i = 0; i < atom; i++)
+		for(i = 0; i < 3*atom; i++)
 		{
-			for(j = i; j < atom; j++)
+			
+			fprintf(out_file, "\t%1.6f", gsl_matrix_get(correl, i, 0));
+			
+			for(j = 1; j < 3*atom; j++)
 			{
-				gsl_matrix_set_all(covij, 0);
-				
-				fprintf(out_file, "Node %1i vs node %1i\n\n", i, j);
-				
-				for(k = 0; k < 3; k++)
-				{
-					for(l = 0; l < 3; l++)
-					{
-						gsl_matrix_set(covij, k, l, gsl_matrix_get(correl, 3*i + k, 3*j + l));
-						
-						fprintf(out_file, "%1.6f\t", gsl_matrix_get(correl, 3*i + k, 3*j + l));
-					}
-					
-					fprintf(out_file, "\n");
-				}
-				
-				fprintf(out_file, "\n");
-				
-				gsl_vector *eval2 = gsl_vector_alloc(3);
-				
-				gsl_matrix *evec2= gsl_matrix_alloc (3,3);
-				
-				diagonalyse_matrix(covij, 3, eval2, evec2);
-				
-				for(k = 0; k < 3; k++)
-				{
-					for(l = 0; l < 3; l++)
-					{
-						fprintf(out_file, "%1.6f\t", gsl_matrix_get(evec2, k, l));
-					}
-					
-					fprintf(out_file, "\n");
-				}
-				
-				fprintf(out_file, "\n");
-				
-				for(k = 0; k < 3; k++)
-				{
-					fprintf(out_file, "%1.6f\t", gsl_vector_get(eval2, k));
-				}
-				
-				fprintf(out_file, "\n\n");
-				
-				gsl_matrix_free(evec2);
-				
-				gsl_vector_free(eval2);
+				fprintf(out_file, "\t%1.6f", gsl_matrix_get(correl, i, j));
 			}
+			
+			fprintf(out_file, "\n");
 		}
 	}
 	
@@ -263,7 +237,7 @@ int main(int argc, char *argv[])
 	
 	// Build connex matrix
 	
-	int **connex=(int **)malloc(3*atom*sizeof(int *)); // Matrix of the Hessian 1 2 3 (bond, angle, dihedral)
+	int **connex=(int **)malloc(3*atom*sizeof(int *));
 	for(i=0;i<3*atom;i++) {connex[i]=(int *)malloc(3*atom*sizeof(int));}
 	for(i=0;i<3*atom;i++)for(j=0;j<3*atom;j++){connex[i][j]=0;}
 	

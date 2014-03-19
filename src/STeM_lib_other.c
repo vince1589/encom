@@ -117,45 +117,52 @@ void load_eigen(gsl_vector *v,gsl_matrix *m,char filename[100],int atom)
   else return temp; 
 }
 
-int load_matrix(gsl_matrix *newstrc,char filename[100]) {
+int load_matrix(gsl_matrix *newstrc,char filename[100])
+{
 	FILE *file;
  	file = fopen(filename,"r");
- 	char line[20000];
+ 	char line[40000];
  	float temp;
  	char *ptr;
  	int count;
  	int i = 0,j;
-	int flag =0;
- 	while(fgets(line,20000,file)) {
+	int flag = 0;
+ 	while(fgets(line,40000,file))
+ 	{
 		ptr = line;
 		j = 0;
 		sscanf(line,"%g",&temp);
-	//	printf("I STORE:%d %d %f\n",i,j,temp);
+		//printf("I STORE:%d %d %f\n",i,j,temp);
 		gsl_matrix_set(newstrc,i,j,temp);
 		count = 0;
 		flag =0;
-		while(1) {
+		while(1)
+		{
 			if (flag == 0 && count == 0 && (line[count] == ' ' || line[count] == '\t')) {flag = 2;continue;} // Espace en commenceant
 			if (flag == 2 && (line[count] != ' ' || line[count] != '\t')) {flag = 1;} 
 			++count;
 			//printf("Count:%d Flag:%d\n",count,flag);
-			if (line[count] == '\0') {break;}
+			if (line[count] == '\0' || line[count] == '\n') {break;}
 			//printf("%s\n",ptr+count);
 			
 			if (flag == 1) {if (line[count] == ' ' || line[count] == '\t') {continue;} else {flag = 0;}}
 			
-			if ((line[count] == ' ' || line[count] == '\t' )&& flag == 0) {
+			if ((line[count] == ' ' || line[count] == '\t' ) && flag == 0)
+			{
 				++j;
-				if (1 == sscanf(ptr+count+1,"%g",&temp)) {
-				//	printf("I STORE:%d %d %f\n",i,j,temp);
+				
+				if(line[count+1] == '\0' || line[count+1] == '\n') {break;}
+					
+				if (1 == sscanf(ptr+count+1,"%g",&temp))
+				{
+					//printf("I STORE:%d %d %f\n",i,j,temp);
 					gsl_matrix_set(newstrc,i,j,temp);
 					flag = 1;
 				}
 			}
-			
 		}
 		
-	++i;
+		++i;
 	}
 	return(i);
 }
