@@ -29,7 +29,7 @@ OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_template.o            \
         STeM_lib_vcon.o
 
-all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter get_networks comp_networks cmp_dyn
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter get_networks comp_networks cmp_dyn AniRMSD
 	\mv build_encom $W/build_encom
 	\mv b_factor $W/b_factor
 	\mv bfactor_diff $W/bfactor_diff
@@ -49,6 +49,7 @@ all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_p
 	\mv get_networks $W/get_networks
 	\mv comp_networks $W/comp_networks
 	\mv cmp_dyn $W/cmp_dyn
+	\mv AniRMSD $W/AniRMSD
 
 clean:
 	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
@@ -95,6 +96,8 @@ comp_networks: $(OBJ) comp_networks.o
 	$(CXX) $(OBJ) comp_networks.o $(LIBS) -o comp_networks
 cmp_dyn: $(OBJ) cmp_dyn.o
 	$(CXX) $(OBJ) cmp_dyn.o $(LIBS) -o cmp_dyn
+AniRMSD: $(OBJ) AniRMSD.o
+	$(CXX) $(OBJ) AniRMSD.o $(LIBS) -o AniRMSD
 
 # Build main()
 cmp_eigen.o: $I/cmp_eigen.c
@@ -137,6 +140,8 @@ comp_networks.o: $I/comp_networks.c
 	$(CXX) $(CXXFLAGS) -c $I/comp_networks.c $(INCLUDES)
 cmp_dyn.o: $I/cmp_dyn.c
 	$(CXX) $(CXXFLAGS) -c $I/cmp_dyn.c $(INCLUDES)
+AniRMSD.o: $I/AniRMSD.c
+	$(CXX) $(CXXFLAGS) -c $I/AniRMSD.c $(INCLUDES)
 
 # Build Source STeM_lib
 

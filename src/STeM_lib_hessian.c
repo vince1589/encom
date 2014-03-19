@@ -157,20 +157,22 @@ void build_3_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_phi
 	// Recherche 4 atoms reliées qui forme des angles diedres
 	
 	
-	for (i=1;i < nb_atom;++i) {
-		for(j=i+1;j<nb_atom;++j) {
+	for (i=1;i < nb_atom+1;++i) {
+		//printf("I:%d\n",i-1);
+		for(j=i+1;j<nb_atom+1;++j) {
 			connect_flag = 0;
 			for (t=0;t<6;++t) {
 				if (strc[i-1].node_c[t] == strc[j-1].node) {++connect_flag;}
 			}
 			if (connect_flag == 0) {continue;}
-			for (k=j+1;k<nb_atom-1;++k) {
+			//printf("\tJ:%d\n",j-1);
+			for (k=j+1;k<nb_atom+1;++k) {
 				connect_flag = 0;
 				for (t=0;t<6;++t) {
 					if (strc[j-1].node_c[t] == strc[k-1].node) {++connect_flag;}
 				}
 				if (connect_flag == 0) {continue;}
-				for(l=k+1;l<nb_atom;++l) {
+				for(l=k+1;l<nb_atom+1;++l) {
 					//printf("%d %d %d %d\n",i-1,j-1,k-1,l-1);
 					connect_flag = 0;
 			 		
@@ -473,10 +475,10 @@ void build_3_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_phi
 
 	 		
 			bx=strc[i-1].x_cord - strc[j-1].x_cord;
-	   		bz=strc[i-1].z_cord - strc[j-1].z_cord;
-	   		by=strc[i-1].y_cord - strc[j-1].y_cord;
-	   		dist = sqrt(bx*bx+by*by+bz*bz);
-	   		distijsqr = dist*dist;
+   		bz=strc[i-1].z_cord - strc[j-1].z_cord;
+   		by=strc[i-1].y_cord - strc[j-1].y_cord;
+   		dist = sqrt(bx*bx+by*by+bz*bz);
+   		distijsqr = dist*dist;
 	   		
 
 	   		// diagonals of off-diagonal super elements (1st term)

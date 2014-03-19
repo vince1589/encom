@@ -4,7 +4,9 @@ int main(int argc, char *argv[]) {
 	int all; /*Nombre d'atomes dans pdb*/
 
 	int all_t; /*Nombre d'atomes dans pdb*/
-
+	int atom;
+	int atom_t;
+	int lig = 0;
  	int help_flag = 1;
  	char file_name[500];
  	char check_name[500];
@@ -55,8 +57,6 @@ int main(int argc, char *argv[]) {
  	all = count_atom(file_name);
  	nconn = count_connect(file_name);
  	
- 	if (verbose == 1) {printf("File I:%s\n",file_name);}
- 	
  	if (verbose == 1) {printf("Connect:%d\n",nconn);}
  	
 	if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
@@ -71,17 +71,20 @@ int main(int argc, char *argv[]) {
 	// Assign tous les atoms
 	
 	struct pdb_atom strc_all[all];
-	build_all_strc(file_name,strc_all); // Retourne le nombre de Node
+	atom = build_all_strc(file_name,strc_all); // Retourne le nombre de Node
 	
-	if (verbose == 1) {printf("	Atom:%d\n",all);}
-	check_lig(strc_all,connect_h,nconn,all);
 	
-	//Construit la structure a comparer
- 	nconn = 0;
+	if (verbose == 1) {printf("	Assign Node:%d\n",atom);}
+	printf("I found %d Anisou with %d atom !\n",load_anisou(strc_all,file_name,all),all);
+	
+	
+	// ***************************
+	// Building second strc
+	// ********************************
+	
+	nconn = 0;
  	all_t = count_atom(check_name);
  	nconn = count_connect(check_name);
- 	
- 	if (verbose == 1) {printf("File T:%s\n",check_name);}
  	
  	if (verbose == 1) {printf("Connect:%d\n",nconn);}
  	
@@ -92,28 +95,16 @@ int main(int argc, char *argv[]) {
 	int **connect_t=(int **)malloc(nconn*sizeof(int *)); 
     for(i=0;i<nconn;i++) { connect_t[i]=(int *)malloc(6*sizeof(int));}
 
-  assign_connect(check_name,connect_t);
+    assign_connect(check_name,connect_t);
 	
 	// Assign tous les atoms
 	
 	struct pdb_atom strc_all_t[all_t];
-	build_all_strc(check_name,strc_all_t); // Retourne le nombre de Node
+	atom_t = build_all_strc(check_name,strc_all_t); // Retourne le nombre de Node
 	
-	// Load ligand Iinit
-	int liginit_atom = count_atom(liginit);
-	struct pdb_atom liginit_strc[liginit_atom];
-	if (liginit_atom != 0) {
-		build_all_strc(liginit,liginit_strc);
- 	}
- 	
- 	// Load ligand Iinit
-	int ligtarg_atom = count_atom(ligtarg);
-	struct pdb_atom ligtarg_strc[ligtarg_atom];
-	struct pdb_atom ligtarg_strct[ligtarg_atom];
-	if (ligtarg_atom != 0) {
-		build_all_strc(ligtarg,ligtarg_strc);
- 	}
- 	printf("Ligand atom:%d et %d\n",liginit_atom,ligtarg_atom);
+	printf("I found %d Anisou with %d atom !\n",load_anisou(strc_all_t,check_name,all_t),all_t);
+	
+	
  	assign_atom_type(strc_all,all);
  	assign_atom_type(strc_all_t,all_t);
 
@@ -125,21 +116,9 @@ int main(int argc, char *argv[]) {
 	gsl_vector *trans = gsl_vector_alloc(3);
 	
 	center_strc(all_t,strc_all_t,trans);
-	if (ligtarg_atom != 0) {
-		for(i = 0;i<ligtarg_atom;++i) {
-			ligtarg_strc[i].x_cord -= gsl_vector_get(trans,0);
-			ligtarg_strc[i].y_cord -= gsl_vector_get(trans,1);
-			ligtarg_strc[i].z_cord -= gsl_vector_get(trans,2);
-		}
-	}
+	
 	center_strc(all,strc_all,trans);
-	if (liginit_atom != 0) {
-		for(i = 0;i<liginit_atom;++i) {
-			liginit_strc[i].x_cord -= gsl_vector_get(trans,0);
-			liginit_strc[i].y_cord -= gsl_vector_get(trans,1);
-			liginit_strc[i].z_cord -= gsl_vector_get(trans,2);
-		}
-	}
+	
 	struct pdb_atom tstrc[all_t];
 	
 	
@@ -224,9 +203,7 @@ int main(int argc, char *argv[]) {
 		// Copy strc
 	
 		copy_strc(tstrc,strc_all_t,all_t);
-		if (ligtarg_atom != 0) {
-			copy_strc(ligtarg_strct,ligtarg_strc,ligtarg_atom);
-		}
+		
 		// Apply rotation
 		int change = 0;
 		if (i != 0) {
@@ -248,16 +225,16 @@ int main(int argc, char *argv[]) {
 		}
 		rotate_matrix(rota,gene[0],xaxis); // In radian !
 		rotate_all(rota,tstrc,all_t);
-		if (ligtarg_atom != 0) {rotate_all(rota,ligtarg_strct,ligtarg_atom);}
+		
 		rotate_matrix(rota,gene[1],yaxis); // In radian !
 		rotate_all(rota,tstrc,all_t);
-		if (ligtarg_atom != 0) {rotate_all(rota,ligtarg_strct,ligtarg_atom);}
+	
 		rotate_matrix(rota,gene[2],zaxis); // In radian !
 		rotate_all(rota,tstrc,all_t);
-		if (ligtarg_atom != 0) {rotate_all(rota,ligtarg_strct,ligtarg_atom);}
+	
 		for(j=0;j<3;++j) {gsl_vector_set(trans,j,gene[j+3]);}
 		translate_strc(tstrc,all_t,trans);
-		if (ligtarg_atom != 0) {translate_strc(ligtarg_strct,ligtarg_atom,trans);}
+	
 		// Compare minimum distance
 		
 		// Comapre prob density
@@ -293,13 +270,7 @@ int main(int argc, char *argv[]) {
 			
 		}
 		float ligrmsd = 0;
-		if (ligtarg_atom != 0) {
-			int o;
-			for (o=0;o<ligtarg_atom;++o) {
-				ligrmsd += pow(ligtarg_strct[o].x_cord-liginit_strc[o].x_cord,2)+pow(ligtarg_strct[o].y_cord-liginit_strc[o].y_cord,2)+pow(ligtarg_strct[o].z_cord-liginit_strc[o].z_cord,2);
-			}
-			ligrmsd = sqrt(ligrmsd/ligtarg_atom);
-		}
+	
 
 		
 		/*if (i % 1000 == 0) {printf("IT:%d Best:%.12f Dens sum:%.12f Dist:%.6f Ligrmsd:%.6f Gene:",i,best,dens_sum,avg/all,ligrmsd);
@@ -332,126 +303,10 @@ int main(int argc, char *argv[]) {
 	}
 	// MC finished
 	
-	
-	// Apply rotation
-	
 
-		
-	rotate_matrix(rota,bgen[0],xaxis); // In radian !
-	rotate_all(rota,strc_all_t,all_t);
-	rotate_matrix(rota,bgen[1],yaxis); // In radian !
-	rotate_all(rota,strc_all_t,all_t);
-	rotate_matrix(rota,bgen[2],zaxis); // In radian !
-	rotate_all(rota,strc_all_t,all_t);
-	
-	for(j=0;j<3;++j) {gsl_vector_set(trans,j,bgen[j+3]);}
-	translate_strc(strc_all_t,all_t,trans);
-	
-
-
-	
 
 	printf("My best = %.12f\n",best);
 	for(j=0;j<6;++j) {printf("%.5f ",bgen[j]);}printf("\n");
-	write_strc("match.pdb",strc_all_t,all_t,1.00);
-	write_strc("init.pdb",strc_all,all,1.00);
-	
-
-	
-	
-	// Load the whole structure
-	
-	if (strcmp(wholeinit,"UNDEF") != 0) {
-		printf("WholeInit:%s\n",wholeinit);	// Première strucutre
- 		float tocenter[3];
- 		build_all_strc(file_name,strc_all);
- 		for(i=0;i<3;++i) {tocenter[i] = 0.0;}
- 		for(i=0;i<all;++i) {
- 			tocenter[0] -= strc_all[i].x_cord/all;
- 			tocenter[1] -= strc_all[i].y_cord/all;
- 			tocenter[2] -= strc_all[i].z_cord/all;
- 		}
- 		for(j=0;j<3;++j) {gsl_vector_set(trans,j,tocenter[j]);}
- 		
-	 	all = count_atom(wholeinit);
-	 	nconn = count_connect(wholeinit);
-	 	
-	 	if (verbose == 1) {printf("Connect:%d\n",nconn);}
-	 	
-		if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
-	
-		// Array qui comprend tous les connects
-	
-		int **connect_bla=(int **)malloc(nconn*sizeof(int *)); 
-	  for(i=0;i<nconn;i++) { connect_bla[i]=(int *)malloc(6*sizeof(int));}
-	  
-	  assign_connect(wholeinit,connect_bla);
-
-		// Assign tous les atoms
-	
-		struct pdb_atom strc_init[all];
-		build_all_strc(wholeinit,strc_init); // Retourne le nombre de Node
-	
-		if (verbose == 1) {printf("	Atom:%d\n",all);}
-	//	check_lig(strc_init,connect_h,nconn,all);
-		
-		// Centre le BS
-		print_vector(trans);
-		translate_strc(strc_init,all,trans);
-		write_strc("init_center.pdb",strc_init,all,1.00);
-		
-	}
-	
-	// Load the whole structure
-	
-	if (strcmp(wholetarg,"UNDEF") != 0) {
-		printf("wholetarg:%s\n",wholetarg);	// Première strucutre
- 		float tocenter[3];
- 		build_all_strc(check_name,strc_all_t);
- 		for(i=0;i<3;++i) {tocenter[i] = 0.0;}
- 		for(i=0;i<all_t;++i) {
- 			tocenter[0] -= strc_all_t[i].x_cord/all_t;
- 			tocenter[1] -= strc_all_t[i].y_cord/all_t;
- 			tocenter[2] -= strc_all_t[i].z_cord/all_t;
- 		}
- 		for(j=0;j<3;++j) {gsl_vector_set(trans,j,tocenter[j]);}
- 		
-	 	all = count_atom(wholetarg);
-	 	nconn = count_connect(wholetarg);
-	 	
-	 	if (verbose == 1) {printf("Connect:%d\n",nconn);}
-	 	
-		if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
-	
-		// Array qui comprend tous les connects
-	
-		int **connect_bla2=(int **)malloc(nconn*sizeof(int *)); 
-	  for(i=0;i<nconn;i++) { connect_bla2[i]=(int *)malloc(6*sizeof(int));}
-	  
-	  assign_connect(wholetarg,connect_bla2);
-
-		// Assign tous les atoms
-	
-		struct pdb_atom strc_init[all];
-		build_all_strc(wholetarg,strc_init); // Retourne le nombre de Node
-	
-		if (verbose == 1) {printf("	Atom:%d\n",all);}
-	//	check_lig(strc_init,connect_h,nconn,all);
-		
-		// Centre le BS
-		print_vector(trans);
-		translate_strc(strc_init,all,trans);
-		
-		rotate_matrix(rota,bgen[0],xaxis); // In radian !
-		rotate_all(rota,strc_init,all);
-		rotate_matrix(rota,bgen[1],yaxis); // In radian !
-		rotate_all(rota,strc_init,all);
-		rotate_matrix(rota,bgen[2],zaxis); // In radian !
-		rotate_all(rota,strc_init,all);
-		
-		write_strc("target_center.pdb",strc_init,all,1.00);
-		
-	}
 	
 	gsl_matrix_free(rota);
 }

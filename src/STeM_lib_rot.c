@@ -8,8 +8,9 @@
  
  void print_vector(gsl_vector *v) {
 	int i;
-	for(i=0;i<3;++i) {
-		printf("%10.5f ",gsl_vector_get(v,i));
+	for(i=0;i<v->size;++i) {
+	
+		printf("%g ",gsl_vector_get(v,i));
 	}
 	printf("\n");
 } 
@@ -151,7 +152,7 @@ void print_matrix(gsl_matrix *mat) {
 	int i,j;
 	for(i=0;i<mat->size1;++i) {
 		for(j=0;j<mat->size2;++j) {
-			printf("%10.5f ",gsl_matrix_get(mat,i,j));
+			printf("%8.2f ",gsl_matrix_get(mat,i,j));
 		}
 		printf("\n");
 	}
