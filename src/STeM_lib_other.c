@@ -535,23 +535,27 @@ for(i=0; i < nb_atom_1; ++i) {
 		 if (k > int (evl->size-1)) {break;}
 		 if  (gsl_vector_get (evl, k) < 0.000001) 
 		 {
-			 printf("K = %d -> Eval to small I next:%f\n",k,gsl_vector_get (evl, k));
+			 printf("K = %d -> Eval to small I next:%g\n",k,gsl_vector_get (evl, k));
 			 continue;
 		 }
 		 
-// 		 printf("%6.10f\n", gsl_vector_get (evl, k));
+ 		 //printf("%6.10f\n", gsl_vector_get (evl, k));
 		 
-		 for (i=0;i<nb_atom;++i)
+		 for (i=0;i<nb_atom*3;++i)
 		 {
-			 for (j=0;j < 3;++j)
-			 {
-				 for(l = 0; l < 3; ++l)
-				 {
-					gsl_matrix_set(m, 3*i + j, 3*i + l, gsl_matrix_get(evc,3*i + j,k)*gsl_matrix_get(evc, 3*i + l, k)/gsl_vector_get(evl, k) + gsl_matrix_get(m, 3*i + j, 3*i + l));
-				 }
+			for (j=0;j<nb_atom*3;++j) 
+			{
+				//	printf("I:%d et J:%d -> %f * %f -> %f\n",i,j,gsl_matrix_get(evc,i,k),gsl_matrix_get(evc, j, k),gsl_matrix_get(evc,i,k)*gsl_matrix_get(evc, j, k));
+
+				 	
+					gsl_matrix_set(m, i,j,
+						gsl_matrix_get(evc,i,k)*gsl_matrix_get(evc, j, k)/gsl_vector_get(evl, k) 
+						+ gsl_matrix_get(m, i,j)
+					);
+				
 			 }
 		 }
-		 //break;
+	//	break;
 	 }
  }
  

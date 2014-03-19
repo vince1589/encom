@@ -16,13 +16,13 @@ int main(int argc, char *argv[]) {
  	char inputname[500] ="none";
  	int verbose = 0;
 	int nconn;
-	float vinit = 1; // Valeur de base
-	float bond_factor = 1;		// Facteur pour poid des bond strechcing
-	float angle_factor = 1;		// Facteur pour poid des angles
+	float vinit = 0.001; // Valeur de base
+	float bond_factor = 1000;		// Facteur pour poid des bond strechcing
+	float angle_factor = 10000;		// Facteur pour poid des angles
 	double K_phi1 = 1;				// Facteurs pour angles dièdres
 	double K_phi3 = 0.5;
 	float init_templaate = 1;
-	float kp_factor = 1;					// Facteur pour poid des angles dièdres
+	float kp_factor = 10000;					// Facteur pour poid des angles dièdres
 	int weight_factor = 0;
 	char eigen_name[500] = "eigen.dat";
 	char hessian_name[500] = "hessian.dat";
@@ -166,6 +166,7 @@ int main(int argc, char *argv[]) {
 	if (hessian_flag != 0) {
 		printf("Writing Hessian\n");
 		write_matrix(hessian_name,h_matrix,3*atom,3*atom);
+		write_matrix("template.dat",templaate,atom,atom);
 	}
 
 	//***************************************************
