@@ -206,10 +206,10 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-/*	print_matrix(k_totinv);printf("\n\n");
+	/*print_matrix(k_totinv);printf("\n\n");
 	
-	print_matrix(k_totinv_two);printf("\n\n");
-*/	
+	print_matrix(k_totinv_two);printf("\n\n");*/
+	
 	//gsl_vector_scale(delr,-1);
 	for(i = 0;i<score;++i) {
 		for(j = 0;j<score;++j) {
@@ -243,11 +243,15 @@ int main(int argc, char *argv[]) {
 
 const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421;
 	k_cov_inv_matrix_stem(incov12,score,eval_cov,evec_cov,0,3*score);
-	 conj_dens12= log(1/sqrt(pow(2*PI,3)));
+	
+	
+	
+	conj_dens12= -0.5*score*3*log(2*PI);
 	for(i=0;i<score*3;++i) {
-		 if  (gsl_vector_get (eval_cov, i) < 0.000001) {continue;}
 		 if (i < 30) {printf("I:%d -> %g Log -> %g\n",i, gsl_vector_get (eval_cov, i),log(gsl_vector_get (eval_cov, i)));}
-		 conj_dens12 += log(gsl_vector_get (eval_cov, i));;
+		 if  (gsl_vector_get (eval_cov, i) < 0.000001) {continue;}
+		
+		 conj_dens12 -= 0.5*log(gsl_vector_get (eval_cov, i));
 	}
 	// Re-verse
 
