@@ -3,11 +3,11 @@
  
  int covalent_bond(int i, int j,int **con, int ncon) {
 	int m,l;
- 	int bla = 0;
 	int con_flag = 0;
  	for (m=0;m<ncon;++m) {
  		if (j == con[m][0]) {
  			for(l=1;l<5;++l) {
+ 				
  				if (i == con[m][l]) { con_flag = 1; }
  			}
  		}
@@ -409,6 +409,11 @@ int count_atom(char filename[100]) {
 			    flag = check_covalent_CA(CA,all,k,atom,CA[i].node,CA[l].node);
 			    
 			}
+			if (flag != 1) {
+					if (covalent_bond(CA[i].atom_number,CA[l].atom_number,con,ncon) == 1) {flag = 1;}
+					
+				
+			}
 			//printf("I TEST:%d   %d  Type:%d %d -> Flag:%d\n",i,l,CA[i].atom_type,CA[l].atom_type,flag);
 			if (flag == 1) {
 				for(n=0;n<6;++n) {
@@ -440,7 +445,7 @@ int count_atom(char filename[100]) {
  	for (i=0;i<atom;++i) {
  		CA[all[i].node].mass += all[i].mass;
  	}
-// 	for (i=0;i<k+1;++i) {printf("CA I:%d Type:%d Node:%d Atom:%d Type:%s Res num:%d Res Type:%s Con:%d %d %d %d %d %d Cord:%f,%f,%f Mass:%f\n",i,CA[i].atom_type,CA[i].node,CA[i].atom_number,CA[i].atom_prot_type,CA[i].res_number,CA[i].res_type,CA[i].node_c[0],CA[i].node_c[1],CA[i].node_c[2],CA[i].node_c[3],CA[i].node_c[4],CA[i].node_c[5],CA[i].x_cord,CA[i].y_cord,CA[i].z_cord,CA[i].mass);}
+ //	for (i=0;i<k+1;++i) {printf("CA I:%d Type:%d Node:%d Atom:%d Type:%s Res num:%d Res Type:%s Con:%d %d %d %d %d %d Cord:%f,%f,%f Mass:%f\n",i,CA[i].atom_type,CA[i].node,CA[i].atom_number,CA[i].atom_prot_type,CA[i].res_number,CA[i].res_type,CA[i].node_c[0],CA[i].node_c[1],CA[i].node_c[2],CA[i].node_c[3],CA[i].node_c[4],CA[i].node_c[5],CA[i].x_cord,CA[i].y_cord,CA[i].z_cord,CA[i].mass);}
  	return(k+1);
  
  }
@@ -689,6 +694,7 @@ int count_atom(char filename[100]) {
 		// On veut assigner des nodes (pour chaque residus)
 		
 		if(index > 0) {
+			// Si le numero de residus est différent
 			if (structure[index-1].res_number != structure[index].res_number || strcmp(structure[index-1].res_type,structure[index-1].res_type) != 0) {++n;}
 		}
 		if (index > 0) {
@@ -696,7 +702,7 @@ int count_atom(char filename[100]) {
 		}
 		structure[index].node = n;
 		if (structure[index].mass == 0.00) {
-  			printf("Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d Mass:%8f\n",structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node,structure[index].mass);	
+  		//	printf("Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d Mass:%8f\n",structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node,structure[index].mass);	
   		}
   	//printf("Index:%d Type:-%s- Res Num:%d	Node:%d Res:-%s- Atom type:%d Node:%4d Mass:%8f Cord:%f %f %f\n",index,structure[index].atom_prot_type,structure[index].res_number,n,structure[index].res_type,structure[index].atom_type,structure[index].node,structure[index].mass,structure[index].x_cord,structure[index].y_cord,structure[index].z_cord);	
 		//printf("%s N:%d\n",line,n);
