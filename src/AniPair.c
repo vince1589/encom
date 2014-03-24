@@ -1,7 +1,7 @@
 #include "STeM.h"
 
 int load_list(char filename[100],int **con);
-
+void inv_mat_align(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm,int *align);
 int main(int argc, char *argv[]) {
 	int all; /*Nombre d'atomes dans pdb*/
 	int atom; /*Nombre de carbone CA*/
@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
 	char eigen_name_two[500] = "eigen.dat";
 	char init_list[500] = "init_list.dat";
 	char targ_list[500] = "targ_list.dat";
+	float rmsd_cutoff = 2.0;
 	float scale = 1.0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
@@ -30,6 +31,7 @@ int main(int argc, char *argv[]) {
 		if (strcmp("-tlist",argv[i]) == 0) {strcpy(targ_list,argv[i+1]);}
 		
  		if (strcmp("-scale",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);scale = temp;}
+ 		if (strcmp("-max_rmsd",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);rmsd_cutoff = temp;}
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
  		
 
@@ -122,13 +124,13 @@ int main(int argc, char *argv[]) {
  
  	int align[atom];
  	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
- 	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
+ /*	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
  	if ((float)score/(float)atom < 0.8 && (float)score/(float)atom_t < 0.8 ) {
  		printf("Low Score... Will try an homemade alignement !!!\n");
  		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
  		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
  	}
- 	
+ 	*/
  	
  	// **********************************************
  	// Load Eigen de la strc init
@@ -160,33 +162,60 @@ int main(int argc, char *argv[]) {
 	gsl_vector_scale(eval,scale);
 	gsl_vector_scale(eval_two,scale);
 	
-	if (verbose == 1) {printf("Building Cross-Correlation Two\n");}
 	
-	gsl_matrix *k_totinv_two = gsl_matrix_alloc(atom_t*3, atom_t*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
-	
-	gsl_matrix_set_all(k_totinv_two, 0);
-	
-	k_cov_inv_matrix_stem(k_totinv_two,atom_t,eval_two,evec_two,6,atom_t*3-6); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
 	
 	// Il va falloir crer un objet qui va etre constitué de toutes les align à comparer
 	
 	// Load list 1
 	if (verbose == 1) {printf("Loading list init:%s\n",init_list);}
-	int **pair_one=(int **)malloc(1000*sizeof(int *)); 
-  for(i=0;i<1000;i++) { pair_one[i]=(int *)malloc(10*sizeof(int));}
+	int **pair_one=(int **)malloc(10000*sizeof(int *)); 
+  for(i=0;i<10000;i++) { pair_one[i]=(int *)malloc(10*sizeof(int));}
   
   int num_list_init = load_list(init_list,pair_one);
   
   if (verbose == 1) {printf("Loading list targ:%s\n",targ_list);}
-  int **pair_two=(int **)malloc(1000*sizeof(int *)); 
-  for(i=0;i<1000;i++) { pair_two[i]=(int *)malloc(10*sizeof(int));}
+  int **pair_two=(int **)malloc(10000*sizeof(int *)); 
+  for(i=0;i<10000;i++) { pair_two[i]=(int *)malloc(10*sizeof(int));}
 	
 	int num_list_targ =load_list(targ_list,pair_two);
+	
+	// Va accéler l'inversion de la matrice en prenant seulement les nodes aligné
+	
+	int align_t[atom_t];
+	for(i=0;i<atom_t;++i) {
+		align_t[i] = -1;
+	}
+
+
+	for(i = 0;i<num_list_targ;++i) {
+		int k;
+		for(k=0;k<6;++k) {
+			if (pair_two[i][k] != -1) {
+				align_t[pair_two[i][k]] = 1;
+		
+			}
+		}
+	}
+
+	
+	
+	if (verbose == 1) {printf("Building Cross-Correlation Two\n");}
+	
+	gsl_matrix *k_totinv_two = gsl_matrix_alloc(atom_t*3, atom_t*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
+
+	gsl_matrix_set_all(k_totinv_two, 0);
+	inv_mat_align(k_totinv_two,atom_t,eval_two,evec_two,0,atom_t*3,align_t);
+	//k_cov_inv_matrix_stem(k_totinv_two,atom_t,eval_two,evec_two,6,atom_t*3-6); // Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. 
 	
 	
 	int paira;
 	for(paira = 0;paira<num_list_init;++paira) {
+		printf("PairA:%d\n",paira);
 		int pairb;
+		
+		
+		
+		
 		for(pairb = 0;pairb<num_list_targ;++pairb) {
 		
 			
@@ -208,6 +237,7 @@ int main(int argc, char *argv[]) {
 			// Rotationne les eigenvector
 	
 			float myRmsd = rmsd_yes_eigen(strc_node,strc_node_t,atom, align,strc_all,all,evec);
+			if (myRmsd > rmsd_cutoff) {continue;}
 			//printf("\tRMSD = %f\n",myRmsd);
 			if (verbose == 1) {printf("\tBuilding Cross-Correlation One\n");}
 
@@ -217,7 +247,7 @@ int main(int argc, char *argv[]) {
 	
 			gsl_matrix_set_all(k_totinv, 0);
 	
-			k_cov_inv_matrix_stem(k_totinv,atom,eval,evec,6,atom*3-6); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
+			inv_mat_align(k_totinv,atom,eval,evec,0,atom*3,align); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
 
 	
 	
@@ -311,8 +341,11 @@ int main(int argc, char *argv[]) {
 			//printf("\tConj_dens = %g\n",conj_dens12);
 			float dens = density_prob_n(incov12, delr, conj_dens12,pos,score*3);
 			//	printf("Pair:%d et %d\n",paira,pairb);
-			printf("%d %d %f %g\n",paira,pairb,myRmsd,dens);
-		
+			printf("%d %d %f %g",paira,pairb,myRmsd,dens);
+			for(i<0;i<3;++i) {
+				printf(" %s",strc_node_t[pair_two[pairb][i*2]].res_type);
+			}
+			printf("\n");
 			// Free some stuff
 			gsl_matrix_free(k_totinv);
 			gsl_matrix_free(evec_cov);		
@@ -352,7 +385,7 @@ int load_list(char filename[100],int **con) {
  			con[j][3] =temp4;
  			con[j][4] =temp5;
  			con[j][5] =temp6;
- 			//printf("J:%d Value:%d %d -- %d %d %d %d %d %d\n",j,temp6,con[j][5],temp1,temp2,temp3,temp4,temp5,temp6);
+ 		//	printf("J:%d Value:%d %d -- %d %d %d %d %d %d\n",j,temp6,con[j][5],temp1,temp2,temp3,temp4,temp5,temp6);
  			//printf("%s",line);
  		
 	}
@@ -364,3 +397,41 @@ int load_list(char filename[100],int **con) {
 
 
 }
+
+void inv_mat_align(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm,int *align) 
+ {
+	 //gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
+	 gsl_matrix_set_all (m, 0);
+	 int i,j,k;
+	 
+	 for (k=mode;k<mode+nm;++k)
+	 {
+		 if (k > int (evl->size-1)) {break;}
+		 if  (gsl_vector_get (evl, k) < 0.000001) 
+		 {
+			// printf("K = %d -> Eval to small I next:%g\n",k,gsl_vector_get (evl, k));
+			 continue;
+		 }
+		 
+ 		 //printf("%6.10f\n", gsl_vector_get (evl, k));
+		 
+		 for (i=0;i<nb_atom*3;++i)
+		 {
+		 	if (align[i/3] == -1) {continue;}
+			for (j=0;j<nb_atom*3;++j) 
+			{
+				if (align[i/3] == -1) {continue;}
+				//	printf("I:%d et J:%d -> %f * %f -> %f\n",i,j,gsl_matrix_get(evc,i,k),gsl_matrix_get(evc, j, k),gsl_matrix_get(evc,i,k)*gsl_matrix_get(evc, j, k));
+
+				 	
+					gsl_matrix_set(m, i,j,
+						gsl_matrix_get(evc,i,k)*gsl_matrix_get(evc, j, k)/gsl_vector_get(evl, k) 
+						+ gsl_matrix_get(m, i,j)
+					);
+				
+			 }
+		 }
+	//	break;
+	 }
+ }
+
