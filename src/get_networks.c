@@ -1,7 +1,11 @@
 #include "STeM.h"
 #include <gsl/gsl_linalg.h>
 
-void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int max, int tresh, struct pdb_atom *init);
+void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int max, int tresh, int **clique_mat, int mat_size, int *cliquenum);
+
+int clique_fusion(int **clique_mat, int mat_size, int *cliquenum);
+
+int get_connex(int nod1, int nod2, struct pdb_atom *init, int natom, float max);
 
 int main(int argc, char *argv[])
 {
@@ -20,6 +24,15 @@ int main(int argc, char *argv[])
 	float s_tresh = 1.645;
 	float h_tresh = 0.33;
 	float anti = 1.0;
+	float cutoff = 5.0;
+	int bresn[800];
+	char bresc[800];
+	int nbind = 0;
+	int aresn[800];
+	int aresc[800];
+	int nallo = 0;
+	
+	int test = 1;
 	
 	int i,j,k,l;
 	
@@ -31,7 +44,7 @@ int main(int argc, char *argv[])
 	int mat_flag = 0;
 	int eig_flag = 0;
 	
-	for (i = 1;i < argc;i++)
+	for (i = 1; i < argc; i++)
 	{
 		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
 		
@@ -43,6 +56,45 @@ int main(int argc, char *argv[])
 		if (strcmp("-imat",argv[i]) == 0) {strcpy(correl_name,argv[i+1]); mat_flag = 1;}
 		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]); print_flag = 1;}
 		if (strcmp("-om",argv[i]) == 0) {strcpy(out_correl,argv[i+1]); print_correl = 1;}
+		if (strcmp("-cut",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); cutoff = temp;}
+		
+		if(strcmp("-bres", argv[i]) == 0)
+		{
+			j = 0;
+			
+			int tmp1;
+			char tmp2;
+			
+			while(sscanf(argv[i+j+1], "%i_%c", &tmp1, &tmp2) != EOF)
+			{
+				bresn[j] = tmp1;
+				
+				bresc[j] = tmp2;
+				
+				j++;
+				
+				nbind++;
+			}
+		}
+		
+		if(strcmp("-ares", argv[i]) == 0)
+		{
+			j = 0;
+			
+			int tmp1;
+			char tmp2;
+			
+			while(sscanf(argv[i+j+1], "%i_%c", &tmp1, &tmp2) != EOF)
+			{
+				aresn[j] = tmp1;
+				
+				aresc[j] = tmp2;
+				
+				j++;
+				
+				nallo++;
+			}
+		}
 		
 		if (strcmp("-tr",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%i",&temp); n_tresh = temp;}
 		if (strcmp("-str",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); s_tresh = temp;}
@@ -55,6 +107,25 @@ int main(int argc, char *argv[])
 	{
 		printf("****************************\nHelp Section\n-i\tFile Input (PDB)\n-v\tVerbose\n-w\tWeight Vector\n-t\tInitial Value of template (negative value for random)\n\tIf Load Template, multiply the template\n-lt\tLoad input template\n-sp\tSuper Node Mode (CA, N, C)\n-kt\tPoid de l'angle entre les nodes (1)\n-kr\tPoid de la distance entre les nodes (1)\n-f\tFile to fit\n****************************\n");
 		return(0);
+	}
+	
+	if(test == 1)
+	{
+		printf("Bind :\n");
+		
+		for(i == 0; i < nbind; i++)
+		{
+			printf("%1i_%1c\n", bresn[i], bresc[i]);
+		}
+		
+		printf("Allo :\n");
+		
+		for(i == 0; i < nallo; i++)
+		{
+			printf("%1i_%1c\n", aresn[i], aresc[i]);
+		}
+		
+		return 0;
 	}
 	
 	//***************************************************
@@ -213,6 +284,8 @@ int main(int argc, char *argv[])
 	
 	printf("Check 5\n");
 	
+	// Print correlation matrix
+	
 	if(print_correl == 1)
 	{
 		FILE *out_file;
@@ -237,40 +310,35 @@ int main(int argc, char *argv[])
 	
 	// Build connex matrix
 	
-	int **connex=(int **)malloc(3*atom*sizeof(int *));
-	for(i=0;i<3*atom;i++) {connex[i]=(int *)malloc(3*atom*sizeof(int));}
-	for(i=0;i<3*atom;i++)for(j=0;j<3*atom;j++){connex[i][j]=0;}
-	
-	for(i = 0; i < atom; i++)
-	{
-		for(j = 0; j < atom; j++)
-		{
-			connex[i][j] = 0;
-		}
-	}
+	int **connex=(int **)malloc(atom*sizeof(int *));
+	for(i=0;i<atom;i++) {connex[i]=(int *)malloc(atom*sizeof(int));}
+	for(i=0;i<atom;i++)for(j=0;j<atom;j++){connex[i][j]=0;}
 	
 	for(i = 0; i < 3*atom; i++)
 	{
-		for(j = 0; j < 3*atom; j++)
+		for(j = 0; j <= i; j++)
 		{
 			if((hard_tresh == 0 && anti * (gsl_matrix_get(correl, i, j) - average) / sd >= s_tresh) || (hard_tresh == 1 && anti * gsl_matrix_get(correl, i, j) >= h_tresh) || i == j)
 			{
 				connex[i / 3][j / 3] ++;
+				connex[j / 3][i / 3] ++;
 			}
 		}
 	}
 	
 	for(i = 0; i < atom; i++)
 	{
-		for(j = 0; j < atom; j++)
+		for(j = 0; j <= i; j++)
 		{
-			if(connex[i][j] >= 3)
+			if(connex[i][j] >= 3 && get_connex(i, j, strc_all, all, cutoff) == 1)
 			{
 				connex[i][j] = 1;
+				connex[j][i] = 1;
 			}
 			else
 			{
 				connex[i][j] = 0;
+				connex[j][i] = 0;
 			}
 		}
 	}
@@ -286,16 +354,49 @@ int main(int argc, char *argv[])
 		nodenums[i] = i;
 	}
 	
-	Extend(nodenums, 0, atom, connex, clique, cpos, atom, n_tresh, strc_node);
+	// Build cliques matrix
+	
+	int **cliques=(int **)malloc(2*atom*sizeof(int *));
+	for(i=0;i<2*atom;i++) {cliques[i]=(int *)malloc((atom + 1)*sizeof(int));}
+	for(i=0;i<2*atom;i++)for(j=0;j<atom;j++){cliques[i][j]=-1;}
+	
+	for(i=0;i<atom;i++) {cliques[i][atom] = 0;}
+	
+	// Fill cliques matrix
+	
+	int cliquen = 0;
+	
+	Extend(nodenums, 0, atom, connex, clique, cpos, atom, n_tresh, cliques, atom, &cliquen);
+	
+	printf("Check 7\n");
+	
+	// Build networks from cliques
+	
+	int cliquen_old = cliquen;
+	
+	while(clique_fusion(cliques, atom, &cliquen) < cliquen_old) {cliquen_old = cliquen;}
+	
+	for(i = 0; i < cliquen; i++)
+	{
+		for(j = 0; j < cliques[i][atom]; j++)
+		{
+			printf("%1i_%1s\t", strc_node[cliques[i][j]].res_number, strc_node[cliques[i][j]].chain);
+		}
+		
+		printf("\n\n");
+	}
+	
+	return 1;
 }
 
-void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int max, int tresh, struct pdb_atom *init)
+void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int max, int tresh, int **clique_mat, int mat_size, int *cliquenum)
 {
 	int *neww = NULL;
 	int nod,fixp;
 	int newne,newce,i,j,count,pos,p,s,sel,minnod;
 	int loc;
 	int l;
+	int k;
 	//printf("entered Extend\n");PAUSE;
 	
 	neww = (int *)malloc(ce*sizeof(int *));
@@ -386,19 +487,25 @@ void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int
 		
 		if(newce == 0)
 		{
-			if(c >= tresh)
+			if(c >= tresh && *cliquenum < 2*mat_size)
 			{
 				for(int loca = 0; loca <= c; loca++)
 				{
-					printf("%1i_%s ", init[cliques[loca]].res_number, init[cliques[loca]].chain);
+					clique_mat[*cliquenum][loca] = cliques[loca];
+					
+					//printf("%1i\t", cliques[loca]);
 				}
 				
-				printf("\n");
+				clique_mat[*cliquenum][mat_size] = c + 1;
+							
+				//printf("\n", *cliquenum, clique_mat[*cliquenum][mat_size]);
+				
+				(*cliquenum) ++;
 			}
 		}
 		else if(newne < newce)
 		{
-			Extend(neww, newne, newce, connex_mat, cliques, c, max, tresh, init);
+			Extend(neww, newne, newce, connex_mat, cliques, c, max, tresh, clique_mat, mat_size, cliquenum);
 		}
 		
 		c--;
@@ -418,4 +525,144 @@ void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int
 	neww=NULL;
 	
 	return;
+}
+
+int clique_fusion(int **clique_mat, int mat_size, int *cliquenum)
+{
+	int i,j,k,l;	
+	
+	int match_found = 0;
+	
+	for(i = 0; i < *cliquenum; i++)
+	{
+		if(clique_mat[i][mat_size] == 0) {continue;}
+		
+		//printf("Size of %1i : %1i\n", i, clique_mat[i][mat_size]);
+		
+		for(j = i + 1; j < *cliquenum; j++)
+		{
+			if(clique_mat[j][mat_size] == 0) {continue;}
+			
+			//printf("Size of %1i : %1i\n", j, clique_mat[j][mat_size]);
+			
+			match_found = 0;
+			
+			for(k = 0; k < clique_mat[j][mat_size]; k++)
+			{
+				for(l = 0; l < clique_mat[i][mat_size]; l++)
+				{
+					if(clique_mat[i][l] == clique_mat[j][k])
+					{
+						match_found = 1;
+						
+						break;
+					}
+				}
+				
+				if(match_found == 1)
+				{
+					break;
+				}
+			}
+			
+			if(match_found == 1)
+			{
+				int matches = 0;
+				
+				for(k = 0; k < clique_mat[j][mat_size]; k++)
+				{
+					match_found = 0;
+					
+					for(l = 0; l < clique_mat[i][mat_size] - matches; l++)
+					{
+						if(clique_mat[i][l] == clique_mat[j][k])
+						{
+							match_found = 1;
+							
+							break;
+						}
+					}
+					
+					if(match_found == 0)
+					{
+						clique_mat[i][clique_mat[i][mat_size]] = clique_mat[j][k];
+						
+						clique_mat[i][mat_size] ++;
+						
+						matches ++;
+					}
+					
+					clique_mat[j][k] = -1;
+				}
+				
+				clique_mat[j][mat_size] = 0;
+				
+				//printf("Size of %1i and %1i : %1i\t%1i\nMat_size : %1i\n", i, j, clique_mat[i][mat_size], clique_mat[j][mat_size], 2*mat_size - 1);
+			}
+		}
+		
+		
+	}
+	
+	for(i = 0; i < *cliquenum; i++)
+	{
+		if(clique_mat[i][mat_size] == 0)
+		{
+			j = i+1;
+			
+			while(clique_mat[j][mat_size] == 0 && j < *cliquenum - 1)
+			{
+				j++;
+			}
+			
+			if(clique_mat[j][mat_size] == 0)
+			{
+				*cliquenum = i;
+				
+				return i;
+			}
+			
+			//printf("Return %1i to %1i\n", j, i);
+			
+			for(k = 0; k < clique_mat[j][mat_size]; k++)
+			{
+				clique_mat[i][k] = clique_mat[j][k];
+			}
+			
+			clique_mat[i][mat_size] = clique_mat[j][mat_size];
+			
+			clique_mat[j][mat_size] = 0;
+		}
+	}
+}
+
+int get_connex(int nod1, int nod2, struct pdb_atom *init, int natom, float max)
+{
+	int i,j;
+	
+	if(nod1 == nod2)
+	{
+		return 1;
+	}
+	
+	for(i = 0; i < natom; i++)
+	{
+		if(init[i].node == nod1)
+		{
+			for(j = 0; j < natom; j++)
+			{
+				if(init[j].node == nod2)
+				{
+					if((init[i].x_cord - init[j].x_cord)*(init[i].x_cord - init[j].x_cord)
+						+ (init[i].y_cord - init[j].y_cord)*(init[i].y_cord - init[j].y_cord)
+						+ (init[i].z_cord - init[j].z_cord)*(init[i].z_cord - init[j].z_cord) <= max*max)
+					{
+						return 1;
+					}
+				}
+			}
+		}
+	}
+	
+	return 0;
 }
