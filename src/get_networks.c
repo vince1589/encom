@@ -634,6 +634,8 @@ int clique_fusion(int **clique_mat, int mat_size, int *cliquenum)
 			clique_mat[j][mat_size] = 0;
 		}
 	}
+	
+	return 0;
 }
 
 int get_connex(int nod1, int nod2, struct pdb_atom *init, int natom, float max)
