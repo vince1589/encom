@@ -7,42 +7,89 @@ int clique_fusion(int **clique_mat, int mat_size, int *cliquenum);
 
 int get_connex(int nod1, int nod2, struct pdb_atom *init, int natom, float max);
 
+int md_print(struct pdb_atom *init, int size_all, int **conx, int size_node, char *out);
+
+float lc(int node, int **conx_mat, int *network, int size);
+
 int main(int argc, char *argv[])
 {
+	int i,j,k,l;
 	int all; /*Number of atoms in the initial PDB*/
 	int atom; /*Number of initial CAs*/
+	int nconn;
 	
-	int help_flag = 1;
 	char file_name[500];
+	
 	char eigen_name[500] = "eigen.dat";
 	char correl_name[500] = "correl.dat";
-	char out_name[500];
-	char out_correl[500];
+	
+	char out_cd[500] = "cor_vs_dist.dat"; // Correlation vs distance out_name
+	char out_correl[500] = "correl.dat"; // Correlation matrix out_name
+	char out_lc[500] = "lc.dat"; // Local closeness out_name
+	char out_net[500] = "networks.dat"; // Networks out_name
+	
+	int n_tresh = 4; // Gives the clique size treshold
+	float s_tresh = 1.645; // Gives the Z treshold
+	float h_tresh = 0.33; // Gives a hard treshold (based on r instead of Z)
+	float anti = 1.0; // If changed to -1.0, tells program to search for anitcorrelated nodes instead
+	float cutoff = 5.0; // Gives a distance cutoff to the connex completion step
+	
+	int print_correl = 0; // Tells the program to print the correlation matrix
+	int print_cd = 0; // Tells the program to print correlation vs distance of residues
+	int print_lc = 0; // Tells the program to print local closeness
+	int print_net = 0; // Tells the program to print networks
+	
+	int mat_flag = 0; // Tells program to load correlation matrix
+	int eig_flag = 0; // Tells program to load hessian
+	
+	int help_flag = 1;
 	int verbose = 0;
-	double beta = 0.000005;
-	int n_tresh = 4;
-	float s_tresh = 1.645;
-	float h_tresh = 0.33;
-	float anti = 1.0;
-	float cutoff = 5.0;
-	int bresn[800];
-	char bresc[800];
-	int nbind = 0;
-	int aresn[800];
-	int aresc[800];
-	int nallo = 0;
-	
-	int test = 1;
-	
-	int i,j,k,l;
-	
 	int lig = 0;
-	int nconn;
-	int print_flag = 0;
-	int print_correl = 0;
-	int hard_tresh = 0;
-	int mat_flag = 0;
-	int eig_flag = 0;
+	int hard_tresh = 0; // Tells the program to use the hard treshold
+	int cde_flag = 0; // Tells the program to end after printing correlation vs distance of residues
+	int cor_flag = 0; // Tells the program to end after calculating the correlation matrix
+	
+	int *bresn; // Binding site residue number array (to be freed)
+	bresn = (int *) malloc(10000*sizeof(int));
+	
+	// Binding site residue chain array (to be freed)
+	
+	char **bresc; 
+	bresc = (char **) malloc(10000*sizeof(char *));
+	
+	if(bresc == NULL) {printf("malloc FAIL\n"); return 0;}
+	
+	for(i = 0; i < 10000; i++)
+	{
+		bresc[i] = (char *) malloc(6*sizeof(char));
+		
+		if(bresc[i] == NULL) {printf("malloc FAIL\n"); return 0;}	
+	}
+	
+	// End of bresc declaration
+	
+	int nbind = 0;
+	
+	int *aresn; // Allosteric site residue number array (to be freed)
+	aresn = (int *) malloc(10000*sizeof(int));
+	
+	// Allosteric site residue chain array (to be freed)
+	
+	char **aresc;
+	aresc = (char **) malloc(10000*sizeof(char *));
+	
+	if(aresc == NULL) {printf("malloc FAIL\n"); return 0;}
+	
+	for(i = 0; i < 10000; i++)
+	{
+		aresc[i] = (char *) malloc(6*sizeof(char));
+		
+		if(aresc[i] == NULL) {printf("malloc FAIL\n"); return 0;}	
+	}
+	
+	// End of aresc declaration
+	
+	int nallo = 0;
 	
 	for (i = 1; i < argc; i++)
 	{
@@ -52,80 +99,77 @@ int main(int argc, char *argv[])
 		if (strcmp("-a",argv[i]) == 0) {anti = -1.0;}
 		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
 		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
+		if (strcmp("-cde",argv[i]) == 0) {cde_flag = 1;}
+		if (strcmp("-cor",argv[i]) == 0) {cor_flag = 1;}
+		
 		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]); eig_flag = 1;}
 		if (strcmp("-imat",argv[i]) == 0) {strcpy(correl_name,argv[i+1]); mat_flag = 1;}
-		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]); print_flag = 1;}
+		
 		if (strcmp("-om",argv[i]) == 0) {strcpy(out_correl,argv[i+1]); print_correl = 1;}
+		if (strcmp("-olc",argv[i]) == 0) {strcpy(out_lc,argv[i+1]); print_lc = 1;}
+		if (strcmp("-ont",argv[i]) == 0) {strcpy(out_net,argv[i+1]); print_net = 1;}
+		if (strcmp("-cvd",argv[i]) == 0) {strcpy(out_cd,argv[i+1]); print_cd = 1;}
+
 		if (strcmp("-cut",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); cutoff = temp;}
-		
-		if(strcmp("-bres", argv[i]) == 0)
-		{
-			j = 0;
-			
-			int tmp1;
-			char tmp2;
-			
-			while(sscanf(argv[i+j+1], "%i_%c", &tmp1, &tmp2) != EOF)
-			{
-				bresn[j] = tmp1;
-				
-				bresc[j] = tmp2;
-				
-				j++;
-				
-				nbind++;
-			}
-		}
-		
-		if(strcmp("-ares", argv[i]) == 0)
-		{
-			j = 0;
-			
-			int tmp1;
-			char tmp2;
-			
-			while(sscanf(argv[i+j+1], "%i_%c", &tmp1, &tmp2) != EOF)
-			{
-				aresn[j] = tmp1;
-				
-				aresc[j] = tmp2;
-				
-				j++;
-				
-				nallo++;
-			}
-		}
-		
 		if (strcmp("-tr",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%i",&temp); n_tresh = temp;}
 		if (strcmp("-str",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); s_tresh = temp;}
 		if (strcmp("-htr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); h_tresh = temp; hard_tresh++;}
 		
-		if (strcmp("-b",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);beta = temp;}
+		if(strcmp("-bres", argv[i]) == 0) // Load the residues of binding site
+		{
+			j = 1;
+			
+			int tmp1;
+			char tmp2;
+			
+			printf("Scanning bind\n");
+			
+			while(sscanf(argv[i+j], "%i_%c", &tmp1, &tmp2) > 0)
+			{
+				//printf("Match! %1i\t%1c\n", tmp1, tmp2);
+				
+				bresn[j - 1] = tmp1;
+				
+				bresc[j - 1][0] = tmp2;
+				
+				j++;
+				
+				nbind++;
+				
+				if(i + j == argc) {break;}
+			}
+		}
+		
+		if(strcmp("-ares", argv[i]) == 0) // Load the residues of allosteric site
+		{
+			j = 1;
+			
+			int tmp1;
+			char tmp2;
+			
+			printf("Scanning allo\n");
+			
+			while(sscanf(argv[i+j], "%i_%c", &tmp1, &tmp2) > 0)
+			{
+				//printf("Match! %1i\t%1c\n", tmp1, tmp2);
+				
+				aresn[j - 1] = tmp1;
+				
+				aresc[j - 1][0] = tmp2;
+				
+				j++;
+				
+				nallo++;
+				
+				if(i + j == argc) {break;}
+			}
+		}
 	}
 	
 	if (help_flag == 1)
 	{
 		printf("****************************\nHelp Section\n-i\tFile Input (PDB)\n-v\tVerbose\n-w\tWeight Vector\n-t\tInitial Value of template (negative value for random)\n\tIf Load Template, multiply the template\n-lt\tLoad input template\n-sp\tSuper Node Mode (CA, N, C)\n-kt\tPoid de l'angle entre les nodes (1)\n-kr\tPoid de la distance entre les nodes (1)\n-f\tFile to fit\n****************************\n");
 		return(0);
-	}
-	
-	if(test == 1)
-	{
-		printf("Bind :\n");
-		
-		for(i == 0; i < nbind; i++)
-		{
-			printf("%1i_%1c\n", bresn[i], bresc[i]);
-		}
-		
-		printf("Allo :\n");
-		
-		for(i == 0; i < nallo; i++)
-		{
-			printf("%1i_%1c\n", aresn[i], aresc[i]);
-		}
-		
-		return 0;
 	}
 	
 	//***************************************************
@@ -156,7 +200,7 @@ int main(int argc, char *argv[])
 	
 	atom = build_all_strc(file_name,strc_all); // Retourne le nombre de Node
 	
-	if (atom > 800) {printf("Too much nodes .... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
+	if (atom > 5000) {printf("Too many nodes! To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
 	
 	if (verbose == 1) {printf("	Atom:%d\n",all);}
 	
@@ -179,16 +223,85 @@ int main(int argc, char *argv[])
 	//for(i=0;i<nconn;i++) {printf("I:%d\n",i);free(connect_h[i]);}
 	//free(connect_h);
 	
-	printf("Check 1\n");
+	printf("Check 0\n");
+	
+	// Scan strc_node for binding and allosteric nodes
+	
+	int bnodes[nbind];
+	int anodes[nallo];
+	
+	for(i = 0; i < nbind; i++)
+	{
+		for(j = 0; j < atom; j++)
+		{
+			if(strc_node[j].res_number == bresn[i] && strcmp(bresc[i], strc_node[j].chain) == 0)
+			{
+				bnodes[i] = strc_node[j].node;
+			}
+		}
+	}
+	
+	for(i = 0; i < nallo; i++)
+	{
+		for(j = 0; j < atom; j++)
+		{
+			if(strc_node[j].res_number == aresn[i] && strcmp(aresc[i], strc_node[j].chain) == 0)
+			{
+				anodes[i] = strc_node[j].node;
+			}
+		}
+	}
+	
+	free(bresn);
+	free(aresn);
+	
+	for(i = 0; i < 5000; i++)
+	{
+		free(bresc[i]);
+		bresc[i] = NULL;
+		
+		free(aresc[i]);
+		aresc[i] = NULL;
+	}
+	
+	free(bresc);
+	free(aresc);
+	
+	bresn = NULL;
+	bresc = NULL;
+	aresn = NULL;
+	aresc = NULL;
+	
+	printf("Bind nodes :\n");
+	
+	for(i = 0; i < nbind; i++)
+	{
+		printf("%1i\n", bnodes[i]);
+	}
+	
+	printf("\nAllo nodes :\n");
+	
+	for(i = 0; i < nallo; i++)
+	{
+		printf("%1i\n", bnodes[i]);
+	}
+	
+	printf("\nCheck 1\n");
+	
+	//***************************************************
+	//*													*
+	//*Builds connectivity matrix
+	//*													*
+	//***************************************************
+	
+	// Either load hessian or correlation matrix
 	
 	gsl_matrix *hess = gsl_matrix_alloc(3*atom,3*atom);
 	
 	gsl_matrix_set_all(hess, 0);
 	
-	if(eig_flag == 1)
+	if(eig_flag == 1) // Load hessian if eigen flag is 1
 	{
-		// Load hessian
-	
 		gsl_vector *eval = gsl_vector_alloc(3*atom);
 	
 		gsl_matrix *evec= gsl_matrix_alloc (3*atom,3*atom);
@@ -221,10 +334,8 @@ int main(int argc, char *argv[])
 	
 	gsl_matrix *correl = gsl_matrix_alloc(3*atom, 3*atom);
 	
-	if(mat_flag == 1)
+	if(mat_flag == 1) // Load correlation matrix if matrix flag is 1
 	{
-		printf("Dimension : %1i\n", 3*atom);
-		
 		printf("Dimension : %1i\n", load_matrix(correl, correl_name));
 	}
 	
@@ -241,16 +352,9 @@ int main(int argc, char *argv[])
 	
 	gsl_matrix_free(hess);
 	
-	if(print_flag == 1)
-	{
-		printf("Writing matrix...\n");
-		
-		write_matrix(out_name,correl,3*(atom-lig),3*(atom-lig));
-	}
-	
 	printf("Check 4\n");
 	
-	// Calculate average and sd
+	// Calculate average and sd of correlations
 	
 	float average = 0.0;
 	
@@ -262,7 +366,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	average /= (3.0 * (float)atom - 1.0) * (3.0 * (float)atom - 2.0) / 2.0;
+	average /= (3.0 * (float)atom - 1.0) * 3.0 * (float)atom / 2.0;
 	
 	float sd = 0.0;
 	
@@ -274,7 +378,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	sd /= (3.0 * (float)atom - 1.0) * (3.0 * (float)atom - 2.0) / 2.0 - 1.0;
+	sd /= (3.0 * (float)atom - 1.0) * 3.0 * (float)atom / 2.0 - 1.0;
 	
 	float flevel = 1.0 / sd;
 	
@@ -284,7 +388,7 @@ int main(int argc, char *argv[])
 	
 	printf("Check 5\n");
 	
-	// Print correlation matrix
+	// Print correlation matrix (if asked)
 	
 	if(print_correl == 1)
 	{
@@ -305,13 +409,21 @@ int main(int argc, char *argv[])
 			fprintf(out_file, "\n");
 		}
 	}
+		
+	if(cor_flag == 1)
+	{
+		return 0;
+	}
 	
 	printf("Check 6\n");
 	
 	// Build connex matrix
 	
 	int **connex=(int **)malloc(atom*sizeof(int *));
-	for(i=0;i<atom;i++) {connex[i]=(int *)malloc(atom*sizeof(int));}
+	
+	if(connex == NULL) {printf("malloc FAIL\n"); return 0;}
+	
+	for(i=0;i<atom;i++) {connex[i]=(int *)malloc(atom*sizeof(int)); if(connex[i] == NULL) {printf("malloc FAIL\n"); return 0;}}
 	for(i=0;i<atom;i++)for(j=0;j<atom;j++){connex[i][j]=0;}
 	
 	for(i = 0; i < 3*atom; i++)
@@ -325,6 +437,22 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	
+	// Print correlation vs distance (if asked)
+	
+	if(print_cd == 1)
+	{
+		if(md_print(strc_all, all, connex, atom, out_cd) == 0) {printf("md_print failure\n"); return 0;};
+	}
+	
+	gsl_matrix_free(correl);
+	
+	if(cde_flag == 1)
+	{
+		return 0;
+	}
+	
+	// Complete connex matrix
 	
 	for(i = 0; i < atom; i++)
 	{
@@ -354,10 +482,17 @@ int main(int argc, char *argv[])
 		nodenums[i] = i;
 	}
 	
-	// Build cliques matrix
+	//***************************************************
+	//*													*
+	//*Builds network matrix
+	//*													*
+	//***************************************************
 	
 	int **cliques=(int **)malloc(2*atom*sizeof(int *));
-	for(i=0;i<2*atom;i++) {cliques[i]=(int *)malloc((atom + 1)*sizeof(int));}
+	
+	if(cliques == NULL) {printf("malloc FAIL\n"); return 0;}
+	
+	for(i=0;i<2*atom;i++) {cliques[i]=(int *)malloc((atom + 1)*sizeof(int)); if(cliques[i] == NULL) {printf("malloc FAIL\n"); return 0;}}
 	for(i=0;i<2*atom;i++)for(j=0;j<atom;j++){cliques[i][j]=-1;}
 	
 	for(i=0;i<atom;i++) {cliques[i][atom] = 0;}
@@ -374,20 +509,114 @@ int main(int argc, char *argv[])
 	
 	int cliquen_old = cliquen;
 	
-	while(clique_fusion(cliques, atom, &cliquen) < cliquen_old) {cliquen_old = cliquen;}
+	while(clique_fusion(cliques, atom, &cliquen) < cliquen_old) {printf("%1i\n", cliquen_old); cliquen_old = cliquen;}
 	
-	for(i = 0; i < cliquen; i++)
+	//***************************************************
+	//*													*
+	//*Calculates local closeness
+	//*													*
+	//***************************************************
+	
+	// Print networks for other uses
+	
+	if(print_net == 1)
 	{
-		for(j = 0; j < cliques[i][atom]; j++)
-		{
-			printf("%1i_%1s\t", strc_node[cliques[i][j]].res_number, strc_node[cliques[i][j]].chain);
-		}
+		FILE *out_name_net;
+	
+		out_name_net = fopen(out_net, "w");
 		
-		printf("\n\n");
+		for(i = 0; i < cliquen; i++)
+		{
+			printf("Clique %1i:\n", i + 1);
+		
+			for(j = 0; j < cliques[i][atom]; j++)
+			{
+				fprintf(out_name_net, "%1i_%1s\t", strc_node[cliques[i][j]].res_number, strc_node[cliques[i][j]].chain);
+			}
+		
+			printf("\n\n");
+		}
 	}
 	
-	return 1;
+	// Calculate local closeness for each combination of nodes
+	
+	if(print_lc == 1)
+	{
+		FILE *out_name_lc;
+	
+		out_name_lc = fopen(out_lc, "w");
+	
+		if(out_name_lc == NULL) {printf("Print_lc failure!\n"); return 0;}
+	
+		fprintf(out_name_lc, "Binding site :\n");
+	
+		for(i = 0; i < nbind; i++)
+		{
+			fprintf(out_name_lc, "%1i\t", bnodes[i]);
+		}
+	
+		fprintf(out_name_lc, "\n\nAllosteric site :\n");
+	
+		for(i = 0; i < nallo; i++)
+		{
+			fprintf(out_name_lc, "%1i\t", anodes[i]);
+		}
+	
+		fprintf(out_name_lc, "\n\n");
+	
+		float max_lc = 0.0;
+	
+		for(i = 0; i < cliquen; i++)
+		{
+			for(j = 0; j < nbind; j++)
+			{
+				for(k = 0; k < nallo; k++)
+				{
+					float new_lc = lc(bnodes[j], connex, cliques[i], atom)*lc(anodes[k], connex, cliques[i], atom);
+				
+					if(new_lc > max_lc) {max_lc = new_lc;}
+				}
+			}
+		
+			fprintf(out_name_lc, "Local closeness product in network %1i : %1.10f\n", i+1, max_lc);
+		
+			max_lc = 0.0;
+		}
+	}
+	else
+	{
+		float max_lc = 0.0;
+	
+		for(i = 0; i < cliquen; i++)
+		{
+			for(j = 0; j < nbind; j++)
+			{
+				for(k = 0; k < nallo; k++)
+				{
+					float new_lc = lc(bnodes[j], connex, cliques[i], atom)*lc(anodes[k], connex, cliques[i], atom);
+				
+					if(new_lc > max_lc) {max_lc = new_lc;}
+				}
+			}
+		
+			printf("Local closeness product in network %1i : %1.10f\n", i+1, max_lc);
+		
+			max_lc = 0.0;
+		}
+	}
+	
+	return 0;
 }
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+//***************************************************
+//*													*
+//*Extend function
+//*													*
+//***************************************************
 
 void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int max, int tresh, int **clique_mat, int mat_size, int *cliquenum)
 {
@@ -527,6 +756,12 @@ void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int
 	return;
 }
 
+//***************************************************
+//*													*
+//*clique_fusion function
+//*													*
+//***************************************************
+
 int clique_fusion(int **clique_mat, int mat_size, int *cliquenum)
 {
 	int i,j,k,l;	
@@ -633,10 +868,20 @@ int clique_fusion(int **clique_mat, int mat_size, int *cliquenum)
 			
 			clique_mat[j][mat_size] = 0;
 		}
+		else
+		{
+			printf("Size of %1i : %1i\n", i + 1, clique_mat[i][mat_size]);
+		}
 	}
 	
-	return 0;
+	return *cliquenum;
 }
+
+//***************************************************
+//*													*
+//*get_connex function
+//*													*
+//***************************************************
 
 int get_connex(int nod1, int nod2, struct pdb_atom *init, int natom, float max)
 {
@@ -667,4 +912,201 @@ int get_connex(int nod1, int nod2, struct pdb_atom *init, int natom, float max)
 	}
 	
 	return 0;
+}
+
+//***************************************************
+//*													*
+//*md_print function
+//*													*
+//***************************************************
+
+int md_print(struct pdb_atom *init, int size_all, int **conx, int size_node, char *out)
+{
+	int i,j,k,l;
+	
+	int **match;
+	
+	match = (int **) malloc(size_node*sizeof(int *));
+	
+	if(match == NULL) {printf("malloc FAIL\n"); return 0;}
+	
+	for(i = 0; i < size_node; i++)
+	{
+		match[i] = (int *) malloc(size_node*sizeof(int));
+		
+		if(match[i] == NULL) {printf("malloc FAIL\n"); return 0;}	
+	}
+	
+	for(i = 0; i < size_node; i++)
+	{
+		for(j = 0; j < size_node; j++)
+		{
+			match[i][j] = -1;
+		}
+	}
+	
+	float **dist;
+	
+	dist = (float **) malloc(size_node*sizeof(float *));
+	
+	if(dist == NULL) {printf("malloc FAIL\n"); return 0;}
+	
+	for(i = 0; i < size_node; i++)
+	{
+		dist[i] = (float *) malloc(size_node*sizeof(float));
+		
+		if(dist[i] == NULL) {printf("malloc FAIL\n"); return 0;}
+	}
+	
+	for(i = 0; i < size_node; i++)
+	{
+		for(j = 0; j < size_node; j++)
+		{
+			dist[i][j] = 1000000.0;
+		}
+	}
+	
+	for(i = 0; i < size_all; i++)
+	{
+		for(j = i+1; j < size_all; j++)
+		{
+			if(init[i].node != init[j].node)
+			{
+				float sqdist = (init[i].x_cord - init[j].x_cord)*(init[i].x_cord - init[j].x_cord) + (init[i].y_cord - init[j].y_cord)*(init[i].y_cord - init[j].y_cord)
+						+ (init[i].z_cord - init[j].z_cord)*(init[i].z_cord - init[j].z_cord);
+				
+				if(sqdist < dist[init[i].node][init[j].node])
+				{
+					dist[init[i].node][init[j].node] = sqdist;
+					dist[init[j].node][init[i].node] = sqdist;
+				}
+				
+				if(match[init[i].node][init[j].node] == -1 && conx[init[i].node][init[j].node] >= 3)
+				{
+					match[init[i].node][init[j].node] = 1;
+					match[init[j].node][init[i].node] = 1;
+				}
+				else if(match[init[i].node][init[j].node] == -1)
+				{
+					match[init[i].node][init[j].node] = 0;
+					match[init[j].node][init[i].node] = 0;
+				}
+			}
+		}
+	}
+	
+	FILE *out_md;
+	
+	out_md = fopen(out, "w");
+	
+	if(out_md == NULL) {return 0;}
+	
+	for(i = 0; i < size_node; i++)
+	{
+		for(j = i + 1; j < size_node; j++)
+		{
+			fprintf(out_md, "%1i\t%1i\t%1.6f\t%1i\n", i, j, sqrt(dist[i][j]), match[i][j]);
+		}
+	}
+	
+	return 1;
+}
+
+//***************************************************
+//*													*
+//*local closeness function
+//*													*
+//***************************************************
+
+float lc(int node, int **conx_mat, int *network, int size)
+{
+	int taken[network[size]];
+	
+	int i, j, k;
+	
+	int tkn_size = 1;
+	
+	int expl_size = 1;
+	
+	int level = 1;
+	
+	float lc = 0.0;
+	
+	for(i = 1; i < network[size]; i++)
+	{
+		taken[i] = -1;
+	}
+	
+	taken[0] = node;
+	
+	int explore[network[size]];
+	
+	for(i = 1; i < network[size]; i++)
+	{
+		explore[i] = -1;
+	}
+	
+	explore[0] = node;
+	
+	while(taken[network[size] - 1] == -1)
+	{
+		int explore_new[network[size]];
+		
+		int expl_newsize = 0;
+		
+		for(i = 0; i < expl_size; i++)
+		{
+			for(j = 0; j < network[size]; j++)
+			{
+				if(conx_mat[explore[i]][network[j]] == 1)
+				{
+					int istaken = 0;
+					
+					for(k = 0; k < tkn_size; k++)
+					{
+						if(taken[k] == network[j])
+						{
+							istaken = 1;
+							
+							break;
+						}
+					}
+					
+					if(istaken == 0)
+					{
+						explore_new[expl_newsize] = network[j];
+						
+						lc += 1.0 / ((float)level * (float)level);
+						
+						expl_newsize ++;
+						
+						taken[tkn_size] = network[j];
+						
+						tkn_size ++;
+					}
+				}
+			}
+		}
+		
+		if(tkn_size == 1)
+		{
+			break;
+		}
+		
+		level ++;
+		
+		expl_size = expl_newsize;
+		
+		for(i = 0; i < expl_newsize; i++)
+		{
+			explore[i] = explore_new[i];
+		}
+		
+		for(i = expl_size; i < network[size]; i++)
+		{
+			explore[i] = -1;
+		}
+	}
+	
+	return lc;
 }

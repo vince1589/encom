@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
 		
 	// Pour les besoins... on limite à 800 atomes
 	
-	if (atom > 2000) {
+	if (atom > 10000) {
 		printf("Too much atom, if you want to remove the limite.... vincent.frappier@usherbrooke.ca\n");
 		return(1);
 	}
