@@ -18,11 +18,14 @@ int main(int argc, char *argv[]) {
 	char eigen_name_two[500] = "eigen.dat";
 	char init_list[500] = "init_list.dat";
 	char targ_list[500] = "targ_list.dat";
-	float rmsd_cutoff = 2.0;
+	float rmsd_cutoff = 4.0;
 	float scale = 1.0;
+	int constraint_flag = 1;
+	int nm = -1;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
+ 		if (strcmp("-no_const",argv[i]) == 0) {constraint_flag = 0;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
 		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
 		if (strcmp("-teig",argv[i]) == 0) {strcpy(eigen_name_two,argv[i+1]);}
@@ -31,6 +34,7 @@ int main(int argc, char *argv[]) {
 		if (strcmp("-tlist",argv[i]) == 0) {strcpy(targ_list,argv[i+1]);}
 		
  		if (strcmp("-scale",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);scale = temp;}
+ 		if (strcmp("-nm",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp);nm = temp;}
  		if (strcmp("-max_rmsd",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);rmsd_cutoff = temp;}
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
  		
@@ -69,7 +73,7 @@ int main(int argc, char *argv[]) {
 	
 	struct pdb_atom strc_all[all];
 	atom = build_all_strc(file_name,strc_all); // Retourne le nombre de Node
-	if (atom > 800) {printf("Too much node.... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
+	if (atom > 5000) {printf("Too much node.... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
 	if (verbose == 1) {printf("	Atom:%d\n",all);}
 	check_lig(strc_all,connect_h,nconn,all);
 	
@@ -108,7 +112,7 @@ int main(int argc, char *argv[]) {
 	
 	struct pdb_atom strc_all_t[all_t];
 	atom_t = build_all_strc(check_name,strc_all_t); // Retourne le nombre de Node
-	if (atom_t > 800) {printf("Too much node.... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
+	if (atom_t > 5000) {printf("Too much node.... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
 	if (verbose == 1) {printf("	Atom:%d\n",all_t);}
 	check_lig(strc_all_t,connect_t,nconn,all_t);
 	
@@ -168,14 +172,14 @@ int main(int argc, char *argv[]) {
 	
 	// Load list 1
 	if (verbose == 1) {printf("Loading list init:%s\n",init_list);}
-	int **pair_one=(int **)malloc(10000*sizeof(int *)); 
-  for(i=0;i<10000;i++) { pair_one[i]=(int *)malloc(10*sizeof(int));}
+	int **pair_one=(int **)malloc(50000*sizeof(int *)); 
+  for(i=0;i<50000;i++) { pair_one[i]=(int *)malloc(10*sizeof(int));}
   
   int num_list_init = load_list(init_list,pair_one);
   
   if (verbose == 1) {printf("Loading list targ:%s\n",targ_list);}
-  int **pair_two=(int **)malloc(10000*sizeof(int *)); 
-  for(i=0;i<10000;i++) { pair_two[i]=(int *)malloc(10*sizeof(int));}
+  int **pair_two=(int **)malloc(50000*sizeof(int *)); 
+  for(i=0;i<50000;i++) { pair_two[i]=(int *)malloc(10*sizeof(int));}
 	
 	int num_list_targ =load_list(targ_list,pair_two);
 	
@@ -209,15 +213,19 @@ int main(int argc, char *argv[]) {
 	
 	
 	int paira;
+	if (nm == -1) {nm = 3*atom;}
 	for(paira = 0;paira<num_list_init;++paira) {
-		printf("PairA:%d\n",paira);
+		//printf("PairA:%d\n",paira);
 		int pairb;
 		
 		
 		
 		
 		for(pairb = 0;pairb<num_list_targ;++pairb) {
-		
+			if (constraint_flag == 1 && strncmp(strc_node_t[pair_two[pairb][2]].res_type,strc_node[pair_one[paira][2]].res_type,3) != 0) {
+				//printf("Not the same constrain:%s - %s et %s - %s\n",strc_node[pair_one[paira][0]].res_type,strc_node[pair_one[paira][2]].res_type,strc_node_t[pair_two[pairb][0]].res_type,strc_node_t[pair_two[pairb][2]].res_type); 
+				continue;
+			} 
 			
 			// Test manuel, va changer l'align
 			int k;
@@ -232,12 +240,14 @@ int main(int argc, char *argv[]) {
 
 			score = 0;
 			for(k=0;k<atom;++k) {if(align[k] != -1) {++score;}}
-		 	if (verbose == 1) {printf("\tRotating Eigenvector One\n");}
+		 	
 			
 			// Rotationne les eigenvector
-	
-			float myRmsd = rmsd_yes_eigen(strc_node,strc_node_t,atom, align,strc_all,all,evec);
+			float myRmsd = (rmsd_no(strc_node,strc_node_t,atom, align));
+			
 			if (myRmsd > rmsd_cutoff) {continue;}
+			if (verbose == 1) {printf("\tRotating Eigenvector One\n");}
+			rmsd_yes_eigen(strc_node,strc_node_t,atom, align,strc_all,all,evec);
 			//printf("\tRMSD = %f\n",myRmsd);
 			if (verbose == 1) {printf("\tBuilding Cross-Correlation One\n");}
 
@@ -247,7 +257,7 @@ int main(int argc, char *argv[]) {
 	
 			gsl_matrix_set_all(k_totinv, 0);
 	
-			inv_mat_align(k_totinv,atom,eval,evec,0,atom*3,align); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
+			inv_mat_align(k_totinv,atom,eval,evec,0,nm,align); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
 
 	
 	
@@ -341,11 +351,11 @@ int main(int argc, char *argv[]) {
 			//printf("\tConj_dens = %g\n",conj_dens12);
 			float dens = density_prob_n(incov12, delr, conj_dens12,pos,score*3);
 			//	printf("Pair:%d et %d\n",paira,pairb);
-			printf("%d %d %f %g",paira,pairb,myRmsd,dens);
-			for(i<0;i<3;++i) {
+			printf("%d %d %f %g Targ:%s %s Init:%s %s\n",paira,pairb,myRmsd,dens,strc_node_t[pair_two[pairb][0]].res_type,strc_node_t[pair_two[pairb][2]].res_type,strc_node[pair_one[paira][0]].res_type,strc_node[pair_one[paira][2]].res_type);
+		/*	for(i<0;i<3;++i) {
 				printf(" %s",strc_node_t[pair_two[pairb][i*2]].res_type);
 			}
-			printf("\n");
+			printf("\n");*/
 			// Free some stuff
 			gsl_matrix_free(k_totinv);
 			gsl_matrix_free(evec_cov);		
@@ -398,40 +408,29 @@ int load_list(char filename[100],int **con) {
 
 }
 
-void inv_mat_align(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm,int *align) 
- {
-	 //gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
-	 gsl_matrix_set_all (m, 0);
-	 int i,j,k;
+void inv_mat_align(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm,int *align) {
+	//gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
+	gsl_matrix_set_all (m, 0);
+	int i,j,k;
 	 
-	 for (k=mode;k<mode+nm;++k)
-	 {
-		 if (k > int (evl->size-1)) {break;}
-		 if  (gsl_vector_get (evl, k) < 0.000001) 
-		 {
-			// printf("K = %d -> Eval to small I next:%g\n",k,gsl_vector_get (evl, k));
-			 continue;
-		 }
-		 
- 		 //printf("%6.10f\n", gsl_vector_get (evl, k));
-		 
-		 for (i=0;i<nb_atom*3;++i)
-		 {
-		 	if (align[i/3] == -1) {continue;}
-			for (j=0;j<nb_atom*3;++j) 
-			{
-				if (align[i/3] == -1) {continue;}
-				//	printf("I:%d et J:%d -> %f * %f -> %f\n",i,j,gsl_matrix_get(evc,i,k),gsl_matrix_get(evc, j, k),gsl_matrix_get(evc,i,k)*gsl_matrix_get(evc, j, k));
+	for (i=0;i<nb_atom*3;++i)	{
+		if (align[i/3] == -1) {continue;}
+		for (j=0;j<nb_atom*3;++j) {
+			if (align[i/3] == -1) {continue;}
+			for (k=mode;k<mode+nm;++k) {
+				if (k > int (evl->size-1)) {break;}
+				if  (gsl_vector_get (evl, k) < 0.000001) {
+					// printf("K = %d -> Eval to small I next:%g\n",k,gsl_vector_get (evl, k));
+					continue;
+				}
+				gsl_matrix_set(m, i,j,
+					gsl_matrix_get(evc,i,k)*gsl_matrix_get(evc, j, k)/gsl_vector_get(evl, k) 
+					+ gsl_matrix_get(m, i,j)
+				);
 
-				 	
-					gsl_matrix_set(m, i,j,
-						gsl_matrix_get(evc,i,k)*gsl_matrix_get(evc, j, k)/gsl_vector_get(evl, k) 
-						+ gsl_matrix_get(m, i,j)
-					);
-				
-			 }
-		 }
-	//	break;
-	 }
- }
+			}
+		}
+		//	break;
+	}
+}
 

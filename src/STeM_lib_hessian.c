@@ -11,7 +11,7 @@ void build_2_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_the
 
  	for (i=1;i < nb_atom;++i) {
 		for(j=i+1;j<nb_atom;++j) {
-			for (k=j+1;k<nb_atom-1;++k) {
+			for (k=j+1;k<nb_atom;++k) {
 		 		
 		 	int connect_flag = 0;
 		 		int t;
