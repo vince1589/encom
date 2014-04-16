@@ -56,6 +56,7 @@ void boinc_all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix 
 double density_prob_n(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,gsl_vector *pos,int atom);
 int conj_prob_init_n(gsl_matrix *incov12, double *conj_dens12,gsl_matrix *cov12cp,int atom);
 float rmsd_yes_eigen(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all,gsl_matrix *evec);
+float rmsd_yes_covar(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all,gsl_matrix *covar,gsl_matrix *sub_covar);
 void rotate_eigen(gsl_matrix *rota,gsl_matrix *evec,int all);
 void translate_strc(struct pdb_atom *init,int all,gsl_vector *trans);
 int node_align(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align);

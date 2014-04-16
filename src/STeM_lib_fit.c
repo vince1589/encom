@@ -790,6 +790,263 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	
  	return(rmsd/t_atom);
  }
+ 
+ float rmsd_yes_covar(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all,gsl_matrix *covar,gsl_matrix *sub_covar) {
+ 	// Fonction qui suimperpose deux structures en utilisant single value decomposition
+ 	// Centre les deux structures autour des atomes dans align et rotate init et init all pour fitter !
+ 	
+ 	int i,k,j; // Dummy
+ 	int t_atom;	
+ 	double cen_init[3],cen_targ[3];
+ 	double rmsd;
+	int d;
+
+	
+ 	gsl_matrix *init_v = gsl_matrix_alloc(atom,3);
+ 	gsl_matrix *targ_v = gsl_matrix_alloc(3,atom);
+ 	gsl_matrix *corr   = gsl_matrix_alloc(3,3);
+ 	gsl_vector *vec_s  = gsl_vector_alloc(3);
+ 	gsl_vector *vec_w  = gsl_vector_alloc(3);
+ 	gsl_matrix *mat_v  = gsl_matrix_alloc(3,3);
+ 	gsl_matrix *rota   = gsl_matrix_alloc(3,3);
+	
+	// Construit structure qui comprend seulement les atomes aligné
+	
+	struct pdb_atom t_init[atom];
+	struct pdb_atom t_targ[atom];
+	k=-1;
+	for(i=0;i<atom;++i) {
+ 		d = align[i];
+ 		//printf("D:%d	%d\n",d,align[i]);
+ 		if(d == -1) {continue;}
+
+ 		//printf("D:%d	%d\n",i,align[i]);
+ 		//printf("(%8.5f,%8.5f,%8.5f) (%8.5f,%8.5f,%8.5f)\n",init[i].x_cord,init[i].y_cord,init[i].z_cord,targ[d].x_cord,targ[d].y_cord,targ[d].z_cord);
+ 		++k;
+ 		t_init[k].x_cord = init[i].x_cord;
+ 		t_init[k].y_cord = init[i].y_cord;
+ 		t_init[k].z_cord = init[i].z_cord;
+ 		
+ 		t_targ[k].x_cord = targ[d].x_cord;
+ 		t_targ[k].y_cord = targ[d].y_cord;
+ 		t_targ[k].z_cord = targ[d].z_cord;
+ 	}
+ 	t_atom =k+1;
+ 	// Centre les deux structures
+ 	if (k == -1) {return(-1);}
+ 	for(i=0;i<3;++i) {
+ 		cen_init[i] = 0;
+ 		cen_targ[i] = 0;
+ 	}
+ 	rmsd = 0;
+ 	// Trouve le centre de masse pour chaque structure
+ 	for(i=0;i<t_atom;++i) {
+ 		
+ 		cen_init[0] += t_init[i].x_cord;
+ 		cen_init[1] += t_init[i].y_cord;
+ 		cen_init[2] += t_init[i].z_cord;
+ 		
+ 		cen_targ[0] += t_targ[i].x_cord;
+ 		cen_targ[1] += t_targ[i].y_cord;
+ 		cen_targ[2] += t_targ[i].z_cord;
+ 		rmsd += ((t_init[i].x_cord-t_targ[i].x_cord)*(t_init[i].x_cord-t_targ[i].x_cord)+
+ 				 (t_init[i].y_cord-t_targ[i].y_cord)*(t_init[i].y_cord-t_targ[i].y_cord)+
+ 				 (t_init[i].z_cord-t_targ[i].z_cord)*(t_init[i].z_cord-t_targ[i].z_cord));
+ 	}
+ 	
+ 	
+ 	for(i=0;i<3;++i) {
+ 		cen_init[i] /= t_atom;
+ 		cen_targ[i] /= t_atom;
+ 	}
+
+	// Translationne et crée des matrice à multiplier (on retournera au centre tantot)
+		
+ 	rmsd = 0;
+ 	for(i=0;i<t_atom;++i) {
+ 	 		
+
+ 		
+ 		t_init[i].x_cord -= cen_init[0];
+ 		t_init[i].y_cord -= cen_init[1];
+ 		t_init[i].z_cord -= cen_init[2];
+ 		
+ 		
+ 		t_targ[i].x_cord -= cen_targ[0];
+ 		t_targ[i].y_cord -= cen_targ[1];
+ 		t_targ[i].z_cord -= cen_targ[2];
+
+ 		gsl_matrix_set(init_v,i,0,t_init[i].x_cord);
+ 		gsl_matrix_set(init_v,i,1,t_init[i].y_cord);
+ 		gsl_matrix_set(init_v,i,2,t_init[i].z_cord);
+
+ 		gsl_matrix_set(targ_v,0,i,t_targ[i].x_cord);
+ 		gsl_matrix_set(targ_v,1,i,t_targ[i].y_cord);
+ 		gsl_matrix_set(targ_v,2,i,t_targ[i].z_cord);
+ 
+ 		rmsd += ((t_init[i].x_cord-t_targ[i].x_cord)*(t_init[i].x_cord-t_targ[i].x_cord)+
+ 				 (t_init[i].y_cord-t_targ[i].y_cord)*(t_init[i].y_cord-t_targ[i].y_cord)+
+ 				 (t_init[i].z_cord-t_targ[i].z_cord)*(t_init[i].z_cord-t_targ[i].z_cord));
+ 	}
+ 	//printf("	Trans RMSD:%f\n",rmsd/t_atom);
+ 	
+ 	// Multiply les deux vecteurs qui comprennent les valeurs
+ 	 	
+ 	multiplie_matrix(targ_v,3,t_atom,init_v,t_atom,3,corr);
+
+
+ 	gsl_linalg_SV_decomp (corr, mat_v,vec_s,vec_w);
+	//gsl_linalg_SV_decomp_jacobi (corr, mat_v, vec_s);
+ 	
+ 	// Multiplie les matrix
+ 	
+	gsl_matrix_transpose (corr);
+	
+	multiplie_matrix(mat_v,3,3,corr,3,3,rota);
+	//print_matrix(rota);
+	
+	// Centre avant de rotationer, les pdb qui n'ont pas été copier dans t_init
+	
+	for(i=0;i<atom;++i) {
+		init[i].x_cord -= cen_init[0];
+ 		init[i].y_cord -= cen_init[1];
+ 		init[i].z_cord -= cen_init[2];
+	}
+	
+	for(i=0;i<all;++i) {
+		all_init[i].x_cord -= cen_init[0];
+ 		all_init[i].y_cord -= cen_init[1];
+ 		all_init[i].z_cord -= cen_init[2];
+	}
+	
+ 	rotate_all(rota,init,atom);
+ 	rotate_all(rota,t_init,t_atom);
+ 	rotate_all(rota,all_init,all);
+ 	
+ 	
+ 	// On veut construire une matrice du genre (R,0,0;0,R,0;0,0,R) pour rotationer 3 nodes covar matrice
+ 	// Laurent style
+ 	
+ 	// On veut rebuilder la super-matrice de rotation
+
+ 	gsl_matrix *super_rota = gsl_matrix_alloc(3*t_atom,3*t_atom);
+ 	gsl_matrix *super_rota_t = gsl_matrix_alloc(3*t_atom,3*t_atom);
+ 	gsl_matrix_set_all(super_rota,0);
+
+ 	// Pour chaque super element
+ 	for(i=0;i<t_atom;++i) {
+ 		for (j=0;j<3;++j) {
+ 			for (k=0;k<3;++k) {
+ 				gsl_matrix_set(super_rota   ,j+i*3,k+i*3,gsl_matrix_get(rota,j,k));
+ 				gsl_matrix_set(super_rota_t,k+i*3,j+i*3,gsl_matrix_get(rota,j,k));
+ 			}
+ 		}
+ 	}
+
+	// Rotate_cov = R * covar * R_T
+	
+	// Need to build the sub part of the covariance matrix (je vais mourrir haha)
+	//gsl_matrix *sub_covar = gsl_matrix_alloc(t_atom*3,t_atom*3);
+	int icount = -1;
+	int jcount = -1;
+	int l;
+	//print_matrix(covar);
+	for(i=0;i<atom;++i) {
+ 		if(align[i] == -1) {continue;}
+ 		
+ 		++icount;
+ 		jcount = -1;
+		for(j=0;j<atom;++j) {
+ 			if(align[j] == -1) {continue;}
+ 			++jcount;
+ 			
+ 			for(k=0;k<3;++k) {
+ 				for(l=0;l<3;++l) {
+ 					gsl_matrix_set(sub_covar,icount*3+k,jcount*3+l,gsl_matrix_get(covar,i*3+k,j*3+l));
+ 				}
+ 			}
+ 		}
+ 	}
+ 	//printf("\n\n");print_matrix(super_rota);
+ //	printf("\n\n");print_matrix(super_rota_t);
+ 	//printf("\n\n");print_matrix(sub_covar);
+ 	
+// 	print_matrix(rota);
+ //	gsl_matrix *temp = gsl_matrix_alloc(t_atom*3,t_atom*3);
+ 	
+ //	multiplie_matrix(super_rota,t_atom*3,t_atom*3,sub_covar,t_atom*3,t_atom*3,temp);
+	//multiplie_matrix(temp,t_atom*3,t_atom*3,super_rota_t,t_atom*3,t_atom*3,sub_covar);
+	
+	gsl_vector *evl = gsl_vector_alloc(3*t_atom);
+	gsl_matrix *evc = gsl_matrix_alloc(3*t_atom,3*t_atom);
+	
+	diagonalyse_matrix(sub_covar,3*t_atom, evl,evc);
+
+	rotate_eigen(rota,evc,t_atom);
+
+	gsl_matrix *temp = gsl_matrix_alloc(t_atom*3,t_atom*3);
+	gsl_matrix_set_all(temp,0);
+	gsl_matrix *prod = gsl_matrix_alloc(t_atom*3,t_atom*3);
+	gsl_matrix_set_all(prod,0);
+	for(i=0;i<t_atom*3;++i) {
+		gsl_matrix_set(temp,i,i,gsl_vector_get(evl,i));
+	}
+	
+	multiplie_matrix(evc,t_atom*3,t_atom*3,temp,t_atom*3,t_atom*3,prod);
+	gsl_matrix_transpose(evc);
+	gsl_matrix_set_all(sub_covar,0);
+	multiplie_matrix(prod,t_atom*3,t_atom*3,evc,t_atom*3,t_atom*3,sub_covar);
+	
+	
+ 	rmsd = 0;
+ 	float max_displacement = 0;
+ 	for(i=0;i<t_atom;++i) {
+ 		/*printf("I:%d %8.4f\n",i,((t_init[i].x_cord-t_targ[i].x_cord)*(t_init[i].x_cord-t_targ[i].x_cord)+
+ 				 (t_init[i].y_cord-t_targ[i].y_cord)*(t_init[i].y_cord-t_targ[i].y_cord)+
+ 				 (t_init[i].z_cord-t_targ[i].z_cord)*(t_init[i].z_cord-t_targ[i].z_cord)));*/
+ 				float	dist = ((t_init[i].x_cord-t_targ[i].x_cord)*(t_init[i].x_cord-t_targ[i].x_cord)+
+ 				 (t_init[i].y_cord-t_targ[i].y_cord)*(t_init[i].y_cord-t_targ[i].y_cord)+
+ 				 (t_init[i].z_cord-t_targ[i].z_cord)*(t_init[i].z_cord-t_targ[i].z_cord));
+ 					rmsd += dist;
+ 				 if (dist > max_displacement) {max_displacement = dist;}
+ 	}
+// 	printf("Max_displacement:%.4f\n",sqrt(max_displacement));
+ 	//printf("	Rota RMSD:%f\n",rmsd/t_atom);
+ 	
+ 	
+ 	for(i=0;i<all;++i) {
+ 		/*all_init[i].x_cord -= cen_init[0];
+ 		all_init[i].y_cord -= cen_init[1];
+ 		all_init[i].z_cord -= cen_init[2];*/
+ 		
+ 		all_init[i].x_cord += cen_targ[0];
+ 		all_init[i].y_cord += cen_targ[1];
+ 		all_init[i].z_cord += cen_targ[2];
+ 	}
+ 	
+	for(i=0;i<atom;++i) {
+		/*init[i].x_cord -= cen_init[0];
+ 		init[i].y_cord -= cen_init[1];
+ 		init[i].z_cord -= cen_init[2];*/
+	
+ 		init[i].x_cord += cen_targ[0];
+ 		init[i].y_cord += cen_targ[1];
+ 		init[i].z_cord += cen_targ[2];
+ 	}
+ 	
+ 	
+ 	gsl_matrix_free(corr);
+ 	gsl_matrix_free(init_v);
+ 	gsl_matrix_free(targ_v);
+ 	gsl_matrix_free(mat_v);
+    gsl_vector_free(vec_s);
+  	gsl_vector_free(vec_w);
+ 	gsl_matrix_free(rota);
+
+ 	
+ 	return(rmsd/t_atom);
+ }
+ 
   float rmsd_yes(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all) {
  	// Fonction qui suimperpose deux structures en utilisant single value decomposition
  	// Centre les deux structures autour des atomes dans align et rotate init et init all pour fitter !

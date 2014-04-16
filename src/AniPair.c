@@ -200,16 +200,38 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
-
+	// First align
 	
+	for(i=0;i<atom;++i) {
+		align[i] = -1;
+	}
+
+
+	for(i = 0;i<num_list_init;++i) {
+		int k;
+		for(k=0;k<6;++k) {	
+			if (pair_one[i][k] != -1) {
+				align[pair_one[i][k]] = 1;
+			}
+		}
+	}
 	
 	if (verbose == 1) {printf("Building Cross-Correlation Two\n");}
 	
 	gsl_matrix *k_totinv_two = gsl_matrix_alloc(atom_t*3, atom_t*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
 
 	gsl_matrix_set_all(k_totinv_two, 0);
+	
 	inv_mat_align(k_totinv_two,atom_t,eval_two,evec_two,0,atom_t*3,align_t);
 	//k_cov_inv_matrix_stem(k_totinv_two,atom_t,eval_two,evec_two,6,atom_t*3-6); // Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. 
+	
+	if (verbose == 1) {printf("Building Cross-Correlation One\n");}
+	
+	gsl_matrix *k_totinv = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
+	gsl_matrix_set_all(k_totinv, 0);
+	inv_mat_align(k_totinv,atom,eval,evec,0,atom*3,align); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
+	//k_cov_inv_matrix_stem(k_totinv,atom,eval,evec,6,atom*3);
+
 	
 	
 	int paira;
@@ -223,7 +245,6 @@ int main(int argc, char *argv[]) {
 		
 		for(pairb = 0;pairb<num_list_targ;++pairb) {
 			if (constraint_flag == 1 && strncmp(strc_node_t[pair_two[pairb][2]].res_type,strc_node[pair_one[paira][2]].res_type,3) != 0) {
-				//printf("Not the same constrain:%s - %s et %s - %s\n",strc_node[pair_one[paira][0]].res_type,strc_node[pair_one[paira][2]].res_type,strc_node_t[pair_two[pairb][0]].res_type,strc_node_t[pair_two[pairb][2]].res_type); 
 				continue;
 			} 
 			
@@ -233,6 +254,7 @@ int main(int argc, char *argv[]) {
 			// Assign pair A
 			for(k=0;k<6;++k) {
 				if (pair_one[paira][k] != -1) {
+					//printf("align[%d] = %d\n",pair_one[paira][k],pair_two[pairb][k]);
 					align[pair_one[paira][k]] = pair_two[pairb][k];
 					
 				}
@@ -242,28 +264,19 @@ int main(int argc, char *argv[]) {
 			for(k=0;k<atom;++k) {if(align[k] != -1) {++score;}}
 		 	
 			
-			// Rotationne les eigenvector
+			// Rotationne la matrice
 			float myRmsd = (rmsd_no(strc_node,strc_node_t,atom, align));
 			
 			if (myRmsd > rmsd_cutoff) {continue;}
-			if (verbose == 1) {printf("\tRotating Eigenvector One\n");}
-			rmsd_yes_eigen(strc_node,strc_node_t,atom, align,strc_all,all,evec);
-			//printf("\tRMSD = %f\n",myRmsd);
-			if (verbose == 1) {printf("\tBuilding Cross-Correlation One\n");}
-
-			// Transforme en matrice de correlation
-	
-			gsl_matrix *k_totinv = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
-	
-			gsl_matrix_set_all(k_totinv, 0);
-	
-			inv_mat_align(k_totinv,atom,eval,evec,0,nm,align); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
-
-	
-	
-	
-	
-	
+			gsl_matrix *sub_covar = gsl_matrix_alloc(score*3,score*3);
+			gsl_matrix_set_all(sub_covar,0);
+			if (verbose == 1) {printf("\tRotating Cross-Correlatin One\n");}
+			struct pdb_atom strc_node_cpy[atom];
+			copy_strc( strc_node_cpy, strc_node,  atom);
+			struct pdb_atom strc_all_cpy[all];
+			copy_strc( strc_all_cpy, strc_all,  all);
+			rmsd_yes_covar(strc_node_cpy,strc_node_t,atom, align,strc_all_cpy,all,k_totinv,sub_covar);
+			//printf("\nCOVAR AGAIN\n\n");print_matrix(sub_covar);
 			// Il faut convolutionner les deux matrices de covariance (pour les atomes correspondants !)
 
 			if (verbose == 1) {printf("\tAdding Two Cross-Correlation Matrix\n");}	
@@ -282,18 +295,20 @@ int main(int argc, char *argv[]) {
 			gsl_vector *pos = gsl_vector_alloc(score*3); // Le vecteur de différence qu'on va vouloir evaluer
 	
 			gsl_vector_set_all(pos,0);
-	
+			
 			for(i=0;i<atom;++i) {
 				if (align[i] != -1) {
 					kept_one[count] = i;
 					kept_two[count] = align[i];
-					gsl_vector_set(delr,count*3+0,strc_node[i].x_cord-strc_node_t[align[i]].x_cord);
-					gsl_vector_set(delr,count*3+1,strc_node[i].y_cord-strc_node_t[align[i]].y_cord);
-					gsl_vector_set(delr,count*3+2,strc_node[i].z_cord-strc_node_t[align[i]].z_cord);
+					gsl_vector_set(delr,count*3+0,strc_node_cpy[i].x_cord-strc_node_t[align[i]].x_cord);
+					gsl_vector_set(delr,count*3+1,strc_node_cpy[i].y_cord-strc_node_t[align[i]].y_cord);
+					gsl_vector_set(delr,count*3+2,strc_node_cpy[i].z_cord-strc_node_t[align[i]].z_cord);
 					++count;
 				}
 			}
-	
+			/*for(i=0;i<12;++i) {
+				printf("Delr(%d) = %f\n",i,gsl_vector_get(delr,i));
+			}*/
 			/*print_matrix(k_totinv);printf("\n\n");
 	
 			print_matrix(k_totinv_two);printf("\n\n");*/
@@ -303,8 +318,10 @@ int main(int argc, char *argv[]) {
 				for(j = 0;j<score;++j) {
 					int k,l;
 					for (l = 0;l<3;++l) {for (k = 0;k<3;++k) {
+					//printf("COV12:(%d,%d) = %f + %f\n",i*3+k,j*3+l,gsl_matrix_get(sub_covar    ,i*3+k,j*3+l),gsl_matrix_get(k_totinv_two,kept_two[i]*3+k,kept_two[j]*3+l));
 					gsl_matrix_set(cov12,i*3+k,j*3+l,
-						gsl_matrix_get(k_totinv,kept_one[i]*3+k,kept_one[j]*3+l)+gsl_matrix_get(k_totinv_two,kept_two[i]*3+k,kept_two[j]*3+l)
+						 gsl_matrix_get(sub_covar    ,i*3+k,j*3+l)
+						+gsl_matrix_get(k_totinv_two,kept_two[i]*3+k,kept_two[j]*3+l)
 					);
 					}}
 	
@@ -312,11 +329,11 @@ int main(int argc, char *argv[]) {
 	
 			}
 
-	
+			//printf("\nCOVAR\n");print_matrix(cov12);
 			// Fonction qui build ma nouvelle matrice de covariance pour ma conjugé
 	
-		/*	print_matrix(cov12);
-			printf("\n\n");*/
+			//print_matrix(cov12);
+			//printf("\n\n");
 	
 			// On va essayer de la diagonalyser
 	
@@ -357,7 +374,7 @@ int main(int argc, char *argv[]) {
 			}
 			printf("\n");*/
 			// Free some stuff
-			gsl_matrix_free(k_totinv);
+			gsl_matrix_free(sub_covar);
 			gsl_matrix_free(evec_cov);		
 			gsl_matrix_free(cov12);
 			gsl_matrix_free(incov12);
@@ -365,7 +382,9 @@ int main(int argc, char *argv[]) {
 			gsl_vector_free(eval_cov);
 			gsl_vector_free(pos);
 			gsl_vector_free(delr);
+			
 		}
+		
 	}
 }
 
@@ -415,14 +434,18 @@ void inv_mat_align(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,in
 	 
 	for (i=0;i<nb_atom*3;++i)	{
 		if (align[i/3] == -1) {continue;}
+	//	printf("I:%d\n",i);
 		for (j=0;j<nb_atom*3;++j) {
-			if (align[i/3] == -1) {continue;}
+			if (align[j/3] == -1) {continue;}
+	//		printf("\tJ:%d\n",j);
 			for (k=mode;k<mode+nm;++k) {
+	//			printf("\t\tK:%d\n",k);
 				if (k > int (evl->size-1)) {break;}
 				if  (gsl_vector_get (evl, k) < 0.000001) {
 					// printf("K = %d -> Eval to small I next:%g\n",k,gsl_vector_get (evl, k));
 					continue;
 				}
+	//			printf("M(%d,%d) += %f*%f / %f\n",i,j,gsl_matrix_get(evc,i,k),gsl_matrix_get(evc, j, k),gsl_vector_get(evl, k));
 				gsl_matrix_set(m, i,j,
 					gsl_matrix_get(evc,i,k)*gsl_matrix_get(evc, j, k)/gsl_vector_get(evl, k) 
 					+ gsl_matrix_get(m, i,j)
