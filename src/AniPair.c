@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 	char init_list[500] = "init_list.dat";
 	char targ_list[500] = "targ_list.dat";
 	float rmsd_cutoff = 4.0;
-	float scale = 1.0;
+	float scale = -1.0;
 	int constraint_flag = 1;
 	int nm = -1;
  	for (i = 1;i < argc;i++) {
@@ -163,8 +163,8 @@ int main(int argc, char *argv[]) {
 	
 	// Scaling eval
 	
-	gsl_vector_scale(eval,scale);
-	gsl_vector_scale(eval_two,scale);
+	//gsl_vector_scale(eval,scale);
+	//gsl_vector_scale(eval_two,scale);
 	
 	
 	
@@ -219,6 +219,7 @@ int main(int argc, char *argv[]) {
 	if (verbose == 1) {printf("Building Cross-Correlation Two\n");}
 	
 	gsl_matrix *k_totinv_two = gsl_matrix_alloc(atom_t*3, atom_t*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
+	gsl_matrix *k_totinv_two_cpy = gsl_matrix_alloc(atom_t*3, atom_t*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
 
 	gsl_matrix_set_all(k_totinv_two, 0);
 	
@@ -228,14 +229,35 @@ int main(int argc, char *argv[]) {
 	if (verbose == 1) {printf("Building Cross-Correlation One\n");}
 	
 	gsl_matrix *k_totinv = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
+	gsl_matrix *k_totinv_cpy = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
 	gsl_matrix_set_all(k_totinv, 0);
 	inv_mat_align(k_totinv,atom,eval,evec,0,atom*3,align); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
 	//k_cov_inv_matrix_stem(k_totinv,atom,eval,evec,6,atom*3);
+	
+	// Copy la matrice
+	gsl_matrix_memcpy (k_totinv_two_cpy,k_totinv_two);
+	gsl_matrix_memcpy (k_totinv_cpy,k_totinv);
+	
+	
 
-	
-	
 	int paira;
-	if (nm == -1) {nm = 3*atom;}
+	float it_scale;
+	float base;
+	float power;
+	for(power = -10;power<2;++power) {
+		for(base = 1;base<10;++base) {
+		it_scale = base*pow(10,power);
+		//if (it_scale != 10.0) {continue;}
+		gsl_matrix_memcpy (k_totinv_two,k_totinv_two_cpy);
+		gsl_matrix_memcpy (k_totinv,k_totinv_cpy);
+		if (scale > 0) {
+			it_scale = scale;
+			gsl_matrix_scale(k_totinv_two,1.00/it_scale);
+			gsl_matrix_scale(k_totinv,1.00/it_scale);
+		} else {
+			gsl_matrix_scale(k_totinv_two,1.00/it_scale);
+			gsl_matrix_scale(k_totinv,1.00/it_scale);
+		}
 	for(paira = 0;paira<num_list_init;++paira) {
 		//printf("PairA:%d\n",paira);
 		int pairb;
@@ -368,7 +390,7 @@ int main(int argc, char *argv[]) {
 			//printf("\tConj_dens = %g\n",conj_dens12);
 			float dens = density_prob_n(incov12, delr, conj_dens12,pos,score*3);
 			//	printf("Pair:%d et %d\n",paira,pairb);
-			printf("%d %d %f %g Targ:%s %s Init:%s %s\n",paira,pairb,myRmsd,dens,strc_node_t[pair_two[pairb][0]].res_type,strc_node_t[pair_two[pairb][2]].res_type,strc_node[pair_one[paira][0]].res_type,strc_node[pair_one[paira][2]].res_type);
+			printf("%.12f %d %d %f %g Targ:%s %s Init:%s %s\n",it_scale,paira,pairb,myRmsd,dens,strc_node_t[pair_two[pairb][0]].res_type,strc_node_t[pair_two[pairb][2]].res_type,strc_node[pair_one[paira][0]].res_type,strc_node[pair_one[paira][2]].res_type);
 		/*	for(i<0;i<3;++i) {
 				printf(" %s",strc_node_t[pair_two[pairb][i*2]].res_type);
 			}
@@ -385,6 +407,10 @@ int main(int argc, char *argv[]) {
 			
 		}
 		
+	}
+	if (scale > 0) {break;}
+	}
+	if (scale > 0) {break;}
 	}
 }
 

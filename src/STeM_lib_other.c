@@ -535,7 +535,7 @@ for(i=0; i < nb_atom_1; ++i) {
 		 if (k > int (evl->size-1)) {break;}
 		 if  (gsl_vector_get (evl, k) < 0.000001) 
 		 {
-			 printf("K = %d -> Eval to small I next:%g\n",k,gsl_vector_get (evl, k));
+			 //printf("K = %d -> Eval to small I next:%g\n",k,gsl_vector_get (evl, k));
 			 continue;
 		 }
 		 

@@ -2832,7 +2832,7 @@ double density_prob_n(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,
 	gsl_matrix_free(a);
 	gsl_matrix_free(temp);
 	gsl_matrix_free(one);
-	printf("Dens = pow(e,%g*-1/2+%g) = %g\n",ans,conj_dens12,pow(e,ans*-1/2+conj_dens12));
+	//printf("Dens = pow(e,%g*-1/2+%g) = %g\n",ans,conj_dens12,pow(e,ans*-1/2+conj_dens12));
 	return(pow(e,ans*-1/2+conj_dens12));
 }
 
