@@ -2,20 +2,16 @@
 #include <gsl/gsl_linalg.h>
 
 void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int max, int tresh, int **clique_mat, int mat_size, int *cliquenum);
-
 int clique_fusion(int **clique_mat, int mat_size, int *cliquenum);
-
 int get_connex(int nod1, int nod2, struct pdb_atom *init, int natom, float max);
-
 int md_print(struct pdb_atom *init, int size_all, int **conx, int size_node, char *out);
-
 float lc(int node, int **conx_mat, int *network, int size);
 
 int main(int argc, char *argv[])
 {
 	int i,j,k,l;
-	int all; /*Number of atoms in the initial PDB*/
-	int atom; /*Number of initial CAs*/
+	int all; /* Number of atoms in the initial PDB */
+	int atom; /* Number of initial CAs */
 	int nconn;
 	
 	char file_name[500];
@@ -28,11 +24,17 @@ int main(int argc, char *argv[])
 	char out_lc[500] = "lc.dat"; // Local closeness out_name
 	char out_net[500] = "networks.dat"; // Networks out_name
 	
-	int n_tresh = 4; // Gives the clique size treshold
-	float s_tresh = 1.645; // Gives the Z treshold
-	float h_tresh = 0.33; // Gives a hard treshold (based on r instead of Z)
+	/*
+	The whole thing should be tested with selection of both correlated and anti-correlated residues in the same graph.
+	Tresholds would then have to be increased (1.645 will be 10% most correlated or anti-correlated instead of 5% most correlated).
+	*/
+	
+	int n_tresh = 4; // Gives the clique size treshold. SHOULD be tested with n = 3 and up. Has not been tested yet (except on 4).
+	int z_tresh = 3; // Gives the number of z-matches required for connexion. SHOULD be tested with n = 1..9. Should also be tested with the trace, just in case (but won't be so physicaly relevant).
+	float s_tresh = 1.645; // Gives the Z treshold (optimal to this date : 2.241 or 1.125% most correlated)
+	float h_tresh = 0.33; // Gives a hard treshold (based on r instead of Z, not in use)
 	float anti = 1.0; // If changed to -1.0, tells program to search for anitcorrelated nodes instead
-	float cutoff = 5.0; // Gives a distance cutoff to the connex completion step
+	float cutoff = 5.0; // Gives a distance cutoff to the connex completion step (current optimum is 6.0, but should be tested from 5.0 to 6.5 with 0.1 increments)
 	
 	int print_correl = 0; // Tells the program to print the correlation matrix
 	int print_cd = 0; // Tells the program to print correlation vs distance of residues
@@ -48,13 +50,14 @@ int main(int argc, char *argv[])
 	int hard_tresh = 0; // Tells the program to use the hard treshold
 	int cde_flag = 0; // Tells the program to end after printing correlation vs distance of residues
 	int cor_flag = 0; // Tells the program to end after calculating the correlation matrix
+	int full_flag = 0; // Tells the program to use full networks instead of clique networks
 	
 	int *bresn; // Binding site residue number array (to be freed)
 	bresn = (int *) malloc(10000*sizeof(int));
 	
 	// Binding site residue chain array (to be freed)
 	
-	char **bresc; 
+	char **bresc;
 	bresc = (char **) malloc(10000*sizeof(char *));
 	
 	if(bresc == NULL) {printf("malloc FAIL\n"); return 0;}
@@ -101,6 +104,7 @@ int main(int argc, char *argv[])
 		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
 		if (strcmp("-cde",argv[i]) == 0) {cde_flag = 1;}
 		if (strcmp("-cor",argv[i]) == 0) {cor_flag = 1;}
+		if (strcmp("-full",argv[i]) == 0) {full_flag = 1;}
 		
 		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]); eig_flag = 1;}
 		if (strcmp("-imat",argv[i]) == 0) {strcpy(correl_name,argv[i+1]); mat_flag = 1;}
@@ -112,6 +116,7 @@ int main(int argc, char *argv[])
 
 		if (strcmp("-cut",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); cutoff = temp;}
 		if (strcmp("-tr",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%i",&temp); n_tresh = temp;}
+		if (strcmp("-ztr",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%i",&temp); z_tresh = temp;}
 		if (strcmp("-str",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); s_tresh = temp;}
 		if (strcmp("-htr",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); h_tresh = temp; hard_tresh++;}
 		
@@ -174,7 +179,7 @@ int main(int argc, char *argv[])
 	
 	//***************************************************
 	//*													*
-	//*Builds a structure contaning information on the initial pdb structure
+	//*	Builds a structure contaning information on the initial pdb structure
 	//*													*
 	//***************************************************
 	
@@ -255,7 +260,7 @@ int main(int argc, char *argv[])
 	free(bresn);
 	free(aresn);
 	
-	for(i = 0; i < 5000; i++)
+	for(i = 0; i < 10000; i++)
 	{
 		free(bresc[i]);
 		bresc[i] = NULL;
@@ -272,6 +277,7 @@ int main(int argc, char *argv[])
 	aresn = NULL;
 	aresc = NULL;
 	
+	/*
 	printf("Bind nodes :\n");
 	
 	for(i = 0; i < nbind; i++)
@@ -283,14 +289,15 @@ int main(int argc, char *argv[])
 	
 	for(i = 0; i < nallo; i++)
 	{
-		printf("%1i\n", bnodes[i]);
+		printf("%1i\n", anodes[i]);
 	}
+	*/
 	
 	printf("\nCheck 1\n");
 	
 	//***************************************************
 	//*													*
-	//*Builds connectivity matrix
+	//*	Builds connectivity matrix
 	//*													*
 	//***************************************************
 	
@@ -398,7 +405,6 @@ int main(int argc, char *argv[])
 		
 		for(i = 0; i < 3*atom; i++)
 		{
-			
 			fprintf(out_file, "\t%1.6f", gsl_matrix_get(correl, i, 0));
 			
 			for(j = 1; j < 3*atom; j++)
@@ -458,7 +464,7 @@ int main(int argc, char *argv[])
 	{
 		for(j = 0; j <= i; j++)
 		{
-			if(connex[i][j] >= 3 && get_connex(i, j, strc_all, all, cutoff) == 1)
+			if(connex[i][j] >= z_tresh && get_connex(i, j, strc_all, all, cutoff) == 1)
 			{
 				connex[i][j] = 1;
 				connex[j][i] = 1;
@@ -484,7 +490,7 @@ int main(int argc, char *argv[])
 	
 	//***************************************************
 	//*													*
-	//*Builds network matrix
+	//*	Builds network matrix
 	//*													*
 	//***************************************************
 	
@@ -497,23 +503,32 @@ int main(int argc, char *argv[])
 	
 	for(i=0;i<atom;i++) {cliques[i][atom] = 0;}
 	
-	// Fill cliques matrix
-	
 	int cliquen = 0;
 	
-	Extend(nodenums, 0, atom, connex, clique, cpos, atom, n_tresh, cliques, atom, &cliquen);
+	if(full_flag == 0)
+	{
+		// Fill cliques matrix
 	
-	printf("Check 7\n");
+		Extend(nodenums, 0, atom, connex, clique, cpos, atom, n_tresh, cliques, atom, &cliquen);
 	
-	// Build networks from cliques
+		printf("Check 7\n");
 	
-	int cliquen_old = cliquen;
+		// Build networks from cliques
 	
-	while(clique_fusion(cliques, atom, &cliquen) < cliquen_old) {printf("%1i\n", cliquen_old); cliquen_old = cliquen;}
+		int cliquen_old = cliquen;
+	
+		while(clique_fusion(cliques, atom, &cliquen) < cliquen_old) {printf("%1i\n", cliquen_old); cliquen_old = cliquen;}
+	}
+	else
+	{
+		printf("In progress!\n");
+		
+		return 0;
+	}
 	
 	//***************************************************
 	//*													*
-	//*Calculates local closeness
+	//*	Calculates local closeness
 	//*													*
 	//***************************************************
 	
@@ -525,18 +540,35 @@ int main(int argc, char *argv[])
 	
 		out_name_net = fopen(out_net, "w");
 		
+		printf("Writing in %s\n", out_net);
+		
 		for(i = 0; i < cliquen; i++)
 		{
-			printf("Clique %1i:\n", i + 1);
+			fprintf(out_name_net, "Clique %1i:\n", i + 1);
 		
 			for(j = 0; j < cliques[i][atom]; j++)
 			{
 				fprintf(out_name_net, "%1i_%1s\t", strc_node[cliques[i][j]].res_number, strc_node[cliques[i][j]].chain);
 			}
 		
+			fprintf(out_name_net,"\n\n");
+		}
+	}
+	else
+	{
+		for(i = 0; i < cliquen; i++)
+		{
+			printf("Clique %1i:\n", i + 1);
+		
+			for(j = 0; j < cliques[i][atom]; j++)
+			{
+				printf("%1i_%1s\t", strc_node[cliques[i][j]].res_number, strc_node[cliques[i][j]].chain);
+			}
+		
 			printf("\n\n");
 		}
 	}
+	
 	
 	// Calculate local closeness for each combination of nodes
 	
@@ -552,19 +584,23 @@ int main(int argc, char *argv[])
 	
 		for(i = 0; i < nbind; i++)
 		{
-			fprintf(out_name_lc, "%1i\t", bnodes[i]);
+			fprintf(out_name_lc, "%1i_%1s\t", strc_node[bnodes[i]].res_number, strc_node[bnodes[i]].chain);
 		}
 	
 		fprintf(out_name_lc, "\n\nAllosteric site :\n");
 	
 		for(i = 0; i < nallo; i++)
 		{
-			fprintf(out_name_lc, "%1i\t", anodes[i]);
+			fprintf(out_name_lc,  "%1i_%1s\t", strc_node[anodes[i]].res_number, strc_node[anodes[i]].chain);
 		}
 	
 		fprintf(out_name_lc, "\n\n");
 	
 		float max_lc = 0.0;
+		
+		int bnode_max = 0;
+		
+		int anode_max = 0;
 	
 		for(i = 0; i < cliquen; i++)
 		{
@@ -574,11 +610,12 @@ int main(int argc, char *argv[])
 				{
 					float new_lc = lc(bnodes[j], connex, cliques[i], atom)*lc(anodes[k], connex, cliques[i], atom);
 				
-					if(new_lc > max_lc) {max_lc = new_lc;}
+					if(new_lc > max_lc) {max_lc = new_lc; bnode_max = bnodes[j]; anode_max = anodes[k];}
 				}
 			}
 		
-			fprintf(out_name_lc, "Local closeness product in network %1i : %1.10f\n", i+1, max_lc);
+			fprintf(out_name_lc, "Local closeness product in network %1i : %1.10f (Residues %1i_%1s and %1i_%1s)\n", i+1, max_lc, strc_node[bnode_max].res_number,
+				strc_node[bnode_max].chain, strc_node[anode_max].res_number, strc_node[anode_max].chain);
 		
 			max_lc = 0.0;
 		}
@@ -614,7 +651,7 @@ int main(int argc, char *argv[])
 
 //***************************************************
 //*													*
-//*Extend function
+//*	Extend function
 //*													*
 //***************************************************
 
@@ -758,7 +795,7 @@ void Extend(int *old, int ne, int ce, int **connex_mat, int *cliques, int c, int
 
 //***************************************************
 //*													*
-//*clique_fusion function
+//*	clique_fusion function
 //*													*
 //***************************************************
 
@@ -879,7 +916,7 @@ int clique_fusion(int **clique_mat, int mat_size, int *cliquenum)
 
 //***************************************************
 //*													*
-//*get_connex function
+//*	get_connex function
 //*													*
 //***************************************************
 
@@ -916,7 +953,7 @@ int get_connex(int nod1, int nod2, struct pdb_atom *init, int natom, float max)
 
 //***************************************************
 //*													*
-//*md_print function
+//*	md_print function
 //*													*
 //***************************************************
 
@@ -995,17 +1032,37 @@ int md_print(struct pdb_atom *init, int size_all, int **conx, int size_node, cha
 		}
 	}
 	
+	printf("MD Check 5\n");
+	
 	FILE *out_md;
 	
 	out_md = fopen(out, "w");
 	
 	if(out_md == NULL) {return 0;}
 	
+	printf("MD Check 6\n");
+	
 	for(i = 0; i < size_node; i++)
 	{
 		for(j = i + 1; j < size_node; j++)
 		{
-			fprintf(out_md, "%1i\t%1i\t%1.6f\t%1i\n", i, j, sqrt(dist[i][j]), match[i][j]);
+			for(k = 0; k < size_all; k++)
+			{
+				if(init[k].node == i)
+				{
+					for(l = 0; l < size_all; l++)
+					{
+						if(init[l].node == j)
+						{
+							fprintf(out_md, "%1i_%s\t%1i_%s\t%1.6f\t%1i\n", init[k].res_number, init[k].chain, init[l].res_number, init[l].chain, sqrt(dist[i][j]), match[i][j]);
+							
+							break;
+						}
+					}
+					
+					break;
+				}
+			}
 		}
 	}
 	
@@ -1014,7 +1071,7 @@ int md_print(struct pdb_atom *init, int size_all, int **conx, int size_node, cha
 
 //***************************************************
 //*													*
-//*local closeness function
+//*	local closeness function
 //*													*
 //***************************************************
 
