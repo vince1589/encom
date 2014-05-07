@@ -1,0 +1,168 @@
+#################################################################
+# Makefile for the ENCoM   program (Linux Version)              #
+#                                                               #
+# Vincent Frappier   & Rafael Najmanovich                       #
+#                                                               #
+#################################################################
+
+
+# Include path
+I = ../src
+
+# Executable path
+W = ../bin
+
+CXX = g++
+
+CXXFLAGS = -Wall -O3
+
+#INCLUDES = -I/home/vfrap/gsl_path/lib/
+INCLUDES = -I/usr/lib/ -I/home/vfrap/gsl_path/lib/
+
+#LIBS = -lgsl -lgslcblas -lm -L/home/vfrap/gsl_path/lib
+LIBS = -lgsl -lgslcblas -lm -L/usr/include/gsl -L/home/vfrap/gsl_path/lib
+
+OBJ =   STeM_lib_grid_motion.o                   \
+        STeM_lib_hessian.o                 \
+        STeM_lib_fit.o          \
+        STeM_lib_other.o            \
+        STeM_lib_rot.o               \
+        STeM_lib_STRC.o             \
+        STeM_lib_template.o            \
+        STeM_lib_vcon.o
+
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter get_networks comp_networks AniRMSD AniPair
+	\mv build_encom $W/build_encom
+	\mv b_factor $W/b_factor
+	\mv bfactor_diff $W/bfactor_diff
+	\mv build_grid_rmsd $W/build_grid_rmsd
+	\mv fit_svd $W/fit_svd
+	\mv motion $W/motion
+	\mv rmsd $W/rmsd
+	\mv fit_prob $W/fit_prob
+	\mv find_rel $W/find_rel
+	\mv anm $W/anm
+	\mv cmp_eigen $W/cmp_eigen
+	\mv fit_gauss $W/fit_gauss
+	\mv cmp_anisou $W/cmp_anisou
+	\mv AniCleft $W/AniCleft
+	\mv build_gauss $W/build_gauss
+	\mv find_inter $W/find_inter
+	\mv get_networks $W/get_networks
+	\mv comp_networks $W/comp_networks
+	\mv AniRMSD $W/AniRMSD
+	\mv AniPair $W/AniPair
+
+clean:
+	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
+	clear
+
+# Linking / Create executable
+cmp_eigen: $(OBJ) cmp_eigen.o
+	$(CXX) $(OBJ) cmp_eigen.o $(LIBS) -o cmp_eigen
+find_rel: $(OBJ) find_rel.o
+	$(CXX) $(OBJ) find_rel.o $(LIBS) -o find_rel
+fit_prob: $(OBJ) fit_prob.o
+	$(CXX) $(OBJ) fit_prob.o $(LIBS) -o fit_prob
+build_encom: $(OBJ) build_encom.o
+	$(CXX) $(OBJ) build_encom.o $(LIBS) -o build_encom
+b_factor: $(OBJ) b_factor.o
+	$(CXX) $(OBJ) b_factor.o $(LIBS) -o b_factor
+bfactor_diff: $(OBJ) bfactor_diff.o
+	$(CXX) $(OBJ) bfactor_diff.o $(LIBS) -o bfactor_diff
+build_grid_rmsd: $(OBJ) build_grid_rmsd.o
+	$(CXX) $(OBJ) build_grid_rmsd.o $(LIBS) -o build_grid_rmsd
+fit_svd: $(OBJ) fit_svd.o
+	$(CXX) $(OBJ) fit_svd.o $(LIBS) -o fit_svd
+motion: $(OBJ) motion.o
+	$(CXX) $(OBJ) motion.o $(LIBS) -o motion
+rmsd: $(OBJ) rmsd.o
+	$(CXX) $(OBJ) rmsd.o $(LIBS) -o rmsd
+build_pca: $(OBJ) build_pca.o
+	$(CXX) $(OBJ) build_pca.o $(LIBS) -o build_pca
+anm: $(OBJ) anm.o
+	$(CXX) $(OBJ) anm.o $(LIBS) -o anm
+fit_gauss: $(OBJ) fit_gauss.o
+	$(CXX) $(OBJ) fit_gauss.o $(LIBS) -o fit_gauss
+cmp_anisou: $(OBJ) cmp_anisou.o
+	$(CXX) $(OBJ) cmp_anisou.o $(LIBS) -o cmp_anisou
+AniCleft: $(OBJ) AniCleft.o
+	$(CXX) $(OBJ) AniCleft.o $(LIBS) -o AniCleft
+build_gauss: $(OBJ) build_gauss.o
+	$(CXX) $(OBJ) build_gauss.o $(LIBS) -o build_gauss
+find_inter: $(OBJ) find_inter.o
+	$(CXX) $(OBJ) find_inter.o $(LIBS) -o find_inter
+get_networks: $(OBJ) get_networks.o
+	$(CXX) $(OBJ) get_networks.o $(LIBS) -o get_networks
+comp_networks: $(OBJ) comp_networks.o
+	$(CXX) $(OBJ) comp_networks.o $(LIBS) -o comp_networks
+AniRMSD: $(OBJ) AniRMSD.o
+	$(CXX) $(OBJ) AniRMSD.o $(LIBS) -o AniRMSD
+AniPair: $(OBJ) AniPair.o
+	$(CXX) $(OBJ) AniPair.o $(LIBS) -o AniPair
+
+# Build main()
+cmp_eigen.o: $I/cmp_eigen.c
+	$(CXX) $(CXXFLAGS) -c $I/cmp_eigen.c $(INCLUDES)
+anm.o: $I/anm.c
+	$(CXX) $(CXXFLAGS) -c $I/anm.c $(INCLUDES)
+find_rel.o: $I/find_rel.c
+	$(CXX) $(CXXFLAGS) -c $I/find_rel.c $(INCLUDES)
+fit_prob.o: $I/fit_prob.c
+	$(CXX) $(CXXFLAGS) -c $I/fit_prob.c $(INCLUDES)
+build_encom.o: $I/build_encom.c
+	$(CXX) $(CXXFLAGS) -c $I/build_encom.c $(INCLUDES)
+b_factor.o: $I/b_factor.c
+	$(CXX) $(CXXFLAGS) -c $I/b_factor.c $(INCLUDES)
+bfactor_diff.o: $I/bfactor_diff.c
+	$(CXX) $(CXXFLAGS) -c $I/bfactor_diff.c $(INCLUDES)
+build_grid_rmsd.o: $I/build_grid_rmsd.c
+	$(CXX) $(CXXFLAGS) -c $I/build_grid_rmsd.c $(INCLUDES)
+fit_svd.o: $I/fit_svd.c
+	$(CXX) $(CXXFLAGS) -c $I/fit_svd.c $(INCLUDES)
+motion.o: $I/motion.c
+	$(CXX) $(CXXFLAGS) -c $I/motion.c $(INCLUDES)
+rmsd.o: $I/rmsd.c
+	$(CXX) $(CXXFLAGS) -c $I/rmsd.c $(INCLUDES)
+build_pca.o: $I/build_pca.c
+	$(CXX) $(CXXFLAGS) -c $I/build_pca $(INCLUDES)
+fit_gauss.o: $I/fit_gauss.c
+	$(CXX) $(CXXFLAGS) -c $I/fit_gauss.c $(INCLUDES)
+cmp_anisou.o: $I/cmp_anisou.c
+	$(CXX) $(CXXFLAGS) -c $I/cmp_anisou.c $(INCLUDES)
+AniCleft.o: $I/AniCleft.c
+	$(CXX) $(CXXFLAGS) -c $I/AniCleft.c $(INCLUDES)
+build_gauss.o: $I/build_gauss.c
+	$(CXX) $(CXXFLAGS) -c $I/build_gauss.c $(INCLUDES)
+find_inter.o: $I/find_inter.c
+	$(CXX) $(CXXFLAGS) -c $I/find_inter.c $(INCLUDES)
+get_networks.o: $I/get_networks.c
+	$(CXX) $(CXXFLAGS) -c $I/get_networks.c $(INCLUDES)
+comp_networks.o: $I/comp_networks.c
+	$(CXX) $(CXXFLAGS) -c $I/comp_networks.c $(INCLUDES)
+AniRMSD.o: $I/AniRMSD.c
+	$(CXX) $(CXXFLAGS) -c $I/AniRMSD.c $(INCLUDES)
+AniPair.o: $I/AniPair.c
+	$(CXX) $(CXXFLAGS) -c $I/AniPair.c $(INCLUDES)
+
+# Build Source STeM_lib
+
+STeM_lib_grid_motion.o: $I/STeM_lib_grid_motion.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_grid_motion.c $(INCLUDES)
+STeM_lib_hessian.o: $I/STeM_lib_hessian.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_hessian.c $(INCLUDES)
+STeM_lib_fit.o: $I/STeM_lib_fit.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_fit.c $(INCLUDES)
+STeM_lib_other.o: $I/STeM_lib_other.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_other.c $(INCLUDES)
+STeM_lib_rot.o: $I/STeM_lib_rot.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_rot.c $(INCLUDES)
+STeM_lib_STRC.o: $I/STeM_lib_STRC.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_STRC.c $(INCLUDES)
+STeM_lib_vcon.o: $I/STeM_lib_vcon.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_vcon.c $(INCLUDES)
+STeM_lib_template.o: $I/STeM_lib_template.c
+	$(CXX) $(CXXFLAGS) -c $I/STeM_lib_template.c $(INCLUDES)
+
+
+

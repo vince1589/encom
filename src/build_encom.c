@@ -212,6 +212,13 @@ int main(int argc, char *argv[]) {
 	{
 		gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom); /*Déclare et crée une matrice qui va être le pseudo inverse*/
 		k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3-6);
+		
+   for (i=0;i<atom;++i) {
+			for (j=i;j<atom;++j) {
+				printf("%d %d %f\n",i+1,j+1,gsl_matrix_get(k_inverse,i,j)*1000);
+			}	
+		}
+		
 		printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
 		gsl_matrix_free(k_inverse);
 	}

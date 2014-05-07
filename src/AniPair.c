@@ -244,9 +244,9 @@ int main(int argc, char *argv[]) {
 	float it_scale;
 	float base;
 	float power;
-	for(power = -10;power<2;++power) {
-		for(base = 1;base<10;++base) {
-		it_scale = base*pow(10,power);
+	for(power = -4;power<1;++power) {
+		for(base = 0;base<4;++base) {
+		it_scale = pow(2,base)*pow(10,power);
 		//if (it_scale != 10.0) {continue;}
 		gsl_matrix_memcpy (k_totinv_two,k_totinv_two_cpy);
 		gsl_matrix_memcpy (k_totinv,k_totinv_cpy);
