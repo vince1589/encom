@@ -472,7 +472,7 @@ int main(int argc, char *argv[]) {
 					printf("%d%s ",strc_node_t[i*2].res_number,strc_node_t[i*2].res_type);for(l=0;l<npair;++l) {printf("%d%s ",strc_node_t[ncount[l]*2].res_number,strc_node_t[ncount[l]*2].res_type);}	
 					printf("et %d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
 					for(l=0;l<npair;++l) {
-						printf("%d%s ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type);
+						printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);
 					}		
 					printf("%f %.4f %g\n",scale[ItScale],sqrt(myRmsd),dens);
 					gsl_matrix_free(sub_covar);
