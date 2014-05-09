@@ -295,9 +295,8 @@ int main(int argc, char *argv[]) {
 			if (verbose == 1) {printf("\tRotating Cross-Correlatin One\n");}
 			struct pdb_atom strc_node_cpy[atom];
 			copy_strc( strc_node_cpy, strc_node,  atom);
-			struct pdb_atom strc_all_cpy[all];
-			copy_strc( strc_all_cpy, strc_all,  all);
-			rmsd_yes_covar(strc_node_cpy,strc_node_t,atom, align,strc_all_cpy,all,k_totinv,sub_covar);
+
+			rmsd_yes_covar(strc_node_cpy,strc_node_t,atom, align,k_totinv,sub_covar);
 			//printf("\nCOVAR AGAIN\n\n");print_matrix(sub_covar);
 			// Il faut convolutionner les deux matrices de covariance (pour les atomes correspondants !)
 

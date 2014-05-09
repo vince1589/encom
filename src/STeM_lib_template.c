@@ -215,7 +215,34 @@ void all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix *ma, i
  	gsl_matrix_free(conta);
  	
  }
- 
+ void all_interaction_leStatium(struct pdb_atom *strc,int atom,int res_n, gsl_matrix *ma, int flag,gsl_matrix *mvcon,struct pdb_atom *ca_strc) {
+ 	int k,l;
+ 	float temp;
+
+ 	// On veut scorer chaque node, une par appaort à l'autre, pour ce faire on chaque atom et fais la somme du score
+ 	// ma est la dite matrice
+	//gsl_matrix_set_all(ma,0);
+	
+	printf("In all interaction\n");
+
+ 	for (k=0;k<atom;++k) {
+ 		for (l=0;l<atom;++l) { 
+
+ 			if (gsl_matrix_get(mvcon,l,k) == 0) {continue;} // Si pas de contact on next	
+ 			temp = 0;
+ 			//printf("L:%4d K:%4d Type:%d :: %d Surface:%f\n",l,k,strc[k].type,strc[l].type,gsl_matrix_get(mvcon,l,k));
+ 		 			
+ 			// Le score pour a adder
+ 			
+			temp = gsl_matrix_get(mvcon,l,k);
+			gsl_matrix_set(ma,strc[k].node,strc[l].node,gsl_matrix_get(ma,strc[k].node,strc[l].node)+temp);
+			gsl_matrix_set(ma,strc[l].node,strc[k].node,gsl_matrix_get(ma,strc[l].node,strc[k].node)+temp);
+		
+ 		}
+ 	}
+ 	
+ 	
+ }
  void assign_lig_type(struct pdb_atom *strc, int atom, char inp[500]) {
  	FILE *file;
  	file = fopen(inp,"r");

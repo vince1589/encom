@@ -791,7 +791,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	return(rmsd/t_atom);
  }
  
- float rmsd_yes_covar(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all,gsl_matrix *covar,gsl_matrix *sub_covar) {
+ float rmsd_yes_covar(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,gsl_matrix *covar,gsl_matrix *sub_covar) {
  	// Fonction qui suimperpose deux structures en utilisant single value decomposition
  	// Centre les deux structures autour des atomes dans align et rotate init et init all pour fitter !
  	
@@ -913,15 +913,11 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  		init[i].z_cord -= cen_init[2];
 	}
 	
-	for(i=0;i<all;++i) {
-		all_init[i].x_cord -= cen_init[0];
- 		all_init[i].y_cord -= cen_init[1];
- 		all_init[i].z_cord -= cen_init[2];
-	}
+
 	
  	rotate_all(rota,init,atom);
  	rotate_all(rota,t_init,t_atom);
- 	rotate_all(rota,all_init,all);
+
  	
  	
  	// On veut construire une matrice du genre (R,0,0;0,R,0;0,0,R) pour rotationer 3 nodes covar matrice
@@ -1012,17 +1008,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	}
 // 	printf("Max_displacement:%.4f\n",sqrt(max_displacement));
  	//printf("	Rota RMSD:%f\n",rmsd/t_atom);
- 	
- 	
- 	for(i=0;i<all;++i) {
- 		/*all_init[i].x_cord -= cen_init[0];
- 		all_init[i].y_cord -= cen_init[1];
- 		all_init[i].z_cord -= cen_init[2];*/
- 		
- 		all_init[i].x_cord += cen_targ[0];
- 		all_init[i].y_cord += cen_targ[1];
- 		all_init[i].z_cord += cen_targ[2];
- 	}
+
  	
 	for(i=0;i<atom;++i) {
 		/*init[i].x_cord -= cen_init[0];

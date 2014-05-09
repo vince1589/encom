@@ -56,7 +56,7 @@ void boinc_all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix 
 double density_prob_n(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,gsl_vector *pos,int atom);
 int conj_prob_init_n(gsl_matrix *incov12, double *conj_dens12,gsl_matrix *cov12cp,int atom);
 float rmsd_yes_eigen(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all,gsl_matrix *evec);
-float rmsd_yes_covar(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,struct pdb_atom *all_init,int all,gsl_matrix *covar,gsl_matrix *sub_covar);
+float rmsd_yes_covar(struct pdb_atom *init,struct pdb_atom *targ,int atom, int *align,gsl_matrix *covar,gsl_matrix *sub_covar);
 void rotate_eigen(gsl_matrix *rota,gsl_matrix *evec,int all);
 void translate_strc(struct pdb_atom *init,int all,gsl_vector *trans);
 int node_align(struct pdb_atom *strc,int atom,struct pdb_atom *strc_t,int atom_t, int *align);
@@ -176,6 +176,7 @@ void read_vcon(char filename[100],int atom, struct pdb_atom *strc, gsl_matrix *m
 void print_templaate(struct pdb_atom *newstrc,int atom,gsl_matrix *m,char filename[100],float min,float max);
 double templaate_average(gsl_matrix *m,int atom);
 void all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix *ma, int flag,gsl_matrix *mvcon,gsl_matrix *mint,struct pdb_atom *ca_strc);
+void all_interaction_leStatium(struct pdb_atom *strc,int atom,int res_n, gsl_matrix *ma, int flag,gsl_matrix *mvcon,struct pdb_atom *ca_strc);
 void assign_atom_type(struct pdb_atom *strc,int atom);
 void assign_lig_type(struct pdb_atom *strc, int atom, char inp[500]);
 

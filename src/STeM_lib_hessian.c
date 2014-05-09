@@ -713,12 +713,7 @@ void build_4h_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double epsi
 	
  	gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (nb_atom);
  	gsl_eigen_symmv (m, evl, evc, w);
- 	int i;
- 	for (i =0;i<nb_atom;++i) {
- 		if (gsl_vector_get(evl,i) < 0.00000000000000000) {
- 		//	gsl_vector_set(evl,i,0);
- 		}
- 	}
+ 
  	gsl_eigen_symmv_free (w);
  	gsl_eigen_symmv_sort (evl, evc,GSL_EIGEN_SORT_ABS_ASC);
  	

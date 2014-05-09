@@ -445,7 +445,7 @@ int count_atom(char filename[100]) {
  	for (i=0;i<atom;++i) {
  		CA[all[i].node].mass += all[i].mass;
  	}
- //	for (i=0;i<k+1;++i) {printf("CA I:%d Type:%d Node:%d Atom:%d Type:%s Res num:%d Res Type:%s Con:%d %d %d %d %d %d Cord:%f,%f,%f Mass:%f\n",i,CA[i].atom_type,CA[i].node,CA[i].atom_number,CA[i].atom_prot_type,CA[i].res_number,CA[i].res_type,CA[i].node_c[0],CA[i].node_c[1],CA[i].node_c[2],CA[i].node_c[3],CA[i].node_c[4],CA[i].node_c[5],CA[i].x_cord,CA[i].y_cord,CA[i].z_cord,CA[i].mass);}
+ 	//for (i=0;i<k+1;++i) {printf("CA I:%d Type:%d Node:%d Atom:%d Type:%s Res num:%d Res Type:%s Con:%d %d %d %d %d %d Cord:%f,%f,%f Mass:%f\n",i,CA[i].atom_type,CA[i].node,CA[i].atom_number,CA[i].atom_prot_type,CA[i].res_number,CA[i].res_type,CA[i].node_c[0],CA[i].node_c[1],CA[i].node_c[2],CA[i].node_c[3],CA[i].node_c[4],CA[i].node_c[5],CA[i].x_cord,CA[i].y_cord,CA[i].z_cord,CA[i].mass);}
  	return(k+1);
  
  }
