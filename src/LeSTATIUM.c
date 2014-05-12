@@ -21,7 +21,9 @@ int main(int argc, char *argv[]) {
 	char targ_list[500] = "targ_list.dat";
 	float rmsd_cutoff = 4.0;
 	int constraint_flag = 1;
-	int  ipos = 298;
+	int  ipos = -1;
+	char posname[100] = "UNK";
+	int posnum = -1;
 	int npair = 2;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
@@ -30,7 +32,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
 		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
 		if (strcmp("-teig",argv[i]) == 0) {strcpy(eigen_name_two,argv[i+1]);}
-		if (strcmp("-pos",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp); ipos = temp;}
+		if (strcmp("-pos",argv[i]) == 0) {strcpy(posname,argv[i+1]);int temp;sscanf(argv[i+2],"%d",&temp); posnum = temp;}
  		if (strcmp("-max_rmsd",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);rmsd_cutoff = temp;}
  		if (strcmp("-size",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp); npair = temp-1;}
 		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
@@ -81,6 +83,16 @@ int main(int argc, char *argv[]) {
 	
 	if (verbose == 1) {printf("	Assign Node:%d\n",atom);}
 	
+	// Cherche la position de la node a analyse
+	
+	for(i=0;i<atom;++i) {
+		if (posnum != strc_node[i].res_number) {continue;}
+		if (strncmp(strc_node[i].res_type,posname,3) != 0) {continue;}	
+		if (ipos == -1) {ipos=i;} else {printf("I match two position\n");return(0);}
+		printf("RESNUMC:%s%d%s\n",strc_node[i].res_type,strc_node[i].res_number,strc_node[i].chain);
+	
+	}
+	if (ipos == -1){return(0);}
 	// Calcul surface en contact
 	gsl_matrix *vcon = gsl_matrix_alloc(all,all);
 	gsl_matrix_set_all(vcon,0);
@@ -206,7 +218,7 @@ int main(int argc, char *argv[]) {
 			//if (bb_sc(i,strc_all,all) != 0) {continue;}
 			if (bb_sc(i,strc_all,all) != 1) {continue;}
 			if (gsl_matrix_get(contact, ipos+1,i)+gsl_matrix_get(contact, ipos+1,i+1) < 5) {continue;}
-			printf("Ori:%d I:%d Template:%f et %f Type:%d\n", ipos+1,i,gsl_matrix_get(contact, ipos+1,i),gsl_matrix_get(contact, ipos+1,i+1),bb_sc(i,strc_all,all));
+			printf("Ori:%d I:%d Template:%f %f Type:%d\n", ipos+1,i,gsl_matrix_get(contact, ipos+1,i),gsl_matrix_get(contact, ipos+1,i+1),bb_sc(i,strc_all,all));
 			align[i] = 1;
 			align[i+1] = 1;
 			init_pair[count] = i;
