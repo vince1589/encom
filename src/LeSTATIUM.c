@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
 	float scale[100];
 	float base;
 	float power;
-	for(power = -5;power<1;++power) {
+	for(power = -4;power<0;++power) {
 		for(base = 0;base<4;++base) {
 			scale[NbScale] = pow(2,base)*pow(10,power);
 			++NbScale;
@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
 	
 	
 	// Look at pair in contact
-	printf("Pair:%d %s%d%s\n", ipos,strc_node[ ipos].res_type,strc_node[ ipos].res_number,strc_node[ ipos].chain);
+	printf("Pair:%d %s%d%s\n", ipos,strc_node[ipos].res_type,strc_node[ipos].res_number,strc_node[ipos].chain);
 	
 	if (bb_sc( ipos,strc_all,all) != 1 && bb_sc( ipos+1,strc_all,all) != 0) {printf("Pair is not backbone\n");return(0);}
 	int count = 0;
@@ -301,7 +301,38 @@ int main(int argc, char *argv[]) {
 	}
 	int myPair;
 	struct pdb_atom strc_node_cpy[atom];
+	
+	// All Scale
+	char allAA[21][4];
+	
+	strcpy(allAA[0],"ALA");
+	strcpy(allAA[1],"LEU");
+	strcpy(allAA[2],"ILE");
+	strcpy(allAA[3],"VAL");
+	strcpy(allAA[4],"GLY");
+	strcpy(allAA[5],"TRP");
+	strcpy(allAA[6],"ARG");
+	strcpy(allAA[7],"GLN");
+	strcpy(allAA[8],"MET");
+	strcpy(allAA[9],"CYS");
+	strcpy(allAA[10],"SER");
+	strcpy(allAA[11],"PHE");
+	strcpy(allAA[12],"GLU");
+	strcpy(allAA[13],"TYR");
+	strcpy(allAA[14],"ASP");
+	strcpy(allAA[15],"THR");
+	strcpy(allAA[16],"LYS");
+	strcpy(allAA[17],"ASN");
+	strcpy(allAA[18],"HIS");
+	strcpy(allAA[19],"PRO");
+	
 	for (myPair=0;myPair<tot_init_pair;++myPair) {
+		double mySum[20][NbScale];
+		for(i=0;i<NbScale;++i) {
+			for(j=0;j<20;++j) {
+				mySum[j][i] = 0;
+			}
+		}
 		int l;
 		for(i=0;i<atom_t/2;++i) {
 			for(j=0;j<npair;++j) {ncount[j] = 0;}
@@ -385,16 +416,13 @@ int main(int argc, char *argv[]) {
 				// On va regarder le RMSD
 				// Reset le align
 				for(j=0;j<atom;++j) {align[j] = -1;}
-				for(j=0;j<atom_t;++j) {align_t[j] = 1;}
 				// Le premier node doit tjrs matcher
-				align[ipos] = i;
-				align[ipos+1] = i+1;
+				align[ipos] = i*2;
+				align[ipos+1] = i*2+1;
 				for(l=0;l<npair;++l) {
 					align[ipair[myPair][(l+1)*2][0]] = ncount[l]*2;
 					align[ipair[myPair][(l+1)*2+1][0]] = ncount[l]*2+1;		
 					
-					align_t[ncount[l]*2] = ipair[myPair][(l+1)*2][0];
-					align_t[ncount[l]*2+1] = ipair[myPair][(l+1)*2+1][0];
 				}
 				// Look at RMSD et si seq peut exister
 			
@@ -402,7 +430,7 @@ int main(int argc, char *argv[]) {
 				
 				for(ItScale=0;ItScale<NbScale;++ItScale) {
 				
-					if (myRmsd > 4) {continue;}
+					if (myRmsd > (2*2)) {continue;}
 				
 			
 					gsl_matrix_memcpy(k_totinv_two,k_totinv_two_cpy);
@@ -420,10 +448,8 @@ int main(int argc, char *argv[]) {
 			
 					
 					copy_strc( strc_node_cpy, strc_node,  atom);
-
 					rmsd_yes_covar(strc_node_cpy,strc_node_t,atom, align,k_totinv,sub_covar);
-					//print_matrix(sub_covar);
-					if (verbose == 1) {printf("\tAdding Two Cross-Correlation Matrix\n");}	
+
 					// Variable importante pour mon inversion
 					gsl_matrix *incov12 = gsl_matrix_alloc(score*3,score*3);
 					double conj_dens12 = 1;
@@ -480,13 +506,29 @@ int main(int argc, char *argv[]) {
 						 conj_dens12 -= 0.5*log(gsl_vector_get (eval_cov, m));
 					}
 					float dens = density_prob_n(incov12, delr, conj_dens12,pos,score*3);
-				
-					printf("%d%s ",strc_node_t[i*2].res_number,strc_node_t[i*2].res_type);for(l=0;l<npair;++l) {printf("%d%s ",strc_node_t[ncount[l]*2].res_number,strc_node_t[ncount[l]*2].res_type);}	
-					printf("et %d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
-					for(l=0;l<npair;++l) {
-						printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);
-					}		
-					printf("%f %.4f %g\n",scale[ItScale],sqrt(myRmsd),dens);
+					
+					
+
+					
+					// Do summation (to reduce output)
+					int added = 0;
+					for(l=0;l<200;++l) {
+						if (strncmp(strc_node_t[i*2].res_type,allAA[l],3) == 0) {
+							//printf("mySum[%d][%d] += %f\n",l,ItScale,dens);
+							mySum[l][ItScale] += dens;
+							++added;
+						}
+					}
+					if (added !=1 && dens!=0) {
+						printf("%d%s ",strc_node_t[i*2].res_number,strc_node_t[i*2].res_type);for(l=0;l<npair;++l) {printf("%d%s ",strc_node_t[ncount[l]*2].res_number,strc_node_t[ncount[l]*2].res_type);}	
+						printf("et %d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
+						for(l=0;l<npair;++l) {
+							printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);
+						}		
+						printf("%f %.4f %g\n",scale[ItScale],sqrt(myRmsd),dens);
+					} 
+
+					
 					gsl_matrix_free(sub_covar);
 					gsl_matrix_free(evec_cov);		
 					gsl_matrix_free(cov12);
@@ -498,6 +540,19 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
+		
+		for(i = 0;i<20;++i) {
+			for(j=0;j<NbScale;++j) {
+				if(mySum[i][j] == 0) {continue;}
+				printf("%d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
+				for(l=0;l<npair;++l) {
+						printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);
+				}		
+				printf("%s %g %g\n",allAA[i],scale[j],mySum[i][j]);
+			}		
+		}
+	//	break;
+		
 	}
 }
 
