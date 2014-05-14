@@ -1025,10 +1025,16 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	gsl_matrix_free(init_v);
  	gsl_matrix_free(targ_v);
  	gsl_matrix_free(mat_v);
-    gsl_vector_free(vec_s);
-  	gsl_vector_free(vec_w);
+  gsl_vector_free(vec_s);
+  gsl_vector_free(evl);
+  
+  gsl_vector_free(vec_w);
  	gsl_matrix_free(rota);
-
+	gsl_matrix_free(super_rota);
+ 	gsl_matrix_free(super_rota_t);
+ 	gsl_matrix_free(evc);
+ 	gsl_matrix_free(temp);
+ 	gsl_matrix_free(prod);
  	
  	return(rmsd/t_atom);
  }
