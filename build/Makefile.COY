@@ -31,7 +31,7 @@ OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_template.o            \
         STeM_lib_vcon.o
 
-all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter get_networks comp_networks AniRMSD AniPair
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter get_networks comp_networks AniRMSD AniPair LeSTATIUM
 	\mv build_encom $W/build_encom
 	\mv b_factor $W/b_factor
 	\mv bfactor_diff $W/bfactor_diff
@@ -52,6 +52,7 @@ all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_p
 	\mv comp_networks $W/comp_networks
 	\mv AniRMSD $W/AniRMSD
 	\mv AniPair $W/AniPair
+	\mv LeSTATIUM $W/LeSTATIUM
 
 clean:
 	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
@@ -100,6 +101,8 @@ AniRMSD: $(OBJ) AniRMSD.o
 	$(CXX) $(OBJ) AniRMSD.o $(LIBS) -o AniRMSD
 AniPair: $(OBJ) AniPair.o
 	$(CXX) $(OBJ) AniPair.o $(LIBS) -o AniPair
+LeSTATIUM: $(OBJ) LeSTATIUM.o
+	$(CXX) $(OBJ) LeSTATIUM.o $(LIBS) -o LeSTATIUM
 
 # Build main()
 cmp_eigen.o: $I/cmp_eigen.c
@@ -144,6 +147,8 @@ AniRMSD.o: $I/AniRMSD.c
 	$(CXX) $(CXXFLAGS) -c $I/AniRMSD.c $(INCLUDES)
 AniPair.o: $I/AniPair.c
 	$(CXX) $(CXXFLAGS) -c $I/AniPair.c $(INCLUDES)
+LeSTATIUM.o: $I/LeSTATIUM.c
+	$(CXX) $(CXXFLAGS) -c $I/LeSTATIUM.c $(INCLUDES)
 
 # Build Source STeM_lib
 

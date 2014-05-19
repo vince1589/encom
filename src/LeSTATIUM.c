@@ -25,9 +25,11 @@ int main(int argc, char *argv[]) {
 	char posname[100] = "UNK";
 	int posnum = -1;
 	int npair = 2;
+	int long_range = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
+ 		if (strcmp("-lr",argv[i]) == 0) {long_range = 1;}
  		if (strcmp("-no_const",argv[i]) == 0) {constraint_flag = 0;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
 		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
@@ -215,6 +217,7 @@ int main(int argc, char *argv[]) {
 	for(i =0;i<atom-1;++i) {
 			if (i ==  ipos+1) {continue;}
 			if (i ==  ipos) {continue;}
+			if (long_range == 1 & abs(i - ipos) < 20) {continue;}
 			//if (bb_sc(i,strc_all,all) != 0) {continue;}
 			if (bb_sc(i,strc_all,all) != 1) {continue;}
 			if (gsl_matrix_get(contact, ipos+1,i)+gsl_matrix_get(contact, ipos+1,i+1) < 5) {continue;}
@@ -427,10 +430,10 @@ int main(int argc, char *argv[]) {
 				// Look at RMSD et si seq peut exister
 			
 				float myRmsd = (rmsd_no(strc_node,strc_node_t,atom, align));
-				
+				if (myRmsd > (rmsd_cutoff*rmsd_cutoff)) {continue;}
 				for(ItScale=0;ItScale<NbScale;++ItScale) {
 				
-					if (myRmsd > (2*2)) {continue;}
+					
 				
 			
 					gsl_matrix_memcpy(k_totinv_two,k_totinv_two_cpy);
@@ -519,8 +522,8 @@ int main(int argc, char *argv[]) {
 							++added;
 						}
 					}
-					if (added !=1 && dens!=0) {
-						printf("%d%s ",strc_node_t[i*2].res_number,strc_node_t[i*2].res_type);for(l=0;l<npair;++l) {printf("%d%s ",strc_node_t[ncount[l]*2].res_number,strc_node_t[ncount[l]*2].res_type);}	
+					if (verbose == 1 && dens!=0) {
+						printf("%d %d%s ",added,strc_node_t[i*2].res_number,strc_node_t[i*2].res_type);for(l=0;l<npair;++l) {printf("%d%s ",strc_node_t[ncount[l]*2].res_number,strc_node_t[ncount[l]*2].res_type);}	
 						printf("et %d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
 						for(l=0;l<npair;++l) {
 							printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);
