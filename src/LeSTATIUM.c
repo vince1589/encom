@@ -172,18 +172,12 @@ int main(int argc, char *argv[]) {
 	
 	int align_t[atom_t];
 	//inv_mat_align(k_totinv_two,atom_t,eval_two,evec_two,0,atom_t*3,align_t);
-	k_cov_inv_matrix_stem(k_totinv_two,atom_t,eval_two,evec_two,6,atom_t*3); // Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. 
+	//k_cov_inv_matrix_stem(k_totinv_two,atom_t,eval_two,evec_two,6,atom_t*3); // Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. 
 	
-	gsl_matrix *k_totinv = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
-	gsl_matrix *k_totinv_cpy = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
-	gsl_matrix *done = gsl_matrix_alloc(atom*3, atom*3);
-	gsl_matrix_set_all(k_totinv, 0);
-	gsl_matrix_set_all(done, -1);
-	//inv_mat_align(k_totinv,atom,eval,evec,0,atom*3,align,done); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
-	k_cov_inv_matrix_stem(k_totinv,atom,eval,evec,0,atom*3);
+
 	// Copy la matrice
 	gsl_matrix_memcpy (k_totinv_two_cpy,k_totinv_two);
-	gsl_matrix_memcpy (k_totinv_cpy,k_totinv);
+
 	
 	
 	// Set the scale
@@ -211,13 +205,14 @@ int main(int argc, char *argv[]) {
 	int init_sele[100]; // Si le residus de la pair mater
 	
 	int align[atom]; // Aussi on va les store dans align pour l'inversement
-	for(i=0;i<atom;++i) {align[i] = 1;}
-	
+	for(i=0;i<atom;++i) {align[i] = -1;}
+	align[ipos] = 1;
+	align[ipos+1] = 1;
 	
 	for(i =0;i<atom-1;++i) {
 			if (i ==  ipos+1) {continue;}
 			if (i ==  ipos) {continue;}
-			if (long_range == 1 & abs(i - ipos) < 20) {continue;}
+			if (long_range == 1 && abs(i - ipos) < 20) {continue;}
 			//if (bb_sc(i,strc_all,all) != 0) {continue;}
 			if (bb_sc(i,strc_all,all) != 1) {continue;}
 			if (gsl_matrix_get(contact, ipos+1,i)+gsl_matrix_get(contact, ipos+1,i+1) < 5) {continue;}
@@ -237,6 +232,18 @@ int main(int argc, char *argv[]) {
 	for (i =0;i<count;++i) {
 		printf("I:%d %d %d\n",i,init_pair[i],init_sele[i]);
 	}
+	
+	//Inverse les premiers Evec
+	
+	gsl_matrix *k_totinv = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
+	gsl_matrix *k_totinv_cpy = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
+	gsl_matrix *done = gsl_matrix_alloc(atom*3, atom*3);
+	gsl_matrix_set_all(k_totinv, 0);
+	gsl_matrix_set_all(done, -1);
+	inv_mat_align(k_totinv,atom,eval,evec,0,atom*3,align,done); /* Génère une matrice contenant les superéléments diagonaux de la pseudo-inverse. */
+	//k_cov_inv_matrix_stem(k_totinv,atom,eval,evec,0,atom*3);
+	gsl_matrix_memcpy (k_totinv_cpy,k_totinv);
+	
 	
 	// Bon il faut dequoi pour builder les pair, triplet, whatever
 	
@@ -418,6 +425,7 @@ int main(int argc, char *argv[]) {
 			
 				// On va regarder le RMSD
 				// Reset le align
+				
 				for(j=0;j<atom;++j) {align[j] = -1;}
 				// Le premier node doit tjrs matcher
 				align[ipos] = i*2;
@@ -431,6 +439,16 @@ int main(int argc, char *argv[]) {
 			
 				float myRmsd = (rmsd_no(strc_node,strc_node_t,atom, align));
 				if (myRmsd > (rmsd_cutoff*rmsd_cutoff)) {continue;}
+				
+				// Inverse la portion de targ si pas deja fait
+				//k_cov_inv_matrix_stem(k_totinv_two,atom_t,eval_two,evec_two,6,atom_t*3);
+				for(j=0;j<atom_t;++j) {align_t[j] = -1;}
+				for(j=0;j<atom;++j) {
+					if (align[j] == -1) {continue;}
+					align_t[align[j]] = j;
+				}
+				inv_mat_align(k_totinv_two_cpy,atom_t,eval_two,evec_two,6,atom_t*3,align_t,done_two);
+				
 				for(ItScale=0;ItScale<NbScale;++ItScale) {
 				
 					
@@ -547,13 +565,14 @@ int main(int argc, char *argv[]) {
 		for(i = 0;i<20;++i) {
 			for(j=0;j<NbScale;++j) {
 				if(mySum[i][j] == 0) {continue;}
-				printf("%d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
+				printf("SUM: %d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
 				for(l=0;l<npair;++l) {
 						printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);
 				}		
 				printf("%s %g %g\n",allAA[i],scale[j],mySum[i][j]);
 			}		
 		}
+	//	return(0);
 	//	break;
 		
 	}
@@ -591,14 +610,15 @@ int bb_sc(int node,struct pdb_atom *strc,int all) {
 
 void inv_mat_align(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm,int *align,gsl_matrix *done) {
 	//gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
-	gsl_matrix_set_all (m, 0);
+	//gsl_matrix_set_all (m, 0);
 	int i,j,k;
 	 
 	for (i=0;i<nb_atom*3;++i)	{
 		if (align[i/3] == -1) {continue;}
+		//printf("I:%d / 3 = %d -> align -> %d\n",i, i/3,align[i/3]);
 		for (j=0;j<nb_atom*3;++j) {
 			if (align[j/3] == -1) {continue;}
-			//if (gsl_matrix_get(done, i,j) > 0) {continue;}
+			if (gsl_matrix_get(done, i,j) > 0) {continue;}
 			//printf("I:%d J:%d\n",i,j);
 			for (k=mode;k<mode+nm;++k) {
 				if (k > int (evl->size-1)) {break;}
