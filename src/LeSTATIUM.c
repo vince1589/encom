@@ -26,10 +26,14 @@ int main(int argc, char *argv[]) {
 	int posnum = -1;
 	int npair = 2;
 	int long_range = 0;
+	int design = 0;
+	int no_bb = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
  		if (strcmp("-lr",argv[i]) == 0) {long_range = 1;}
+ 		if (strcmp("-design",argv[i]) == 0) {design = 1;}
+ 		if (strcmp("-no_bb",argv[i]) == 0) {no_bb = 1;}
  		if (strcmp("-no_const",argv[i]) == 0) {constraint_flag = 0;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
 		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
@@ -220,11 +224,12 @@ int main(int argc, char *argv[]) {
 			align[i] = 1;
 			align[i+1] = 1;
 			init_pair[count] = i;
-			if (gsl_matrix_get(contact, ipos+1,i+1) < 5) {
+			if (gsl_matrix_get(contact, ipos+1,i+1) < 5 && no_bb == 0) {
 				init_sele[count] = 0;
 			} else {
 				init_sele[count] = 1;
 			}
+			if (abs(i - ipos) < 20 && init_sele[count] == 1 && design == 1) {init_sele[count] = 2;}
 			++count;
 			//if (count > 4) {break;}
 	}
@@ -295,6 +300,37 @@ int main(int argc, char *argv[]) {
 		}
 		if (ncount[0] > count-npair) {break;}
 		if (long_range == 1 && lrp == 0) {continue;}
+		
+		// Regarde si une des paires fait partie du intra-peptide, si oui, il va falloir calculer pour chaque
+		for(j=0;j<npair;++j) {
+			printf("%d%s%d ",strc_node[ipair[i][(j+1)*2][0]].res_number,strc_node[ipair[i][(j+1)*2][0]].res_type,ipair[i][(j+1)*2][1]);
+			// Si j'ai une paire qui est de type 2, je vais en refaire plein, le seul problème, c est si j en ai plusieurs de type 2...
+			// Va commencer comme si j en avais juste une... future Vince and futur LeStatium will figure this out
+			if (ipair[i][(j+1)*2][1] == 2 && design == 1) {
+				int old_i = i;
+				// Va falloir refaire les paires, mais varier cette position là
+				for(k=0;k<20;++k) {
+					int p;
+					ipair[i][0][0] = ipos;
+					ipair[i][1][0] = ipos+1;
+					for(p=0;p<npair;++p) {
+						ipair[i][(p+1)*2][0] =   ipair[old_i][(p+1)*2][0];
+						ipair[i][(p+1)*2][1] =   ipair[old_i][(p+1)*2][1];
+						ipair[i][(p+1)*2+1][0] = ipair[old_i][(p+1)*2+1][0];
+						ipair[i][(p+1)*2+1][1] = ipair[old_i][(p+1)*2+1][1];
+						if (ipair[old_i][(p+1)*2][1] == 2) {
+							ipair[i][(p+1)*2][1] = 2+k;
+							ipair[i][(p+1)*2+1][1] = 2+k;
+						}
+					}
+					
+					if (k != 19) {++i;}
+				}
+				break;
+			}
+		
+		}
+		printf("\n");
 		++i;
 	}	
 	printf("My Init strc have:%d pair\n",i);
@@ -360,7 +396,7 @@ int main(int argc, char *argv[]) {
 		}
 		printf("\n");
 		
-		
+		//continue;
 		for(i=0;i<atom_t/2;++i) {
 			for(j=0;j<npair;++j) {ncount[j] = 0;}
 			int k;
@@ -397,7 +433,7 @@ int main(int argc, char *argv[]) {
 				int seq = 0;
 				for(l=0;l<npair;++l) {
 					if (seq != 0) {break;}
-					//printf("		L:%d -> %d Init_seq:%s vs Targ_seq:%s\n",l,ncount[l]*2,strc_node[ipair[myPair][(l+1)*2][0]].res_type,strc_node_t[ncount[l]*2].res_type);
+					
 					if (ipair[myPair][(l+1)*2][1] == 1) {
 						if (strncmp(strc_node[ipair[myPair][(l+1)*2][0]].res_type,strc_node_t[ncount[l]*2].res_type,3) != 0) {
 							if (l != npair-1) {++ncount[l];}
@@ -407,6 +443,16 @@ int main(int argc, char *argv[]) {
 							++seq;
 						}
 					
+					}
+					if (ipair[myPair][(l+1)*2][1] > 1) {
+					//	printf("		L:%d -> %d Init_seq:%s vs Targ_seq:%s\n",l,ncount[l]*2,allAA[ipair[myPair][(l+1)*2][1]-2],strc_node_t[ncount[l]*2].res_type);
+						if (strncmp(allAA[ipair[myPair][(l+1)*2][1]-2],strc_node_t[ncount[l]*2].res_type,3) != 0) {
+							if (l != npair-1) {++ncount[l];}
+							for(m=l+1;m<npair;++m) {
+								ncount[m] = 0;
+							}
+							++seq;
+						}
 					}
 			
 				}
@@ -584,7 +630,14 @@ int main(int argc, char *argv[]) {
 				if(mySum[i][j] == 0) {continue;}
 				printf("SUM: %d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
 				for(l=0;l<npair;++l) {
-						printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);
+					if (ipair[myPair][(l+1)*2][1] > 1) {
+						printf("%d%s2/%s ",
+							strc_node[ipair[myPair][(l+1)*2][0]].res_number,
+							strc_node[ipair[myPair][(l+1)*2][0]].res_type,
+							allAA[ipair[myPair][(l+1)*2][1]-2]
+						);
+					} else {
+						printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);			}
 				}		
 				printf("%s %g %g\n",allAA[i],scale[j],mySum[i][j]);
 			}		
