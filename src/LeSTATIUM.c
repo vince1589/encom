@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
 	for(i =0;i<atom-1;++i) {
 			if (i ==  ipos+1) {continue;}
 			if (i ==  ipos) {continue;}
-			if (long_range == 1 && abs(i - ipos) < 20) {continue;}
+			//if (long_range == 1 && abs(i - ipos) < 20) {continue;}
 			//if (bb_sc(i,strc_all,all) != 0) {continue;}
 			if (bb_sc(i,strc_all,all) != 1) {continue;}
 			if (gsl_matrix_get(contact, ipos+1,i)+gsl_matrix_get(contact, ipos+1,i+1) < 5) {continue;}
@@ -250,10 +250,13 @@ int main(int argc, char *argv[]) {
 	int ipair[10000][(npair+1)*2][2];for(i=0;i<10000;++i){for(j=0;j<(npair+1)*2;++j) {ipair[i][j][0] = -1;ipair[i][j][1] = -1;}}
 	int ncount[npair];for(j=0;j<npair;++j) {ncount[j] = j;}
 	printf("\n");
-	for(i=0;i<10000;++i) {
+	i = 0;
+	
+	while(1) {
 	
 		// Populate ipair
 		// ipos (position a muter)
+		int lrp = 0;
 		ipair[i][0][0] = ipos;
 		ipair[i][1][0] = ipos+1;
 		for(j=0;j<npair;++j) {
@@ -263,8 +266,9 @@ int main(int argc, char *argv[]) {
 			ipair[i][(j+1)*2+1][1] = init_sele[ncount[j]];
 			//printf("ipair[%d][%d][0] = %d\n",i,(j+1)*2,init_pair[ncount[j]]);
 			//printf("ipair[%d][%d][0] = %d\n",i,(j+1)*2+1,1+init_pair[ncount[j]]);
+			if (abs(init_pair[ncount[j]] - ipos) > 20) {lrp += 1;}
 			//printf("%d ",init_pair[ncount[j]]);
-		}		//printf("\n");
+		}	//	printf("\n");
 		
 		// Non-redundant pair
 		ncount[npair-1] += 1;
@@ -289,8 +293,9 @@ int main(int argc, char *argv[]) {
 			}
 			
 		}
-		//printf("\t%d > %d et %d\n",ncount[0], count-npair,ncount[npair-1]);
 		if (ncount[0] > count-npair) {break;}
+		if (long_range == 1 && lrp == 0) {continue;}
+		++i;
 	}	
 	printf("My Init strc have:%d pair\n",i);
 	int tot_init_pair = i;
@@ -344,6 +349,18 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		int l;
+		int seq_skip = 0;
+		int red_skip = 0;
+		int rms_skip = 0;
+		int dis_skip = 0;
+		
+		printf("I do: %d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
+		for(l=0;l<npair;++l) {
+				printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);
+		}
+		printf("\n");
+		
+		
 		for(i=0;i<atom_t/2;++i) {
 			for(j=0;j<npair;++j) {ncount[j] = 0;}
 			int k;
@@ -374,7 +391,7 @@ int main(int argc, char *argv[]) {
 					}
 					if(redun != 0) {break;}
 				}
-				if (redun != 0) {continue;}
+				if (redun != 0) {++red_skip;continue;}
 			
 				// Va regarder si respecte sequence
 				int seq = 0;
@@ -394,7 +411,7 @@ int main(int argc, char *argv[]) {
 			
 				}
 			
-				if (seq != 0) {continue;}
+				if (seq != 0) {++seq_skip;continue;}
 			
 			
 			
@@ -418,7 +435,7 @@ int main(int argc, char *argv[]) {
 					}
 					if (dist_flag != 0) {break;}
 				}
-				if (dist_flag != 0) {continue;}
+				if (dist_flag != 0) {++dis_skip;continue;}
 			
 			
 			
@@ -438,7 +455,7 @@ int main(int argc, char *argv[]) {
 				// Look at RMSD et si seq peut exister
 			
 				float myRmsd = (rmsd_no(strc_node,strc_node_t,atom, align));
-				if (myRmsd > (rmsd_cutoff*rmsd_cutoff)) {continue;}
+				if (myRmsd > (rmsd_cutoff*rmsd_cutoff)) {++rms_skip;continue;}
 				
 				// Inverse la portion de targ si pas deja fait
 				//k_cov_inv_matrix_stem(k_totinv_two,atom_t,eval_two,evec_two,6,atom_t*3);
@@ -561,7 +578,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
-		
+		printf("Red_skip:%d Seq_skip:%d Dis_skip:%d Rms_skip:%d\n",red_skip,seq_skip,dis_skip,rms_skip);
 		for(i = 0;i<20;++i) {
 			for(j=0;j<NbScale;++j) {
 				if(mySum[i][j] == 0) {continue;}
