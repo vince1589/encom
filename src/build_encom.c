@@ -215,10 +215,12 @@ int main(int argc, char *argv[]) {
 		
    for (i=0;i<atom;++i) {
 			for (j=i;j<atom;++j) {
-				printf("%d %d %f\n",i+1,j+1,gsl_matrix_get(k_inverse,i,j)*1000);
+				printf("COV: %d %d %s%d%s %s%d%s %f\n",i,j,strc_node[i].res_type,strc_node[i].res_number,strc_node[i].chain,
+																	  strc_node[j].res_type,strc_node[j].res_number,strc_node[j].chain
+				,gsl_matrix_get(k_inverse,i,j)*1000);
 			}	
 		}
-		
+	
 		printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
 		gsl_matrix_free(k_inverse);
 	}
