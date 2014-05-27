@@ -28,10 +28,12 @@ int main(int argc, char *argv[]) {
 	int long_range = 0;
 	int design = 0;
 	int no_bb = 0;
+	int non_local = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
  		if (strcmp("-lr",argv[i]) == 0) {long_range = 1;}
+ 		if (strcmp("-nl",argv[i]) == 0) {non_local = 1;}
  		if (strcmp("-design",argv[i]) == 0) {design = 1;}
  		if (strcmp("-no_bb",argv[i]) == 0) {no_bb = 1;}
  		if (strcmp("-no_const",argv[i]) == 0) {constraint_flag = 0;}
@@ -191,8 +193,9 @@ int main(int argc, char *argv[]) {
 	float scale[100];
 	float base;
 	float power;
-	for(power = -4;power<0;++power) {
+	for(power = -3;power<0;++power) {
 		for(base = 0;base<4;++base) {
+			if (pow(2,base)*pow(10,power) > 0.011) {continue;}
 			scale[NbScale] = pow(2,base)*pow(10,power);
 			++NbScale;
 		}
@@ -216,7 +219,7 @@ int main(int argc, char *argv[]) {
 	for(i =0;i<atom-1;++i) {
 			if (i ==  ipos+1) {continue;}
 			if (i ==  ipos) {continue;}
-			//if (long_range == 1 && abs(i - ipos) < 20) {continue;}
+			if (non_local == 1 && abs(i - ipos) < 20) {continue;}
 			//if (bb_sc(i,strc_all,all) != 0) {continue;}
 			if (bb_sc(i,strc_all,all) != 1) {continue;}
 			if (gsl_matrix_get(contact, ipos+1,i)+gsl_matrix_get(contact, ipos+1,i+1) < 5) {continue;}
