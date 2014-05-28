@@ -236,11 +236,7 @@ int main(int argc, char *argv[]) {
 			++count;
 			//if (count > 4) {break;}
 	}
-	
-	for (i =0;i<count;++i) {
-		printf("I:%d %d %d\n",i,init_pair[i],init_sele[i]);
-	}
-	
+		
 	//Inverse les premiers Evec
 	
 	gsl_matrix *k_totinv = gsl_matrix_alloc(atom*3, atom*3); /* Déclare et crée une matrice qui va être le pseudo inverse */
@@ -258,10 +254,10 @@ int main(int argc, char *argv[]) {
 	int ipair[10000][(npair+1)*2][2];for(i=0;i<10000;++i){for(j=0;j<(npair+1)*2;++j) {ipair[i][j][0] = -1;ipair[i][j][1] = -1;}}
 	int ncount[npair];for(j=0;j<npair;++j) {ncount[j] = j;}
 	printf("\n");
-	i = 0;
-	
+	i = -1;
+	if (count < npair) {printf("Not enough amino acid for the size\n");return(0);}
 	while(1) {
-	
+		++i;
 		// Populate ipair
 		// ipos (position a muter)
 		int lrp = 0;
@@ -272,16 +268,14 @@ int main(int argc, char *argv[]) {
 			ipair[i][(j+1)*2+1][0] = init_pair[ncount[j]]+1;
 			ipair[i][(j+1)*2][1] = init_sele[ncount[j]];
 			ipair[i][(j+1)*2+1][1] = init_sele[ncount[j]];
-			//printf("ipair[%d][%d][0] = %d\n",i,(j+1)*2,init_pair[ncount[j]]);
-			//printf("ipair[%d][%d][0] = %d\n",i,(j+1)*2+1,1+init_pair[ncount[j]]);
 			if (abs(init_pair[ncount[j]] - ipos) > 20) {lrp += 1;}
-			//printf("%d ",init_pair[ncount[j]]);
-		}	//	printf("\n");
+			printf("%d ",init_pair[ncount[j]]);
+		}		printf("\n");
 		
 		// Non-redundant pair
 		ncount[npair-1] += 1;
 		//
-		//int l;printf("\t");for(l=0;l<npair;++l) {printf("%d ",ncount[l]);}		printf("\n");
+	//	int l;printf("\t");for(l=0;l<npair;++l) {printf("%d ",ncount[l]);}		printf("\n");
 		int k;
 		for (j=1;j<npair;++j) {
 			if (ncount[npair-j] > count-j) {
@@ -302,7 +296,7 @@ int main(int argc, char *argv[]) {
 			
 		}
 		if (ncount[0] > count-npair) {break;}
-		if (long_range == 1 && lrp == 0) {continue;}
+		if (long_range == 1 && lrp == 0) {--i;continue;}
 		
 		// Regarde si une des paires fait partie du intra-peptide, si oui, il va falloir calculer pour chaque
 		for(j=0;j<npair;++j) {
@@ -334,10 +328,10 @@ int main(int argc, char *argv[]) {
 		
 		}
 		printf("\n");
-		++i;
-	}	
+	}
+	int tot_init_pair = i+1;
 	printf("My Init strc have:%d pair\n",i);
-	int tot_init_pair = i;
+
 	// Bon j'ai toute mes pair,cluster, non-redundant dans init_pair et savoir s'il sont amino acid type dependant
 	
 
