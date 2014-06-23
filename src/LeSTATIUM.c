@@ -193,10 +193,12 @@ int main(int argc, char *argv[]) {
 	float scale[100];
 	float base;
 	float power;
-	for(power = -3;power<0;++power) {
+	for(power = -3;power<2;++power) {
 		for(base = 0;base<4;++base) {
-			if (pow(2,base)*pow(10,power) > 0.011) {continue;}
+			if (pow(2,base)*pow(10,power) > 0.9) {continue;}
+			if (pow(2,base)*pow(10,power) < 0.005) {continue;}
 			scale[NbScale] = pow(2,base)*pow(10,power);
+			printf("Scale:%f\n",pow(2,base)*pow(10,power));
 			++NbScale;
 		}
 	}
@@ -618,6 +620,7 @@ int main(int argc, char *argv[]) {
 					gsl_vector_free(eval_cov);
 					gsl_vector_free(pos);
 					gsl_vector_free(delr);
+					if (dens == 0) {break;}
 				}
 			}
 		}
