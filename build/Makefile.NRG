@@ -16,9 +16,17 @@ CXX = g++
 
 CXXFLAGS = -Wall -O3
 
+#INCLUDES = -I/home/vfrap/gsl_path/lib/
+#INCLUDES = -I/usr/lib/ -I/home/vfrap/gsl_path/lib/
+
+#LIBS = -lgsl -lgslcblas -lm -L/home/vfrap/gsl_path/lib
+#LIBS = -lgsl -lgslcblas -lm -L/usr/include/gsl -L/home/vfrap/gsl_path/lib
+
 INCLUDES = -I/share/apps/gsl/include/
 
 LIBS = -lgsl -lgslcblas -lm -L/share/apps/gsl/lib/
+
+
 
 OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_hessian.o                 \
@@ -29,7 +37,7 @@ OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_template.o            \
         STeM_lib_vcon.o
 
-all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter AniRMSD
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter get_networks comp_networks AniRMSD AniPair LeSTATIUM
 	\mv build_encom $W/build_encom
 	\mv b_factor $W/b_factor
 	\mv bfactor_diff $W/bfactor_diff
@@ -46,7 +54,11 @@ all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_p
 	\mv AniCleft $W/AniCleft
 	\mv build_gauss $W/build_gauss
 	\mv find_inter $W/find_inter
+	\mv get_networks $W/get_networks
+	\mv comp_networks $W/comp_networks
 	\mv AniRMSD $W/AniRMSD
+	\mv AniPair $W/AniPair
+	\mv LeSTATIUM $W/LeSTATIUM
 
 clean:
 	\rm -f $W/build_encom core *~ $I/*~ $W/*~ *.o a.out
@@ -87,8 +99,16 @@ build_gauss: $(OBJ) build_gauss.o
 	$(CXX) $(OBJ) build_gauss.o $(LIBS) -o build_gauss
 find_inter: $(OBJ) find_inter.o
 	$(CXX) $(OBJ) find_inter.o $(LIBS) -o find_inter
+get_networks: $(OBJ) get_networks.o
+	$(CXX) $(OBJ) get_networks.o $(LIBS) -o get_networks
+comp_networks: $(OBJ) comp_networks.o
+	$(CXX) $(OBJ) comp_networks.o $(LIBS) -o comp_networks
 AniRMSD: $(OBJ) AniRMSD.o
 	$(CXX) $(OBJ) AniRMSD.o $(LIBS) -o AniRMSD
+AniPair: $(OBJ) AniPair.o
+	$(CXX) $(OBJ) AniPair.o $(LIBS) -o AniPair
+LeSTATIUM: $(OBJ) LeSTATIUM.o
+	$(CXX) $(OBJ) LeSTATIUM.o $(LIBS) -o LeSTATIUM
 
 # Build main()
 cmp_eigen.o: $I/cmp_eigen.c
@@ -125,8 +145,16 @@ build_gauss.o: $I/build_gauss.c
 	$(CXX) $(CXXFLAGS) -c $I/build_gauss.c $(INCLUDES)
 find_inter.o: $I/find_inter.c
 	$(CXX) $(CXXFLAGS) -c $I/find_inter.c $(INCLUDES)
+get_networks.o: $I/get_networks.c
+	$(CXX) $(CXXFLAGS) -c $I/get_networks.c $(INCLUDES)
+comp_networks.o: $I/comp_networks.c
+	$(CXX) $(CXXFLAGS) -c $I/comp_networks.c $(INCLUDES)
 AniRMSD.o: $I/AniRMSD.c
 	$(CXX) $(CXXFLAGS) -c $I/AniRMSD.c $(INCLUDES)
+AniPair.o: $I/AniPair.c
+	$(CXX) $(CXXFLAGS) -c $I/AniPair.c $(INCLUDES)
+LeSTATIUM.o: $I/LeSTATIUM.c
+	$(CXX) $(CXXFLAGS) -c $I/LeSTATIUM.c $(INCLUDES)
 
 # Build Source STeM_lib
 

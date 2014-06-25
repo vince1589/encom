@@ -197,7 +197,6 @@ int main(int argc, char *argv[]) {
 	float ener = calc_energy(atom,eval,temperature);
 	printf("Energy:%10.8f\n",ener);
 	printf("Energy/node:%10.8f\n",ener/(float)(atom*3));
-	
 	if(invert_hessian == 1)
 	{
 		gsl_matrix *k_totinv = gsl_matrix_alloc(3*atom, 3*atom);
@@ -208,7 +207,8 @@ int main(int argc, char *argv[]) {
 		
 		write_matrix(ihess_name,k_totinv,3*(atom-lig),3*(atom-lig));
 	}
-	else
+	int covariance_flag = 0;
+	if (covariance_flag == 1) 
 	{
 		gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom); /*Déclare et crée une matrice qui va être le pseudo inverse*/
 		k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3-6);
@@ -224,7 +224,6 @@ int main(int argc, char *argv[]) {
 		printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
 		gsl_matrix_free(k_inverse);
 	}
-	
 	gsl_matrix_free(templaate);
 	gsl_matrix_free(inter_m);
 	gsl_matrix_free(vcon);
