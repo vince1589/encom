@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
 	int invert_hessian = 0;
 	char ihess_name[500];
 	int no_write = 0;
+	int covariance_flag = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-inp",argv[i]) == 0) {strcpy(inputname,argv[i+1]);--help_flag;}
@@ -52,6 +53,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-ihes",argv[i]) == 0) {strcpy(ihess_name,argv[i+1]);++invert_hessian;}
  		if (strcmp("-pt",argv[i]) == 0) {print_template = 1;}
  		if (strcmp("-no",argv[i]) == 0) {no_write = 1;}
+ 		if (strcmp("-cov",argv[i]) == 0) {covariance_flag = 1;}
  		
  	}
  	
@@ -207,7 +209,7 @@ int main(int argc, char *argv[]) {
 		
 		write_matrix(ihess_name,k_totinv,3*(atom-lig),3*(atom-lig));
 	}
-	int covariance_flag = 0;
+	
 	if (covariance_flag == 1) 
 	{
 		gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom); /*Déclare et crée une matrice qui va être le pseudo inverse*/
@@ -215,6 +217,7 @@ int main(int argc, char *argv[]) {
 		
    for (i=0;i<atom;++i) {
 			for (j=i;j<atom;++j) {
+				if (i != j) {continue;}
 				printf("COV: %d %d %s%d%s %s%d%s %f\n",i,j,strc_node[i].res_type,strc_node[i].res_number,strc_node[i].chain,
 																	  strc_node[j].res_type,strc_node[j].res_number,strc_node[j].chain
 				,gsl_matrix_get(k_inverse,i,j)*1000);

@@ -484,6 +484,7 @@ for(i=0; i < nb_atom_1; ++i) {
 		{
  			for (j=0;j<nb_atom;++j) 
 			{
+				if (i != j) {continue;}
 		 		for (l=0;l<3;++l) 
 				{	
 			 			gsl_matrix_set(m,i,j,
