@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
  	if (verbose == 1) {printf("Score: %d/%d\n",score,atom);}
 	//if (atom_t != atom) {printf("Not the same number of Node... Terminating\n");return(0);}
 	
-	if (score/atom < 0.8) {
+	if ((float)score/(float)atom < 0.8) {
  		printf("Low Score... Will try an homemade alignement !!!\n");
  		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
  		
