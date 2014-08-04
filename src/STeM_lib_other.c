@@ -172,7 +172,7 @@ void load_eigen_grid(gsl_vector *v,gsl_matrix *m,char filename[100],int atom, in
  	fclose(file);
 }
 
-void write_grid_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1) {
+void write_grid_mat(char filename[500], gsl_matrix *m,int nb_atom,int nb_atom_1) {
  	FILE *out_file;
  	out_file = fopen(filename,"w"); 	
 	int i,j;
@@ -187,7 +187,7 @@ void write_grid_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1)
  
  }
  
- void write_eigen_mat(char filename[100], gsl_matrix *m,int nb_atom,int nb_atom_1,int mode, int nbr_mode) {
+ void write_eigen_mat(char filename[500], gsl_matrix *m,int nb_atom,int nb_atom_1,int mode, int nbr_mode) {
  	FILE *out_file;
  	out_file = fopen(filename,"w"); 	
 	 int i,j;
@@ -647,8 +647,9 @@ float calc_energy(int atom,gsl_vector *eval,float t) {
 	double k = 1.3806503 *pow(10,-23);
 	double R= 8.31447;
 	double sum = 0.000000000;
-	for (i = 6;i<atom;++i) {
+	for (i = 6;i<atom*3;++i) {
 		v = gsl_vector_get(eval,i);
+		//printf("V:%f\n",v);
 		power = pow(e,-h*v/(k*t));
 		ental += 0.5*Na*h*v+(Na*h*v*power)/(1-power);
 		

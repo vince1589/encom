@@ -17,11 +17,11 @@ void mode_switching(gsl_vector *eval,gsl_matrix *evec,int atom1,int atom2,int *m
 	int all; /*Nombre d'atomes dans pdb*/
 	int atom; /*Nombre de carbone CA*/
  	int help_flag = 1;
- 	char file_name[100];
- 	char eigen_name[100] = "eigen.dat";
- 	char grid_name[100] = "grid_motion.pdb";
- 	char out_name[100] = "grid.dat";
- 	char eigen_grid[100] = "eigen_grid.dat";
+ 	char file_name[500];
+ 	char eigen_name[500] = "eigen.dat";
+ 	char grid_name[500] = "grid_motion.pdb";
+ 	char out_name[500] = "grid.dat";
+ 	char eigen_grid[500] = "eigen_grid.dat";
  	int verbose = 0;
 	int nbr_mode = 2;
  	float resolution = 0.5;
