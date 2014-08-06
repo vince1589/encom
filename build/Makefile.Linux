@@ -29,7 +29,7 @@ OBJ =   STeM_lib_grid_motion.o                   \
         STeM_lib_template.o            \
         STeM_lib_vcon.o
 
-all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob find_rel anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter get_networks comp_networks AniRMSD AniPair LeSTATIUM
+all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_prob anm cmp_eigen fit_gauss cmp_anisou AniCleft build_gauss find_inter get_networks comp_networks AniRMSD AniPair LeSTATIUM
 	\mv build_encom $W/build_encom
 	\mv b_factor $W/b_factor
 	\mv bfactor_diff $W/bfactor_diff
@@ -38,7 +38,6 @@ all: build_encom b_factor bfactor_diff build_grid_rmsd fit_svd motion rmsd fit_p
 	\mv motion $W/motion
 	\mv rmsd $W/rmsd
 	\mv fit_prob $W/fit_prob
-	\mv find_rel $W/find_rel
 	\mv anm $W/anm
 	\mv cmp_eigen $W/cmp_eigen
 	\mv fit_gauss $W/fit_gauss
@@ -59,8 +58,6 @@ clean:
 # Linking / Create executable
 cmp_eigen: $(OBJ) cmp_eigen.o
 	$(CXX) $(OBJ) cmp_eigen.o $(LIBS) -o cmp_eigen
-find_rel: $(OBJ) find_rel.o
-	$(CXX) $(OBJ) find_rel.o $(LIBS) -o find_rel
 fit_prob: $(OBJ) fit_prob.o
 	$(CXX) $(OBJ) fit_prob.o $(LIBS) -o fit_prob
 build_encom: $(OBJ) build_encom.o
@@ -107,8 +104,6 @@ cmp_eigen.o: $I/cmp_eigen.c
 	$(CXX) $(CXXFLAGS) -c $I/cmp_eigen.c $(INCLUDES)
 anm.o: $I/anm.c
 	$(CXX) $(CXXFLAGS) -c $I/anm.c $(INCLUDES)
-find_rel.o: $I/find_rel.c
-	$(CXX) $(CXXFLAGS) -c $I/find_rel.c $(INCLUDES)
 fit_prob.o: $I/fit_prob.c
 	$(CXX) $(CXXFLAGS) -c $I/fit_prob.c $(INCLUDES)
 build_encom.o: $I/build_encom.c

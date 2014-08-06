@@ -9,8 +9,8 @@ int main(int argc, char *argv[])
 	
  	int help_flag = 1;
  	char file_name[500];
-	char matrix_name[500];
  	char check_name[500];
+ 	char matrix_name[500];
 	int print_inter = 0;
 	int print_inter_t = 0;
  	char out_name[500];

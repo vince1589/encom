@@ -309,7 +309,7 @@ void avg_dist(struct pdb_atom *init,int node,struct pdb_atom *targ,int *align,fl
 			gsl_vector_set(vars2, j, targ[mat].main_vars[j] * scaler);
 		}
 		
-		gsl_vector_set(distances, i, cmp_gauss(anisou1, vars1, anisou2, vars2));
+		gsl_vector_set(distances, i, cmp_gauss(anisou1, vars1, anisou2, vars2, 3));
 		gsl_vector_set(delta_s, i, delta_entro(vars1, vars2, 3));
 
 		gsl_matrix_set(aniso, i, 0, init[i].main_vars[2] / init[i].main_vars[0]);
