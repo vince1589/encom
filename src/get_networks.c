@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 	
 	//***************************************************
 	//*													*
-	//*	Builds a structure contaning information on the initial pdb structure
+	//*	Build a structure contaning information on the initial pdb structure
 	//*													*
 	//***************************************************
 	
@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
 	
 	//***************************************************
 	//*													*
-	//*	Builds connectivity matrix
+	//*	Build connectivity matrix
 	//*													*
 	//***************************************************
 	
@@ -490,7 +490,7 @@ int main(int argc, char *argv[])
 	
 	//***************************************************
 	//*													*
-	//*	Builds network matrix
+	//*	Build network matrix
 	//*													*
 	//***************************************************
 	
@@ -528,7 +528,7 @@ int main(int argc, char *argv[])
 	
 	//***************************************************
 	//*													*
-	//*	Calculates local closeness
+	//*	Calculate local closeness
 	//*													*
 	//***************************************************
 	
