@@ -660,8 +660,8 @@ float calc_energy(int atom,gsl_vector *eval,float t) {
 	printf("Ental contribution:%10.2f\n",ental/1000);
 	printf("Entro contribution:%10.2f\n",t*entro/1000);
 	printf("Ln Summation:%10.2f\n",sum);		
-	
-	return((ental-t*entro)/1000);
+	return(entro);
+	//return((ental-t*entro)/1000);
 }
 
 void assign_anisou_all(struct pdb_atom *init,int atom,struct pdb_atom *strc,int all, int ihess)
