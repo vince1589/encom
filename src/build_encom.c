@@ -67,6 +67,7 @@ int main(int argc, char *argv[]) {
  	//***************************************************
  	
  	all = count_atom(file_name);
+ 	
  	nconn = count_connect(file_name);
  	
  	if (verbose == 1) {printf("Connect:%d\n",nconn);}
@@ -100,7 +101,7 @@ int main(int argc, char *argv[]) {
 		
 	// Pour les besoins... on limite à 800 atomes
 	
-	if (atom > 2000) {
+	if (atom > 10000) {
 		printf("Too much atom, if you want to remove the limite.... vincent.frappier@usherbrooke.ca\n");
 		return(1);
 	}
@@ -111,8 +112,7 @@ int main(int argc, char *argv[]) {
  	//*Build Hessian									*
  	//*													*
  	//***************************************************
-	
-	
+	 	
 	double **hessian=(double **)malloc(3*atom*sizeof(double *)); // Matrix of the Hessian 1 2 3 (bond, angle, dihedral)
 	for(i=0;i<3*atom;i++) { hessian[i]=(double *)malloc(3*atom*sizeof(double));}
 	for(i=0;i<3*atom;i++)for(j=0;j<(3*atom);j++){hessian[i][j]=0;}
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
  	//*Build template									*
  	//*													*
  	//***************************************************
-	
+	 	
 	assign_atom_type(strc_all, all);
 	if (strcmp(inputname,"none") == 0) {} else {assign_lig_type(strc_all, all, inputname);}
 	gsl_matrix *vcon = gsl_matrix_alloc(all,all);
@@ -134,15 +134,14 @@ int main(int argc, char *argv[]) {
 	gsl_matrix_set_all(vcon,0);
 	
 	if (verbose == 1) {printf("Do Vcon !!!\n");}
-	
+	 	
 	vcon_file_dom(strc_all,vcon,all);
-	
-	
-	
+	 	
 	if (verbose == 1) {printf("Reading Interaction Matrix %s\n",matrix_name);}
 	load_matrix(inter_m,matrix_name);
 	//write_matrix("vcon_vince.dat", vcon,all,all);
 	if (verbose == 1) {printf("Building templaate\n");}
+	 	
 	all_interaction(strc_all,all, atom, templaate,lig,vcon,inter_m,strc_node);
 	gsl_matrix_scale (templaate, init_templaate);
 	
@@ -209,14 +208,16 @@ int main(int argc, char *argv[]) {
 		
 		write_matrix(ihess_name,k_totinv,3*(atom-lig),3*(atom-lig));
 	}
-	
+
 	if (covariance_flag == 1) 
 	{
-		gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom); /*Déclare et crée une matrice qui va être le pseudo inverse*/
+		gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom);
 		k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3-6);
 		
-   for (i=0;i<atom;++i) {
-			for (j=i;j<atom;++j) {
+   		for (i=0;i<atom;++i)
+   		{
+			for (j=i;j<atom;++j)
+			{
 				if (i != j) {continue;}
 				printf("COV: %d %d %s%d%s %s%d%s %f\n",i,j,strc_node[i].res_type,strc_node[i].res_number,strc_node[i].chain,
 																	  strc_node[j].res_type,strc_node[j].res_number,strc_node[j].chain
@@ -227,6 +228,7 @@ int main(int argc, char *argv[]) {
 		printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
 		gsl_matrix_free(k_inverse);
 	}
+
 	gsl_matrix_free(templaate);
 	gsl_matrix_free(inter_m);
 	gsl_matrix_free(vcon);
