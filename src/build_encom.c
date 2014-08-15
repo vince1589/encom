@@ -195,9 +195,21 @@ int main(int argc, char *argv[]) {
 	
 	if (no_write == 0) {write_eigen(eigen_name,evec,eval,3*atom);}
 	
-	float ener = calc_energy(atom,eval,temperature);
-	printf("Energy:%10.8f\n",ener);
-	printf("Energy/node:%10.8f\n",ener/(float)(atom*3));
+
+	if (temperature  < 0) {
+		float factor;
+		for(factor = -2000.0;factor < 2000.0;++factor) {
+			calc_energy(atom,eval,300.0-factor/1000.0);
+		}
+		for(factor = -300.0;factor < 300;++factor) {
+			calc_energy(atom,eval,300.0-factor/10.0);
+		}
+	
+	} else {
+			float ener = calc_energy(atom,eval,temperature);
+			printf("Energy:%10.8f\n",ener);
+			printf("Energy/node:%10.8f\n",ener/(float)(atom*3));
+	}
 	if(invert_hessian == 1)
 	{
 		gsl_matrix *k_totinv = gsl_matrix_alloc(3*atom, 3*atom);
