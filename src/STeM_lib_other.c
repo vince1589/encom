@@ -665,9 +665,10 @@ float calc_energy(int atom,gsl_vector *eval,float t) {
 		sum += log(v);
 	}
 	
-	printf("Ental contribution:%10.2f\n",ental/1000);
-	printf("Entro contribution:%10.2f\n",t*entro/1000);
-	printf("Ln Summation:%10.2f\n",sum);		
+	printf("Ental contribution:%f\n",ental/1000);
+	printf("Temperature:%f\n",t);
+	printf("Entro contribution:%f\n",t*entro/1000);
+	printf("Ln Summation:%f\n",sum);		
 	return(sum);
 	//return((ental-t*entro)/1000);
 }

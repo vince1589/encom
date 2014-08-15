@@ -167,21 +167,12 @@ int main(int argc, char *argv[]) {
 	//float overlap;
 	for(i=mode-1;i<nm+mode-1;++i) {
 		for(j=mode-1;j<nm+mode-1;++j) {
-			corr = over_eigen(evec,evecpca,atom[0],j,i);
+			corr = over_eigen(evec,evecpca,atom[0],i,j);
 			
-			if (corr*corr > 0.2 || i == j) {
-				printf("I:%3d J:%3d %8.5f Val %8.5f :: %8.5f\n",i+1,j+1,corr,gsl_vector_get(eval,i),gsl_vector_get(evalpca,i));
-				float factor = 1.00;
-				if (corr < 0) {factor = -1.00;}
-				if ( i == j) {
-					for(k=0;k<atom[0]/3;++k) {
-						float rmsd = sqrt(pow(gsl_matrix_get(evecpca,k*3,j)-gsl_matrix_get(evec,k*3,i)*factor,2)+
-												 pow(gsl_matrix_get(evecpca,k*3+1,j)-gsl_matrix_get(evec,k*3+1,i)*factor,2)+
-												 pow(gsl_matrix_get(evecpca,k*3+2,j)-gsl_matrix_get(evec,k*3+2,i)*factor,2))/3;
-						if (rmsd > 0.04) {printf("\tK:%d %s %d Rmsd:%.4f (%.2f,%.2f,%.2f) (%.2f,%.2f,%.2f)\n",k,strc_node[k].res_type,strc_node[k].res_number,rmsd,gsl_matrix_get(evecpca,k*3,j),gsl_matrix_get(evecpca,k*3+1,j),gsl_matrix_get(evecpca,k*3+2,j),gsl_matrix_get(evec,k*3,i)*factor,gsl_matrix_get(evec,k*3+1,i)*factor,gsl_matrix_get(evec,k*3+2,i)*factor);}
-					}
-				}	
-			}
+			
+				printf("I:%3d J:%3d %8.5f Val %8.5f :: %8.5f\n",i,j,corr*corr,gsl_vector_get(eval,i),gsl_vector_get(evalpca,j));
+				
+			
 		}
 	}
 	return(1);
