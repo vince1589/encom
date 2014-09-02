@@ -127,13 +127,14 @@ void print_grid_motion(struct pdb_atom *old,gsl_matrix *m,int mode,int atom,char
 	 		if ((lig == 0) && (old[k].atom_type == 3)) {continue;}
 	 		//printf("Atom:%d	Res Num:%d	Res:%s	Type:%s\n",old[k].atom_number,old[k].res_number,newstrc[k].res_type,newstrc[k].atom_prot_type);
 			for (l=0;l<nbr;++l) {
-				//printf("L:%d H:%d K:%d Node:%d\n",l,h,k,old[k].node*3+2);
+				
 		 		double amplitude = gsl_matrix_get(g,h,l);
 		 		//printf("%d > %d ?\n",old[k].node*3,m->size1);
 		 		if (old[k].node*3 > m->size1-1) {continue;}
-		 		newstrc[k].x_cord += (amplitude*gsl_matrix_get(m,old[k].node*3,mode));
-		 		newstrc[k].y_cord += (amplitude*gsl_matrix_get(m,old[k].node*3+1,mode));
-		 		newstrc[k].z_cord += (amplitude*gsl_matrix_get(m,old[k].node*3+2,mode));
+		 	//	if (k == 10) {printf("L:%d H:%d K:%d Node:%d\n",l,h,k,old[k].node*3+2);}
+		 		newstrc[k].x_cord += (amplitude*gsl_matrix_get(m,old[k].node*3,mode+l));
+		 		newstrc[k].y_cord += (amplitude*gsl_matrix_get(m,old[k].node*3+1,mode+l));
+		 		newstrc[k].z_cord += (amplitude*gsl_matrix_get(m,old[k].node*3+2,mode+l));
 	 		
 	 		}	 		
 	 	}

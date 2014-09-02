@@ -175,7 +175,9 @@ void mode_switching(gsl_vector *eval,gsl_matrix *evec,int atom1,int atom2,int *m
 	write_eigen_mat(eigen_grid, evec,3*atom,3*atom,mode,nbr_mode);
 	//write_matrix_pdb("grid_matrix.pdb", grid_m,nb_grid,nbr_mode);
 	if (verbose == 1) {printf("	Write Motion\n");}	
-	if (print == 1) {print_grid_motion(strc_all,evec,mode,all,grid_name,grid_m,nb_grid,nbr_mode,lig);}
+	if (print == 1) {
+		print_grid_motion(strc_all,evec,mode,all,grid_name,grid_m,nb_grid,nbr_mode,lig);
+	}
  	
  	
 	// Freeing
