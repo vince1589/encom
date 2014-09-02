@@ -430,14 +430,24 @@ int build_grid_math(double **grid,int nb_mode,float step,float limit,float resol
 			
 		}
 		if (temp == nb_mode) {break;}
-	//	for (i=0;i<nb_mode;++i) {printf("%2d ",sign[i]);} printf("\n");
+		//for (i=0;i<nb_mode;++i) {printf("%2d ",sign[i]);} printf("\n");
 		// Modifie
 		
 		for (j=1;j<old_count;++j) {
+			int to_next = 0;
 			for(i=0;i<nb_mode;++i) {
+					if (grid[j][i] == 0 && sign[i] == -1) {
+						//printf("	grid[%d][%i] = %f et sign:%d\n",j,i,grid[j][i],sign[i]);
+						++to_next;
+					}
 					grid[count][i] = grid[j][i]*sign[i];
 			}
 			++count;
+			if (to_next != 0) {
+				--count;
+				//printf("		I remove:");for(i=0;i<nb_mode;++i) {printf(" %.1f",grid[count][i]);}printf("\n");
+				
+			}
 			if (count % 10000 == 0) {printf("I have %d points and counting\n",count);}
 		}
 		
