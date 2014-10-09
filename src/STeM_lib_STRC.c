@@ -59,8 +59,8 @@ int assign_connect(char filename[100],int **con) {
  			//printf("%s",line);
  		}
 	}
-	
-	printf("FCLOSE:%d\n",fclose(file));
+	fclose(file);
+	//printf("FCLOSE:%d\n",);
 
 	return(j+1);
 }

@@ -115,7 +115,7 @@ void all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix *ma, i
  	// ma est la dite matrice
 	//gsl_matrix_set_all(ma,0);
 	
-	printf("In all interaction\n");
+	//printf("In all interaction\n");
 	
 	gsl_matrix *conta = gsl_matrix_alloc(8,8);
 	gsl_matrix_set_all(conta,0);
@@ -202,15 +202,15 @@ void all_interaction(struct pdb_atom *strc,int atom,int res_n, gsl_matrix *ma, i
 			gsl_matrix_set(conta,strc[l].type-1,strc[k].type-1,gsl_matrix_get(conta,strc[l].type-1,strc[k].type-1)+gsl_matrix_get(mvcon,l,k));
  		}
  	}
- 	printf("%s",strong);
- 	for(k=0;k<8;++k) {
+ 	printf("	%s",strong);
+ /*	for(k=0;k<8;++k) {
  		for(l=0;l<8;++l) {
  			printf("%10.2f ",gsl_matrix_get(conta,k,l));
  		} 	
  		printf("\n");
- 	}
+ 	}*/
  	
- 	printf("CF score:%f\n",all_score);
+ 	printf("	CF score:%f\n",all_score);
  	
  	gsl_matrix_free(conta);
  	
