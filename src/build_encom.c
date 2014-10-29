@@ -34,9 +34,9 @@ int main(int argc, char *argv[]) {
 	char ihess_name[500];
 	int no_write = 0;
 	int covariance_flag = 0;
-	int total_model = 0.0;
+	int total_model = 0;
  	for (i = 1;i < argc;i++) {
- 		if (strcmp("-i",argv[i]) == 0) {
+ 		if (strcmp("-il",argv[i]) == 0) {
  			while (strncmp(argv[i+1+total_model],".pdb",4)>0) {
  				//printf("%d I read:%s ,%d\n",total_model,argv[i+1+total_model],strncmp(argv[i+1+total_model],".pdb",4));
  				strcpy(file_name[total_model],argv[i+1+total_model]);
@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
  			}
  			--help_flag;
  		}
+ 			if (strcmp("-i",argv[i]) == 0) {strcpy(file_name[total_model],argv[i+1]);++total_model;}
  		if (strcmp("-inp",argv[i]) == 0) {strcpy(inputname,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {++help_flag;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}

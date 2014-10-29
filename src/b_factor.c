@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 	
 	if (verbose == 1) {printf("Inversing Matrix\n");}
 	gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom); /*Déclare et crée une matrice qui va être le pseudo inverse*/
-	k_inverse_matrix_stem(k_inverse,atom,eval,evec,0,atom*3);
+	k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3);
 
 	assign_bfactor(strc_all,k_inverse,all,lig);
 	
