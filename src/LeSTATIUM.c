@@ -193,10 +193,10 @@ int main(int argc, char *argv[]) {
 	float scale[100];
 	float base;
 	float power;
-	for(power = -3;power<2;++power) {
+	for(power = -5;power<2;++power) {
 		for(base = 0;base<4;++base) {
-			if (pow(2,base)*pow(10,power) > 0.9) {continue;}
-			if (pow(2,base)*pow(10,power) < 0.005) {continue;}
+			//if (pow(2,base)*pow(10,power) > 0.9) {continue;}
+			if (pow(2,base)*pow(10,power) > 0.005) {continue;}
 			scale[NbScale] = pow(2,base)*pow(10,power);
 			printf("Scale:%f\n",pow(2,base)*pow(10,power));
 			++NbScale;
