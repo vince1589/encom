@@ -639,7 +639,7 @@ int main(int argc, char *argv[]) {
 					} else {
 						printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);			}
 				}		
-				printf("%s %g %g\n",allAA[i],scale[j],mySum[i][j]);
+				printf("%s %.10f %g\n",allAA[i],scale[j],mySum[i][j]);
 			}		
 		}
 	//	return(0);
