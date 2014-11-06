@@ -144,10 +144,11 @@ void print_grid_motion(struct pdb_atom *old,gsl_matrix *m,int mode,int atom,char
 	 	for (k = 0;k<atom;++k) {
 	 		if (newstrc[k].atom_type == 1 || newstrc[k].atom_type == 4) {fprintf(out_file,"ATOM  ");}
 	 		if (newstrc[k].atom_type == 2 || newstrc[k].atom_type == 3 || newstrc[k].atom_type == 5) {fprintf(out_file,"HETATM");}
-	 		fprintf(out_file,"%5.d %s%s%6.d%12.3f%8.3f%8.3f  1.00  0.00\n",
+	 		fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  0.00\n",
 	 			newstrc[k].atom_number,
 	 			newstrc[k].atom_prot_type,
 	 			newstrc[k].res_type,
+	 			newstrc[k].chain,
 	 			newstrc[k].res_number,
 	 			newstrc[k].x_cord,
 	 			newstrc[k].y_cord,
