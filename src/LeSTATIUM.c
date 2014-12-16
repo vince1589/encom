@@ -378,9 +378,11 @@ int main(int argc, char *argv[]) {
 	
 	for (myPair=0;myPair<tot_init_pair;++myPair) {
 		double mySum[20][NbScale];
+		int myCount[20];
 		for(i=0;i<NbScale;++i) {
 			for(j=0;j<20;++j) {
 				mySum[j][i] = 0;
+				myCount[j] = 0;
 			}
 		}
 		int l;
@@ -398,6 +400,8 @@ int main(int argc, char *argv[]) {
 		//continue;
 		for(i=0;i<atom_t/2;++i) {
 			for(j=0;j<npair;++j) {ncount[j] = 0;}
+	
+			
 			int k;
 			while(1) {
 			//for (k=0;k<pow(npair,atom_t);++k) {
@@ -414,19 +418,7 @@ int main(int argc, char *argv[]) {
 					}
 				}
 				if (ncount[0] >atom_t/2-1){break;}
-			
-				// Can't have same node twice or be the I node
-				int redun = 0;
-				for (m=0;m<npair;++m) {
 				
-					for (l=m+1;l<npair;++l) {
-						if (ncount[m] == ncount[l]) {++redun;break;}
-						if (ncount[m] == i) {++redun;break;}
-						if (ncount[l] == i) {++redun;break;}
-					}
-					if(redun != 0) {break;}
-				}
-				if (redun != 0) {++red_skip;continue;}
 			
 				// Va regarder si respecte sequence
 				int seq = 0;
@@ -457,6 +449,22 @@ int main(int argc, char *argv[]) {
 				}
 			
 				if (seq != 0) {++seq_skip;continue;}
+			
+			
+				// Can't have same node twice or be the I node
+				int redun = 0;
+				for (m=0;m<npair;++m) {
+				
+					for (l=m+1;l<npair;++l) {
+						if (ncount[m] == ncount[l]) {++redun;break;}
+						if (ncount[m] == i) {++redun;break;}
+						if (ncount[l] == i) {++redun;break;}
+					}
+					if(redun != 0) {break;}
+				}
+				if (redun != 0) {++red_skip;continue;}
+			
+
 			
 			
 			
@@ -500,6 +508,7 @@ int main(int argc, char *argv[]) {
 				// Look at RMSD et si seq peut exister
 			
 				float myRmsd = (rmsd_no(strc_node,strc_node_t,atom, align));
+				
 				if (myRmsd > (rmsd_cutoff*rmsd_cutoff)) {++rms_skip;continue;}
 				
 				// Inverse la portion de targ si pas deja fait
@@ -583,11 +592,12 @@ int main(int argc, char *argv[]) {
 	
 					conj_dens12= -0.5*score*3*log(2*PI);
 					for(m=0;m<score*3;++m) {
-						 //if (m < 30) {printf("I:%d -> %g Log -> %g\n",m, gsl_vector_get (eval_cov, m),log(gsl_vector_get (eval_cov, m)));}
+						// if (m < 30) {printf("I:%d -> %g Log -> %g\n",m, gsl_vector_get (eval_cov, m),log(gsl_vector_get (eval_cov, m)));}
 						 if  (gsl_vector_get (eval_cov, m) < 0.000001) {continue;}
 		
 						 conj_dens12 -= 0.5*log(gsl_vector_get (eval_cov, m));
 					}
+					//printf("Itscale:%d\n",ItScale);
 					float dens = density_prob_n(incov12, delr, conj_dens12,pos,score*3);
 					
 					
@@ -597,11 +607,13 @@ int main(int argc, char *argv[]) {
 					int added = 0;
 					for(l=0;l<200;++l) {
 						if (strncmp(strc_node_t[i*2].res_type,allAA[l],3) == 0) {
-							//printf("mySum[%d][%d] += %f\n",l,ItScale,dens);
+						//	printf("mySum[%d][%d] += %f\n",l,ItScale,dens);
 							mySum[l][ItScale] += dens;
+							if (ItScale == 0) {myCount[l] += 1;}
 							++added;
 						}
 					}
+				//	for(j=0;j<npair;++j) {printf("%d ",ncount[j]);}printf("%f %g\n",myRmsd,dens);
 					if (verbose == 1 && dens!=0) {
 						printf("%d %d%s ",added,strc_node_t[i*2].res_number,strc_node_t[i*2].res_type);for(l=0;l<npair;++l) {printf("%d%s ",strc_node_t[ncount[l]*2].res_number,strc_node_t[ncount[l]*2].res_type);}	
 						printf("et %d%s ",strc_node[ipos].res_number,strc_node[ipos].res_type);
@@ -620,7 +632,7 @@ int main(int argc, char *argv[]) {
 					gsl_vector_free(eval_cov);
 					gsl_vector_free(pos);
 					gsl_vector_free(delr);
-					if (dens == 0) {break;}
+				//	if (dens == 0) {break;}
 				}
 			}
 		}
@@ -639,7 +651,7 @@ int main(int argc, char *argv[]) {
 					} else {
 						printf("%d%s%d ",strc_node[ipair[myPair][(l+1)*2][0]].res_number,strc_node[ipair[myPair][(l+1)*2][0]].res_type,ipair[myPair][(l+1)*2][1]);			}
 				}		
-				printf("%s %.10f %g\n",allAA[i],scale[j],mySum[i][j]);
+				printf("%s %.10f %g %d\n",allAA[i],scale[j],mySum[i][j],myCount[i]);
 			}		
 		}
 	//	return(0);
