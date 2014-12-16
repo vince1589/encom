@@ -2887,11 +2887,6 @@ int conj_prob_init_n(gsl_matrix *incov12 , double *conj_dens12,gsl_matrix *cov12
 
 	
 	
-	
-	
-	
-	
-	
 		int signum;
 
 	gsl_permutation * p = gsl_permutation_alloc (atom);

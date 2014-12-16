@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
 	int design = 0;
 	int no_bb = 0;
 	int non_local = 0;
+	int max_pair = -1;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
@@ -43,6 +44,7 @@ int main(int argc, char *argv[]) {
 		if (strcmp("-pos",argv[i]) == 0) {strcpy(posname,argv[i+1]);int temp;sscanf(argv[i+2],"%d",&temp); posnum = temp;}
  		if (strcmp("-max_rmsd",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);rmsd_cutoff = temp;}
  		if (strcmp("-size",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp); npair = temp-1;}
+ 		if (strcmp("-max_pair",argv[i]) == 0) {int temp;sscanf(argv[i+1],"%d",&temp); max_pair = temp;}
 		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
  		
  	}
@@ -252,12 +254,13 @@ int main(int argc, char *argv[]) {
 	
 	
 	// Bon il faut dequoi pour builder les pair, triplet, whatever
-	
+	if (max_pair != -1) {npair = count-max_pair;}
 	int ipair[10000][(npair+1)*2][2];for(i=0;i<10000;++i){for(j=0;j<(npair+1)*2;++j) {ipair[i][j][0] = -1;ipair[i][j][1] = -1;}}
 	int ncount[npair];for(j=0;j<npair;++j) {ncount[j] = j;}
 	printf("\n");
 	i = -1;
 	if (count < npair) {printf("Not enough amino acid for the size\n");return(0);}
+	
 	while(1) {
 		++i;
 		// Populate ipair
