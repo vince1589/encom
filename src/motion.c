@@ -1,7 +1,7 @@
 #include "STeM.h"
 
 
-
+ void find_rmsd_step(struct pdb_atom *strc,gsl_matrix *m,int mode,int atom,float step,double *ampli);
 
 
 int main(int argc, char *argv[]) {
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
  	
  	gsl_vector *eval = gsl_vector_alloc((3-torsion)*atom+10);
 	gsl_matrix *evec= gsl_matrix_alloc ((3-torsion)*atom+10,(3-torsion)*atom+10);
-	load_eigen_motion(eval,evec,eigen_name,(3-torsion)*atom,mode);
+	load_eigen(eval,evec,eigen_name,3*atom);
 	
 	//***************************************************
  	//*													*
@@ -99,12 +99,20 @@ int main(int argc, char *argv[]) {
  	//***************************************************
  	if (verbose == 1) {printf("Creating Motion\n");}
  	if (verbose == 1) {printf("\tFinding Max and Min movement\n");}
-
+	double step;
+ 	find_rmsd_step(strc_node,evec,mode,atom,max_dist,&step);
+ 	step = step*step;
+ 	printf("%f\n",step);
 	if (torsion == 0) {
 	 	find_max_ampli(strc_node,evec,mode,atom,max_dist,&max_val,&min_val);
+	 
+	 
+	 //	rmsd += step*ampli[i]*ampli[i];
+	  
+	 
+	 	max_val = sqrt(max_dist/step);
 	 	
-	 	max_val = max_dist;
-	 	min_val = -max_dist;
+	 	min_val = -max_val;
 	 	printf("Max:%f\tMin:%f\n",max_val,min_val);
 	 	if (verbose == 1) {printf("Printing Motion\n");}
 	 	print_image_motion(strc_all,evec,mode,max_val,min_val,all,out_name,lig);
@@ -117,4 +125,31 @@ int main(int argc, char *argv[]) {
 	gsl_vector_free(eval);
 	gsl_matrix_free(evec);
 	
+}
+
+void find_rmsd_step(struct pdb_atom *strc,gsl_matrix *m,int mode,int atom,float step,double *ampli) {
+		
+	// En temps normal, le RMSD varie de la fonction suivante: RMSD(x) = Ax^2... Il faut trouver le A
+	int i;
+	
+	int temp_align[atom];
+	
+	for (i=0;i<atom;++i) { temp_align[i] = i;}
+	
+	
+	// Crée une structure temporaire
+	struct pdb_atom temp_strc[atom];
+	copy_strc(temp_strc, strc, atom);
+	
+	// Applique l'amplitude
+	apply_eigen(temp_strc,atom,m,8,1.0);
+		
+	
+	
+	
+	
+	
+	
+	*ampli = sqrt(rmsd_no(strc,temp_strc,atom, temp_align));
+
 }
