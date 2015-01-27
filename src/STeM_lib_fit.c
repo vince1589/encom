@@ -1274,13 +1274,13 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	return(a/sqrt(b*c));
  }
 
- void fit(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *eval, int *align) {
+ void fit(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *eval, int *align,int nb_mode) {
  	
 
 
 	int i,j,l;
  	long seed; 
-
+	seed = time_seed();
  	float newstrc,old = 9999999;
  	int mode;
 
@@ -1321,9 +1321,9 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  	}
  	printf("INIT:%f\n",old);
 	mode = 6;
-	int nb_mode = atom*3-6;
-	double amp[nb_mode];
-	double namp[nb_mode];
+	//int nb_mode = 30;
+	double amp[nb_mode+10];
+	double namp[nb_mode+10];
 	int rand_node;
 	
 	
@@ -1335,8 +1335,9 @@ double gsl_matrix_Det3D(gsl_matrix *M){
 	
 
 	for(j = 0;j<nb_mode;++j) {
+		//printf("J:%d\n",j);
 		step = 1;
-	 	for (i = 0;i < 200;++i) {
+	 	for (i = 0;i < 2000;++i) {
 	 		for(l=0;l<atom;++l) {
 	 			store_init[l].x_cord = init[l].x_cord;
 				store_init[l].y_cord = init[l].y_cord;
@@ -1349,7 +1350,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
 		 	
 	 		newstrc = rmsd_no(store_init,targ,atom,align);
 	 		if (i == 0) {old = newstrc+1;}
-	 		if (step < 0.0001 && step > -0.0001) {amp[j] = namp[j];printf("%3d Mode:%4d Amp:%7.4f	Step:%7.4f	RMS:%10.9f\n",i,mode+j+1,namp[j],step,newstrc);break;}
+	 		if (step < 0.0001 && step > -0.0001) {amp[j] = namp[j];printf("%3d Mode:%4d Amp:%7.4f	Step:%7.4f	RMSD:%10.9f\n",i,mode+j+1,namp[j],step,sqrt(newstrc));break;}
 	 		//
 	 		if (i > nb_mode * atom *100) {break;}
 			if (old < newstrc) {step = -step/10;}
@@ -1359,30 +1360,27 @@ double gsl_matrix_Det3D(gsl_matrix *M){
 		}
 	}
 	// Monte Carlo Approch
-	for(i=0;i<nb_mode*1000;++i) {
+	/*for(i=0;i<nb_mode;++i) {
 		amp[i] = namp[i];
 	}
 	printf("RMS before MC:%f\n",old);
- 	for(i=0;i<50*1;++i) {
- 		
+ 	for(i=0;i<50*100;++i) {
  		for(l=0;l<atom;++l) {
  			store_init[l].x_cord = init[l].x_cord;
 			store_init[l].y_cord = init[l].y_cord;
 			store_init[l].z_cord = init[l].z_cord;
  		}
- 		
  		for(j=0;j<nb_mode;++j) {
  			if (namp[j] == 0) {continue;}
+ 			//printf("J:%d %f\n",j,namp[j]);
 	 		apply_eigen(store_init,atom,eval,mode+j,namp[j]);
 	 	}
-	 	
+	 
  		newstrc = rmsd_no(store_init,targ,atom,align);
- 		
  		if (newstrc < old) {
  			//printf("I:%4d Old:%10.9f	newstrc:%10.9f\n",i,old,newstrc);
  			
  			for(j=0;j<nb_mode;++j) {
- 				//printf("%5.3f	",amp[j]);
  				amp[j] = namp[j];
  			}
  			
@@ -1395,7 +1393,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
  		
  		// Modify namp
  		
- 		rand_node = ran2(&seed)*nb_mode;
+ 		rand_node = int(ran2(&seed)*nb_mode);
  		
  		namp[rand_node] += ran2(&seed)*0.5 - 0.25;
 		 		
@@ -1410,6 +1408,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
 		printf("J:%4d %10.6f	%10.6f	%10.6f\n",j+mode+1,amp[j],old,newstrc);
 	}
  	printf("END:%f\n",rmsd_no(init,targ,atom,align));
+ 	*/
  	//write_strc("target.pdb",all_targ,all);
  	//write_strc("final.pdb",all_init,all);
  	//fclose(file);
@@ -2887,6 +2886,11 @@ int conj_prob_init_n(gsl_matrix *incov12 , double *conj_dens12,gsl_matrix *cov12
 
 	
 	
+	
+	
+	
+	
+	
 		int signum;
 
 	gsl_permutation * p = gsl_permutation_alloc (atom);
@@ -2927,7 +2931,7 @@ double density_prob_n(gsl_matrix *incov12, gsl_vector *delr, double conj_dens12,
 	gsl_matrix_free(a);
 	gsl_matrix_free(temp);
 	gsl_matrix_free(one);
-//	printf("Dens = pow(e,%g*-1/2+%g) = %g\n",ans,conj_dens12,pow(e,ans*-1/2+conj_dens12));
+	printf("Dens = pow(e,%g*-1/2+%g) = pow(e,%g) = %g\n",ans,conj_dens12,ans*-1/2+conj_dens12,pow(e,ans*-1/2+conj_dens12));
 	return(pow(e,ans*-1/2+conj_dens12));
 }
 

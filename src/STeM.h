@@ -73,7 +73,7 @@ void apply_eigen(struct pdb_atom *strc,int atom,gsl_matrix *m,int mode,float amp
 void center_yes(struct pdb_atom *init,struct pdb_atom *targ,int atom,int atom_t, int *align);
 float vector_lenght(gsl_vector *d,int atom);
 float overlap(int atom, int mode,gsl_matrix *m,gsl_vector *d, int *align);
-void fit(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *eval, int *align);
+void fit(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *eval, int *align, int nb_mode);
 void fit_math(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *eval, int *align);
 void fit_vince(struct pdb_atom *init,struct pdb_atom *targ,int atom,int all,struct pdb_atom *all_init,struct pdb_atom *all_targ,gsl_matrix *eval, int *align, int nb_mode, int mode);
 void nrg_rmsd(struct pdb_atom *init,int atom,gsl_matrix *evec, int *align, int nb_mode, int mode,gsl_vector *eval);

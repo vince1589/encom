@@ -19,6 +19,7 @@ int main(int argc, char *argv[]) {
 	int nconn;
 	int torsion = 0;
 	float ligalign = 0; // Flag/valeur pour aligner seulement les résidus dans un cutoff du ligand, 0, one le fait pas... > 0... le cutoff
+	int iterative_flag = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {help_flag = 1;}
@@ -30,6 +31,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-ieig",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
  		if (strcmp("-ligc",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);ligalign = temp;}
  		if (strcmp("-angle",argv[i]) == 0) {torsion = 1;}
+ 		if (strcmp("-iterative",argv[i]) == 0) {iterative_flag = 1;}
  	}
  	
  	if (help_flag == 1) {
@@ -151,10 +153,11 @@ int main(int argc, char *argv[]) {
 	if (nbr_mode == -1) {nbr_mode = 3*atom-7;}
 	
 	if (torsion == 0) {
-		//fit(strc_node,strc_node_t,atom,all,strc_all,strc_all_t,evec,align);
-		// nrg_rmsd(strc_node,atom,evec, align, nbr_mode, mode,eval);
-		fit_svd(strc_node,strc_node_t,atom,all,atom_t,all_t,strc_all,strc_all_t,evec,align,nbr_mode,mode,eval);
-		//fit_math(strc_node,strc_node_t,atom,all,strc_all,strc_all_t,evec,align);
+		if (iterative_flag == 1) {
+			fit(strc_node,strc_node_t,atom,all,strc_all,strc_all_t,evec,align,nbr_mode);
+		} else {
+			fit_svd(strc_node,strc_node_t,atom,all,atom_t,all_t,strc_all,strc_all_t,evec,align,nbr_mode,mode,eval);
+		}
 	} else {
 		fit_mc_torsion(strc_node,strc_node_t,atom,all,atom_t,all_t,strc_all,strc_all_t,evec,align,nbr_mode,mode,eval);
 	
