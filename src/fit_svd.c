@@ -8,9 +8,9 @@ int main(int argc, char *argv[]) {
 	int all_t; /*Nombre d'atomes dans pdb*/
 	int atom_t; /*Nombre de carbone CA*/
  	int help_flag = 1;
- 	char file_name[500];
- 	char check_name[500];
- 	char eigen_name[100] = "eigen.dat";
+ 	char file_name[5000];
+ 	char check_name[5000];
+ 	char eigen_name[5000] = "eigen.dat";
  	int verbose = 0;
 	int i;
 	int nbr_mode = 2;
