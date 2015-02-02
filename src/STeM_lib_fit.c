@@ -1337,7 +1337,7 @@ double gsl_matrix_Det3D(gsl_matrix *M){
 	for(j = 0;j<nb_mode;++j) {
 		//printf("J:%d\n",j);
 		step = 1;
-	 	for (i = 0;i < 2000;++i) {
+	 	for (i = 0;i < 10000;++i) {
 	 		for(l=0;l<atom;++l) {
 	 			store_init[l].x_cord = init[l].x_cord;
 				store_init[l].y_cord = init[l].y_cord;
