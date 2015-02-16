@@ -66,6 +66,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-pt",argv[i]) == 0) {print_template = 1;}
  		if (strcmp("-no",argv[i]) == 0) {no_write = 1;}
  		if (strcmp("-cov",argv[i]) == 0) {covariance_flag = 1;}
+ 		if (strcmp("-fcov",argv[i]) == 0) {covariance_flag = 2;}
  		
  	}
  	int count = 0;
@@ -260,6 +261,7 @@ int main(int argc, char *argv[]) {
 		gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom);
 		k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3-6);
 		
+	
    		for (i=0;i<atom;++i)
    		{
 			for (j=i;j<atom;++j)
@@ -274,7 +276,16 @@ int main(int argc, char *argv[]) {
 		printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
 		gsl_matrix_free(k_inverse);
 	}
-
+	if (covariance_flag == 2) {
+		gsl_matrix *k_inverse = gsl_matrix_alloc(atom*3,atom*3);
+		k_tot_inv_matrix_stem(k_inverse,atom,eval,evec,6,atom);
+		for (i=0;i<atom;++i) {for (j=i;j<atom;++j){
+			printf("COV: %d %d %s%d%s %s%d%s %f\n",i,j,strc_node[i/3].res_type,strc_node[i/3].res_number,strc_node[i/3].chain,
+																	  strc_node[j/3].res_type,strc_node[j/3].res_number,strc_node[j/3].chain
+				,gsl_matrix_get(k_inverse,i,j)*1000);
+		}}
+	
+	}
 	gsl_matrix_free(templaate);
 	gsl_matrix_free(inter_m);
 	gsl_matrix_free(vcon);

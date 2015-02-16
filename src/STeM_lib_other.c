@@ -506,6 +506,7 @@ for(i=0; i < nb_atom_1; ++i) {
  
  void k_tot_inv_matrix_stem(gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc,int mode,int nm) 
  {
+ 	printf("In function\n");
 	 //gsl_matrix *buffer = gsl_matrix_alloc(nb_atom, nb_atom); /*Matrix buffer a additionner*/
 	 gsl_matrix_set_all (m, 0);
 	 int i,j,k;
@@ -519,7 +520,7 @@ for(i=0; i < nb_atom_1; ++i) {
 			 continue;
 		 }
 		 
-		 // 		 printf("%6.10f\n", gsl_vector_get (evl, k));
+		printf("%6.10f\n", gsl_vector_get (evl, k));
 		 
 		 for (i=0;i<3*nb_atom;++i)
 		 {

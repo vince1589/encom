@@ -173,6 +173,7 @@ int main(int argc, char *argv[]) {
  	int verbose = 0;
 	int i;
 	int lig = 0;
+	int resnumc_flag = 0;
 	int nconn;
 	int print_flag = 0;
 	float ligalign = 0; // Flag/valeur pour aligner seulement les résidus dans un cutoff du ligand, 0, one le fait pas... > 0... le cutoff
@@ -185,7 +186,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-t",argv[i]) == 0) {strcpy(check_name,argv[i+1]);help_flag = 0;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(out_name,argv[i+1]);++print_flag;}
  		if (strcmp("-ligc",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);ligalign = temp;}
- 		
+ 		if (strcmp("-resnumc",argv[i]) == 0) {resnumc_flag = 1;} 
  		if (strcmp("-a",argv[i]) == 0) {aln_flag = 1;}
  	}
 	 	
@@ -204,7 +205,7 @@ int main(int argc, char *argv[]) {
  	
  	all = count_atom(file_name);
  	nconn = count_connect(file_name);
- 	
+ 	if (verbose == 1) {printf("First file:%s\n",file_name);}
  	if (verbose == 1) {printf("Connect:%d\n",nconn);}
  	
 	if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
@@ -243,7 +244,7 @@ int main(int argc, char *argv[]) {
  	nconn = 0;
  	all_t = count_atom(check_name);
  	nconn = count_connect(check_name);
- 	
+ 	if (verbose == 1) {printf("Sec file:%s\n",check_name);}
  	if (verbose == 1) {printf("Connect:%d\n",nconn);}
  	
 	if (verbose == 1) {printf("Assigning Structure\n\tAll Atom\n");}
@@ -276,14 +277,14 @@ int main(int argc, char *argv[]) {
  	int align[atom];
  	int score = node_align(strc_node,atom,strc_node_t,atom_t,align);
  	printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
- 	if ((float)score/(float)atom < 0.8)
+ 	if ((float)score/(float)atom < 0.8 && resnumc_flag == 0)
 	{
  		printf("Low Score... Will try an homemade alignement !!!\n");
  		score = node_align_onechain(strc_node,atom,strc_node_t,atom_t,align);
  		printf("RMSD:%8.5f Score: %d/%d\n",sqrt(rmsd_no(strc_node,strc_node_t,atom, align)),score,atom);
  	}
  	
- 	if ((float)score/(float)atom < 0.8)
+ 	if ((float)score/(float)atom < 0.8 && resnumc_flag == 0)
 	{
 		printf("Low Score... Will try an homemade alignement !!!\n");
 		score = node_align_low(strc_node,atom,strc_node_t,atom_t,align);
