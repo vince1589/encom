@@ -1,7 +1,7 @@
 #include "STeM.h"
 
 void add_model(char filename[500],gsl_matrix *m,char matrix_name[500],float init_templaate,float vinit,float bond_factor,float angle_factor,float kp_factor,int lig,char inputname[500]);
-
+void write_template(char filename[500],gsl_matrix *m,int nb_atom, struct pdb_atom *old);
 
 int main(int argc, char *argv[]) {
 	int all; /*Nombre d'atomes dans pdb*/
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
 	all_interaction(strc_all,all, atom, templaate,lig,vcon,inter_m,strc_node);
 	gsl_matrix_scale (templaate, init_templaate);
 	
-	if (print_template == 1) {write_matrix("template.dat", templaate,atom,atom);}
+	if (print_template == 1) {write_template("template.dat", templaate,atom,strc_node);}
 	
 	if (verbose == 1) {printf("Building Hessian\n");}
 	
@@ -299,6 +299,23 @@ int main(int argc, char *argv[]) {
  	return(1);
  	
 }
+
+void write_template(char filename[500],gsl_matrix *m,int nb_atom, struct pdb_atom *old) {
+	FILE *out_file;
+ 	out_file = fopen(filename,"w");
+	int i,j;
+	for(i=0; i < nb_atom; ++i) {
+		fprintf(out_file,"%s%d",old[i].res_type,old[i].res_number);
+	 	for(j=0; j < nb_atom; ++j) {
+	 		fprintf (out_file," %.6g",gsl_matrix_get (m, i, j));
+	 	}
+	 fprintf (out_file,"\n");
+	 }
+	 fclose(out_file);
+}
+
+
+
 
 void add_model(char filename[500],gsl_matrix *m,char matrix_name[500],float init_templaate,float vinit,float bond_factor,float angle_factor,float kp_factor,int lig,char inputname[500]) {
 	int i,j;
