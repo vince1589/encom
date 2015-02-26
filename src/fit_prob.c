@@ -285,7 +285,9 @@ int main(int argc, char *argv[]) {
 				for(j=0;j<nb_mode;++j) {
 		
 			 		repar_func += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta);
-			 	
+			 		/*if (j < 20) {
+			 			printf("J:%d Beta:%f Eval:%f\n",j,beta,gsl_vector_get(eval,mode+j-1));
+			 			printf("	%f += pow(2.71828,%f/%f) = pow(2.7,%f) = %f\n",repar_func ,-gsl_vector_get(eval,mode+j-1),beta,-gsl_vector_get(eval,mode+j-1)/beta,pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta));}*/
 			 	}
 			 
 	
@@ -297,7 +299,8 @@ int main(int argc, char *argv[]) {
 					overlap_proability += over*pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func;
 					total_prob += pow(2.71828,-gsl_vector_get(eval,mode+j-1)/beta)/repar_func;
 				}
-				printf("Beta:%f Probability:%g\n",beta,overlap_proability);
+				printf("Beta:%f Probability:%g\n",beta,overlap_proability,repar_func);
+			//	break;
 		}
 	}
  	gsl_vector_free(diff);
