@@ -322,7 +322,7 @@ float write_strc_type(char filename[100], struct pdb_atom *newstrc,int nb_atom,f
  		if (newstrc[k].atom_type == 1) {fprintf(out_file,"ATOM  ");}
 	 	if (newstrc[k].atom_type == 2) {fprintf(out_file,"HETATM");}
 	 	if (newstrc[k].atom_type == 3) {fprintf(out_file,"HETATM");}
- 		fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
+ 		fprintf(out_file,"%5.d %s%s %s%4d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
  			newstrc[k].atom_number,
  			newstrc[k].atom_prot_type,
  			newstrc[k].res_type,
@@ -361,7 +361,7 @@ float write_strc_type(char filename[100], struct pdb_atom *newstrc,int nb_atom,f
 				
 
 	 			fprintf(out_file,"ANISOU");
-	 			fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
+	 			fprintf(out_file,"%5.d %s%s %s%4d  %7d%7d%7d%7d%7d%7d\n",
 		 			newstrc[k].atom_number,
 		 			newstrc[k].atom_prot_type,
 		 			newstrc[k].res_type,

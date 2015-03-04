@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
 	
 	struct pdb_atom strc_all[all];
 	atom = build_all_strc(file_name,strc_all); // Retourne le nombre de Node
-	if (atom > 800) {printf("Too much node.... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
+	if (atom > 2000) {printf("Too much node.... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
 	if (verbose == 1) {printf("	Atom:%d\n",all);}
 	check_lig(strc_all,connect_h,nconn,all);
 	
@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
 	
 	struct pdb_atom strc_all_t[all_t];
 	atom_t = build_all_strc(check_name,strc_all_t); // Retourne le nombre de Node
-	if (atom_t > 800) {printf("Too much node.... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
+	if (atom_t > 2000) {printf("Too much node.... To fix, ask vincent.frappier@usherbrooke.ca\n");return(1);}
 	if (verbose == 1) {printf("	Atom:%d\n",all_t);}
 	check_lig(strc_all_t,connect_t,nconn,all_t);
 	

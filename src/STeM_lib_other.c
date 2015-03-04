@@ -232,7 +232,7 @@ for(i=0; i < nb_atom_1; ++i) {
 		if (newstrc[k].atom_type == 1) {fprintf(out_file,"ATOM  ");}
 	 	if (newstrc[k].atom_type == 2) {fprintf(out_file,"HETATM");}
 	 	if (newstrc[k].atom_type == 3) {fprintf(out_file,"HETATM");}
-		fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
+		fprintf(out_file,"%5.d %s%s %s%4d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
 			newstrc[k].atom_number,
  			newstrc[k].atom_prot_type,
  			newstrc[k].res_type,
@@ -275,7 +275,7 @@ for(i=0; i < nb_atom_1; ++i) {
 			multiplie_matrix(temp2,3,3,tevec,3,3,temp);
 			
 			fprintf(out_file,"ANISOU");
-			fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
+			fprintf(out_file,"%5.d %s%s %s%4d  %7d%7d%7d%7d%7d%7d\n",
 				newstrc[k].atom_number,
 				newstrc[k].atom_prot_type,
 				newstrc[k].res_type,
@@ -321,7 +321,7 @@ for(i=0; i < nb_atom_1; ++i) {
 		 if (newstrc[k].atom_type == 1) {fprintf(out_file,"ATOM  ");}
 		 if (newstrc[k].atom_type == 2) {fprintf(out_file,"HETATM");}
 		 if (newstrc[k].atom_type == 3) {fprintf(out_file,"HETATM");}
-		 fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
+		 fprintf(out_file,"%5.d %s%s %s%4d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
 			 newstrc[k].atom_number,
 			 newstrc[k].atom_prot_type,
 			 newstrc[k].res_type,
@@ -334,7 +334,7 @@ for(i=0; i < nb_atom_1; ++i) {
 			 );
 			 
 		fprintf(out_file,"ANISOU");
-		fprintf(out_file,"%5.d %s%s %s%4.d  %7d%7d%7d%7d%7d%7d\n",
+		fprintf(out_file,"%5.d %s%s %s%4d  %7d%7d%7d%7d%7d%7d\n",
 			newstrc[k].atom_number,
 			newstrc[k].atom_prot_type,
 			newstrc[k].res_type,
@@ -366,7 +366,7 @@ for(i=0; i < nb_atom_1; ++i) {
 		if (old[k].atom_type == 1) {fprintf(out_file,"ATOM  ");}
 		if (old[k].atom_type == 2) {fprintf(out_file,"HETATM");}
 		if (old[k].atom_type == 3) {fprintf(out_file,"HETATM");}
-			fprintf(out_file,"%5.d %s%s %s%4.d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
+			fprintf(out_file,"%5.d %s%s %s%4d%12.3f%8.3f%8.3f  1.00  %2.2f\n",
 				old[k].atom_number,
 				old[k].atom_prot_type,
 				old[k].res_type,
