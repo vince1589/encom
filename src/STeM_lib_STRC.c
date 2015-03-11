@@ -296,6 +296,7 @@ int count_atom(char filename[100]) {
 	int lig_tot;
 	float dist;
 	float min;
+	int off = 0;
  	cord[0] = 0.0;
  	cord[1] = 0.0;
  	cord[2] = 0.0;
@@ -355,7 +356,11 @@ int count_atom(char filename[100]) {
  				(strncmp(all[i].atom_prot_type," CA ",4) == 0 && (all[i].atom_type == 2 || all[i].atom_type == 1)) || 
  				(strncmp(all[i].atom_prot_type," O3'",4) == 0 && (all[i].atom_type == 4 || all[i].atom_type == 5)) ||
  				lig_flag == 3
- 			) {} else {continue;}
+ 			) {} else {
+ 			//if (all[i].node < 40) {	printf("I:%d Node:%d	Atom:%d	Type:%s	Res num:%d	Res Type:%s Type:%d Flag:%d\n",i,all[i].node,all[i].atom_number,all[i].atom_prot_type,all[i].res_number,all[i].res_type,all[i].atom_type,lig_flag);}
+ 				continue;
+ 				
+ 				}
  		if (ligand == 0 && all[i].atom_type == 3) {continue;}
  		++k;
  		
@@ -365,7 +370,7 @@ int count_atom(char filename[100]) {
  		
  		// On copie l'information
  		for (j=0;j<6;++j) {CA[k].node_c[j] = -1;}
- 		CA[k].node = all[i].node;
+ 		CA[k].node = k;
  		CA[k].mass = 0.0000;
  		CA[k].atom_number = all[i].atom_number;
 	 	CA[k].res_number = all[i].res_number;
@@ -380,6 +385,10 @@ int count_atom(char filename[100]) {
 	 	strcpy(CA[k].atom_prot_type,all[i].atom_prot_type);
 	 	strcpy(CA[k].res_type,all[i].res_type);
 	 	strcpy(CA[k].chain,all[i].chain);
+	 	if (k+off != all[i].node) {
+	 		printf("Node was off -> K:%d Node:%d	Atom:%d	Type:%s	Res num:%d	Res Type:%s Con:%d %d %d Type:%d Lig:%d\n",k,all[i].node,all[i].atom_number,all[i].atom_prot_type,all[i].res_number,all[i].res_type,all[i].node_c[0],all[i].node_c[1],all[i].node_c[2],all[i].atom_type,ligand);
+	 		++off;
+	 	}
 	 	if (lig_flag == 3) {
 	 		//printf("I JUST ADD LIG:%d\n",i);
 	 		i = lig_tot;
@@ -445,7 +454,13 @@ int count_atom(char filename[100]) {
  	for (i=0;i<atom;++i) {
  		CA[all[i].node].mass += all[i].mass;
  	}
- 	//for (i=0;i<k+1;++i) {printf("CA I:%d Type:%d Node:%d Atom:%d Type:%s Res num:%d Res Type:%s Con:%d %d %d %d %d %d Cord:%f,%f,%f Mass:%f\n",i,CA[i].atom_type,CA[i].node,CA[i].atom_number,CA[i].atom_prot_type,CA[i].res_number,CA[i].res_type,CA[i].node_c[0],CA[i].node_c[1],CA[i].node_c[2],CA[i].node_c[3],CA[i].node_c[4],CA[i].node_c[5],CA[i].x_cord,CA[i].y_cord,CA[i].z_cord,CA[i].mass);}
+ 	/*for (i=0;i<k+1;++i) {
+ 		printf("CA I:%d Type:%d Node:%d Atom:%d Type:%s Res num:%d Res Type:%s Con:%d %d %d %d %d %d Cord:%f,%f,%f Mass:%f\n",i,CA[i].atom_type,CA[i].node,CA[i].atom_number,CA[i].atom_prot_type,CA[i].res_number,CA[i].res_type,CA[i].node_c[0],CA[i].node_c[1],CA[i].node_c[2],CA[i].node_c[3],CA[i].node_c[4],CA[i].node_c[5],CA[i].x_cord,CA[i].y_cord,CA[i].z_cord,CA[i].mass);
+ 		if (i != CA[i].node) {
+ 			printf(" Node don't fit ID, I last\n");
+ 			break;
+ 		}
+ 	}*/
  	return(k+1);
  
  }
