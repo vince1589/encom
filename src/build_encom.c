@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
 	int no_write = 0;
 	int covariance_flag = 0;
 	int total_model = 0;
+	int noligand = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-il",argv[i]) == 0) {
  			while (strncmp(argv[i+1+total_model],".pdb",4)>0) {
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-no",argv[i]) == 0) {no_write = 1;}
  		if (strcmp("-cov",argv[i]) == 0) {covariance_flag = 1;}
  		if (strcmp("-fcov",argv[i]) == 0) {covariance_flag = 2;}
+ 		if (strcmp("-nolig",argv[i]) == 0) {noligand =1 ;}
  		
  	}
  	int count = 0;
@@ -195,6 +197,45 @@ int main(int argc, char *argv[]) {
 	////////////////
 	
 	
+	// Si on veut juste les valeurs de la prot sans le ligand
+	
+	if (noligand == 1) {
+		// Combien de ligand node
+		int atom_no_lig = 0;
+		for(i=0;i<atom;++i) {
+			if (strc_node[i].atom_type != 3) {
+				++atom_no_lig;
+			}
+		}
+		printf("Atom no lig:%d\n",atom_no_lig);
+		
+		gsl_matrix *h_matrix_no_lig = gsl_matrix_alloc(3*atom_no_lig, 3*atom_no_lig);
+		int i_count = 0;
+		int j_count = 0;
+		int k,h;
+		for (i=0;i<atom;++i) {
+			j_count = 0;
+			if (strc_node[i].atom_type == 3) {continue;}
+			for (j=0;j<atom;++j) {
+				if (strc_node[j].atom_type == 3) {continue;}
+				
+				for(k=0;k<3;++k) {
+					for (h=0;h<3;++h) {
+					//	if (i == 0 && j == 0) {printf("(%d,%d) = (%d,%d)\n",3*i_count+k,3*j_count+h,3*i+k,3*j+h);}
+						gsl_matrix_set(h_matrix_no_lig,3*i_count+k,3*j_count+h,gsl_matrix_get(h_matrix,3*i+k,3*j+h));
+					}
+				}
+				++j_count;
+			}
+			++i_count;
+		}
+		gsl_matrix_free(h_matrix);
+		gsl_matrix *h_matrix = gsl_matrix_alloc(3*atom_no_lig, 3*atom_no_lig);
+		gsl_matrix_memcpy (h_matrix, h_matrix_no_lig);
+		gsl_matrix_free(h_matrix_no_lig);
+		atom = atom_no_lig;
+		if (verbose == 1) {printf("	Node:%d\n",atom);}
+	}
 	if (weight_factor == 1) {mass_weight_hessian(h_matrix,atom,strc_node);}
 	if (hessian_flag != 0) {
 		printf("Writing Hessian\n");
