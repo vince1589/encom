@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
 	
 	if (enm == 1) {
 		 for(i=0;i<3*atom;i++)for(j=0;j<(3*atom);j++){hessian[i][j]=0;}
-		 build_enm(strc_node,hessian,atom,epsilon,templaate,cutoff);
+		 build_enm(strc_node,hessian,atom,epsilon,templaate,cutoff,0);
 	}
 	
 	if (verbose == 1) {printf("\tAssigning Array\n");}	

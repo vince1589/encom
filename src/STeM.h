@@ -108,7 +108,7 @@ void build_2_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_the
 void build_3_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_phi,float factor);
 void build_1st_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double K_r);
 void build_4h_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double epsi,gsl_matrix *tmp);
-void build_enm(struct pdb_atom *strc, double **hes,int nb_atom,gsl_matrix *tmp,float cutoff);
+void build_enm(struct pdb_atom *strc, double **hes,int nb_atom,gsl_matrix *tmp,float cutoff, int pfanm);
 void diagonalyse_matrix (gsl_matrix *m,int nb_atom, gsl_vector *evl,gsl_matrix *evc);
 void mass_weight_hessian(gsl_matrix *m,int atom,struct pdb_atom *strc_all);
 void adjust_weight_evec(gsl_matrix *m,int atom,struct pdb_atom *strc);

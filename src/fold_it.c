@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
 		
 		gsl_matrix_set_all(templaate,1);
 		//printf("Build Matrix\n");
-		build_enm(strc_node,hessian,atom,epsilon,templaate,cutoff);
+		build_enm(strc_node,hessian,atom,epsilon,templaate,cutoff,0);
 		assignArray(h_matrix,hessian,3*atom,3*atom);
 		//printf("Diago\n");
 		gsl_vector *eval = gsl_vector_alloc(3*atom); /*Déclare un vector qui va contenir les eigenvalue */	

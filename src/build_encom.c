@@ -2,6 +2,8 @@
 
 void add_model(char filename[500],gsl_matrix *m,char matrix_name[500],float init_templaate,float vinit,float bond_factor,float angle_factor,float kp_factor,int lig,char inputname[500]);
 void write_template(char filename[500],gsl_matrix *m,int nb_atom, struct pdb_atom *old);
+void load_default_matrix(gsl_matrix *m);
+
 
 int main(int argc, char *argv[]) {
 	int all; /*Nombre d'atomes dans pdb*/
@@ -12,7 +14,7 @@ int main(int argc, char *argv[]) {
  	char file_name[500][500];
 
  	int lig = 0;
- 	char matrix_name[500] = "interaction_m.dat";
+ 	char matrix_name[500] = "undef";
  	char param_name[500] = "param_m.dat";
  	char inputname[500] ="none";
  	int verbose = 0;
@@ -27,6 +29,7 @@ int main(int argc, char *argv[]) {
 	int weight_factor = 0;
 	char eigen_name[500] = "eigen.dat";
 	char hessian_name[500] = "hessian.dat";
+	char covariance_name[500] = "structure.cov";
 	int hessian_flag = 0;
 	float temperature = 310;
 	int print_template = 0;
@@ -66,8 +69,8 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-ihes",argv[i]) == 0) {strcpy(ihess_name,argv[i+1]);++invert_hessian;}
  		if (strcmp("-pt",argv[i]) == 0) {print_template = 1;}
  		if (strcmp("-no",argv[i]) == 0) {no_write = 1;}
- 		if (strcmp("-cov",argv[i]) == 0) {covariance_flag = 1;}
- 		if (strcmp("-fcov",argv[i]) == 0) {covariance_flag = 2;}
+ 		if (strcmp("-cov",argv[i]) == 0)  {covariance_flag = 1;strcpy(covariance_name,argv[i+1]);}
+ 		if (strcmp("-fcov",argv[i]) == 0) {covariance_flag = 2;strcpy(covariance_name,argv[i+1]);}
  		if (strcmp("-nolig",argv[i]) == 0) {noligand =1 ;}
  		
  	}
@@ -155,7 +158,12 @@ int main(int argc, char *argv[]) {
 	vcon_file_dom(strc_all,vcon,all);
 	 	
 	if (verbose == 1) {printf("Reading Interaction Matrix %s\n",matrix_name);}
-	load_matrix(inter_m,matrix_name);
+	if (strcmp(matrix_name,"undef") == 0) {
+		load_default_matrix(inter_m);
+	} else {
+		load_matrix(inter_m,matrix_name);
+	}
+	//print_matrix(inter_m);
 	//write_matrix("vcon_vince.dat", vcon,all,all);
 	if (verbose == 1) {printf("Building templaate\n");}
 	 	
@@ -271,7 +279,7 @@ int main(int argc, char *argv[]) {
 	
 	if (no_write == 0) {write_eigen(eigen_name,evec,eval,3*atom);}
 	
-
+	float ener  = 0.0;
 	if (temperature  < 0) {
 		float factor;
 		for(factor = -2000.0;factor < 2000.0;++factor) {
@@ -282,7 +290,7 @@ int main(int argc, char *argv[]) {
 		}
 	
 	} else {
-			float ener = calc_energy(atom,eval,temperature);
+			ener = calc_energy(atom,eval,temperature);
 			printf("Energy:%10.8f\n",ener);
 			printf("Energy/node:%10.8f\n",ener/(float)(atom*3));
 	}
@@ -297,18 +305,21 @@ int main(int argc, char *argv[]) {
 		write_matrix(ihess_name,k_totinv,3*(atom-lig),3*(atom-lig));
 	}
 
-	if (covariance_flag == 1) 
+	if (covariance_flag > 0) 
 	{
 		gsl_matrix *k_inverse = gsl_matrix_alloc(atom, atom);
 		k_inverse_matrix_stem(k_inverse,atom,eval,evec,6,atom*3-6);
-		
-	
+	//	k_tot_inv_matrix_stem(k_inverse,atom,eval,evec,6,atom);
+		FILE *file;
+ 		file = fopen(covariance_name,"w");
+ 			fprintf(file,"File:%s\n",file_name[0]);
+			fprintf(file,"Energy:%f\n",ener);
    		for (i=0;i<atom;++i)
    		{
 			for (j=i;j<atom;++j)
 			{
-				if (i != j) {continue;}
-				printf("COV: %d %d %s%d%s %s%d%s %f\n",i,j,strc_node[i].res_type,strc_node[i].res_number,strc_node[i].chain,
+				if (i != j && covariance_flag == 1) {continue;}
+				fprintf(file,"COV: %d %d %s%d%s %s%d%s %f\n",i,j,strc_node[i].res_type,strc_node[i].res_number,strc_node[i].chain,
 																	  strc_node[j].res_type,strc_node[j].res_number,strc_node[j].chain
 				,gsl_matrix_get(k_inverse,i,j)*1000);
 			}	
@@ -316,17 +327,9 @@ int main(int argc, char *argv[]) {
 	
 		printf("Correlation:%f\n",correlate(k_inverse,strc_node, atom));
 		gsl_matrix_free(k_inverse);
+		fclose(file);
 	}
-	if (covariance_flag == 2) {
-		gsl_matrix *k_inverse = gsl_matrix_alloc(atom*3,atom*3);
-		k_tot_inv_matrix_stem(k_inverse,atom,eval,evec,6,atom);
-		for (i=0;i<atom;++i) {for (j=i;j<atom;++j){
-			printf("COV: %d %d %s%d%s %s%d%s %f\n",i,j,strc_node[i/3].res_type,strc_node[i/3].res_number,strc_node[i/3].chain,
-																	  strc_node[j/3].res_type,strc_node[j/3].res_number,strc_node[j/3].chain
-				,gsl_matrix_get(k_inverse,i,j)*1000);
-		}}
-	
-	}
+
 	gsl_matrix_free(templaate);
 	gsl_matrix_free(inter_m);
 	gsl_matrix_free(vcon);
@@ -442,3 +445,39 @@ void add_model(char filename[500],gsl_matrix *m,char matrix_name[500],float init
 	assignArray(h_matrix,hessian,3*atom,3*atom);
 	gsl_matrix_add (m ,h_matrix);
 }
+
+void load_default_matrix(gsl_matrix *m) {
+	gsl_matrix_set_all(m,3.0);
+	
+	gsl_matrix_set(m,3,0,1.0);
+	
+	gsl_matrix_set(m,1,1,1.0);
+	gsl_matrix_set(m,3,1,1.0);
+	gsl_matrix_set(m,7,1,1.0);
+
+
+	gsl_matrix_set(m,2,2,1.0);
+	gsl_matrix_set(m,3,2,1.0);
+	gsl_matrix_set(m,6,2,1.0);
+	
+	gsl_matrix_set(m,0,3,1.0);
+	gsl_matrix_set(m,1,3,1.0);
+	gsl_matrix_set(m,2,3,1.0);
+	
+	
+	gsl_matrix_set(m,2,6,1.0);
+	gsl_matrix_set(m,6,6,1.0);
+	
+	gsl_matrix_set(m,1,7,1.0);
+	gsl_matrix_set(m,7,7,1.0);
+
+}
+
+
+
+
+
+
+
+
+

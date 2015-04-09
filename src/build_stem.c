@@ -27,6 +27,7 @@ int main(int argc, char *argv[]) {
 	int energy = 0;							// Flag pour printer l'energy
 	float cutoff = 18.0;
 	int weight_factor = 0;
+	int pfanm = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-o",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
@@ -40,7 +41,8 @@ int main(int argc, char *argv[]) {
  		if (strcmp("-kpf",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); kp_factor = temp;}  
  		if (strcmp("-b",argv[i]) == 0) {b_factor_flag = 1;}
  		if (strcmp("-lig",argv[i]) == 0) {lig= 1;} 
- 		if (strcmp("-enm",argv[i]) == 0) {enm= 1;}  
+ 		if (strcmp("-enm",argv[i]) == 0) {pfanm= 1;}
+ 		if (strcmp("-pfanm",argv[i]) == 0) {enm= 1;}    
  		if (strcmp("-ee",argv[i]) == 0) {energy= 1;}  
  		if (strcmp("-tot",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); tot_factor = temp;}
  		if (strcmp("-cut",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp); cutoff = temp;}  
@@ -156,7 +158,7 @@ int main(int argc, char *argv[]) {
 	
 	if (enm == 1) {
 		 for(i=0;i<3*atom;i++)for(j=0;j<(3*atom);j++){hessian[i][j]=0;}
-		 build_enm(strc_node,hessian,atom,epsilon,templaate,cutoff);
+		 build_enm(strc_node,hessian,atom,epsilon,templaate,cutoff,pfanm);
 	}
 	
 	if (verbose == 1) {printf("\tAssigning Array\n");}	

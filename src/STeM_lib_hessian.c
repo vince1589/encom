@@ -646,7 +646,7 @@ void build_4h_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double epsi
  	} 
  }
  
- void build_enm(struct pdb_atom *strc, double **hes,int nb_atom,gsl_matrix *tmp,float cutoff) {
+ void build_enm(struct pdb_atom *strc, double **hes,int nb_atom,gsl_matrix *tmp,float cutoff,int pfanm) {
  	int i,j;
  	double bx,by,bz,dist,distijsqr;
  	double temp;
@@ -666,6 +666,9 @@ void build_4h_matrix(struct pdb_atom *strc, double **hes,int nb_atom,double epsi
        		dist = (bx*bx+by*by+bz*bz);
        		if (dist > cutoff*cutoff) {continue;}
        		distijsqr = dist;
+       		if (pfanm == 1) {
+       			distijsqr = dist*dist;
+       		}
        		temp = gsl_matrix_get(tmp,i-1,j-1);
        		epsi = 1.0/120.0;
        		//printf("%d	%d	%10.5f %10.5f\n",i,j,temp,dist);

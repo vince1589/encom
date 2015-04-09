@@ -491,7 +491,7 @@ for(i=0; i < nb_atom_1; ++i) {
 		{
  			for (j=0;j<nb_atom;++j) 
 			{
-				if (i != j) {continue;}
+				//if (i != j) {continue;}
 		 		for (l=0;l<3;++l) 
 				{	
 			 			gsl_matrix_set(m,i,j,
@@ -666,10 +666,10 @@ float calc_energy(int atom,gsl_vector *eval,float t) {
 		sum += log(v);
 	}
 	
-	printf("Ental contribution:%f\n",ental/1000);
-	printf("Temperature:%f\n",t);
-	printf("Entro contribution:%f\n",t*entro/1000);
-	printf("Ln Summation:%f\n",sum);		
+	//printf("Ental contribution:%f\n",ental/1000);
+	//printf("Temperature:%f\n",t);
+	//printf("Entro contribution:%f\n",t*entro/1000);
+	//printf("Ln Summation:%f\n",sum);		
 	return(sum);
 	//return((ental-t*entro)/1000);
 }

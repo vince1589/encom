@@ -18,11 +18,13 @@ int main(int argc, char *argv[]) {
 	int hessian_flag = 0;
 	float temperature = 310;
 	float cutoff = 18.0;
+	int pfanm = 0;
  	for (i = 1;i < argc;i++) {
  		if (strcmp("-i",argv[i]) == 0) {strcpy(file_name,argv[i+1]);--help_flag;}
  		if (strcmp("-h",argv[i]) == 0) {++help_flag;}
  		if (strcmp("-v",argv[i]) == 0) {verbose = 1;}
  		if (strcmp("-lig",argv[i]) == 0) {lig= 1;}
+ 		if (strcmp("-pfanm",argv[i]) == 0) {pfanm= 1;}
  		if (strcmp("-cut",argv[i]) == 0) {float temp;sscanf(argv[i+1],"%f",&temp);cutoff = temp;} 
  		
  		if (strcmp("-o",argv[i]) == 0) {strcpy(eigen_name,argv[i+1]);}
@@ -103,7 +105,7 @@ int main(int argc, char *argv[]) {
 	if (verbose == 1) {printf("\tNon Local Interaction Potential\n");}	
 	gsl_matrix *templaate = gsl_matrix_alloc(3*atom, 3*atom);
 	gsl_matrix_set_all(templaate,1);
-	build_enm(strc_node,hessian,atom,templaate,cutoff);	
+	build_enm(strc_node,hessian,atom,templaate,cutoff,pfanm);	
  	if (verbose == 1) {printf("\tAssigning Array\n");}	
 	assignArray(h_matrix,hessian,3*atom,3*atom);
 
