@@ -1,0 +1,4 @@
+# To compile ENCoM you need a Unix based machine and the GSL library (http://www.gnu.org/software/gsl/)
+
+cd ./build
+make -f Makefile.Unix
